@@ -21,6 +21,7 @@
       lua-language-server # lua
       texlab # latex
       bash-language-server # bash
+      tree-sitter # tree-sitter grammar CLI
     ];
   };
 }

@@ -6,11 +6,14 @@
 # and cut stays move-aware in every running instance. Restart all yazi
 # instances to pick up changes.
 { inputs, ... }: {
-  flake.modules.homeManager.yazi = { ... }: {
+  flake.modules.homeManager.yazi = { pkgs, ... }: {
     home.sessionVariables = {
       FILEMANAGER = "yazi";
       TERM_FILE_CHOOSER = "yazi";
     };
+
+    # ripdrag: Wayland drag-and-drop daemon invoked by the <C-d> keymap below
+    home.packages = [ pkgs.ripdrag ];
 
     programs.yazi = {
       enable = true;

@@ -28,6 +28,12 @@
     # ==========================================================================
     # INTERACTIVE BASH MANAGEMENT
     # ==========================================================================
+    # User-scale shell tooling (previously in nixos.main systemPackages)
+    home.packages = with pkgs; [
+      ripgrep
+      tree
+    ];
+
     programs.bash = {
       enable = true;
       historyControl = [ "ignoreboth" ];

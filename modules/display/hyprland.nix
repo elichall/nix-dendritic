@@ -12,6 +12,11 @@
       withUWSM = false;
     };
 
-    environment.systemPackages = [ pkgs.hypridle ];
+    # hypridle daemon + keybind-invoked brightness/screenshot tools
+    environment.systemPackages = with pkgs; [
+      hypridle
+      grimblast
+      brightnessctl
+    ];
   };
 }

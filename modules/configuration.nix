@@ -138,20 +138,10 @@
 
     # System-only packages that are not pure dependancies for a program
     environment.systemPackages = with pkgs; [
-      ripgrep
-      ripdrag
-      libqalculate
-      chafa
+      # Base utilities (root/system-script scope)
       unzip
       wl-clipboard
-      grimblast
-      brightnessctl
       xdg-utils
-      tree
-
-      # CLI tools (not managed by HM)
-      tree-sitter
-      fastfetch
       docker
     ];
 

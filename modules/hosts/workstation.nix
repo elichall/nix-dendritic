@@ -54,6 +54,7 @@
               self.modules.homeManager.ghostty
               self.modules.homeManager.tui
               self.modules.homeManager.zotero
+              self.modules.homeManager.showoff
               self.modules.homeManager.awww
               self.modules.homeManager.waypaper
               self.modules.homeManager.rclone

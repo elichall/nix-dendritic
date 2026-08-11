@@ -9,8 +9,9 @@
 # - TUI app launcher (entries/wrappers/icons/binaries) -> homeManager.tui
 # - File manager env + config                        -> homeManager.yazi
 # - Zotero                                           -> homeManager.zotero
-# - Showoff dashboard deps live here until the
-#   homeManager.showoff port (Phase 3) absorbs them.
+# - Showoff dashboard deps                           -> homeManager.showoff
+# - otter-launcher deps (qalc/chafa) live here until
+#   the homeManager.otter-launcher port (Phase 3) absorbs them.
 { inputs, ... }: {
   flake.modules.homeManager.main = { config, pkgs, ... }: {
     home.stateVersion = "26.05";
@@ -45,17 +46,12 @@
       # gtk.portal must live in the user profile so the daemon finds it
       xdg-desktop-portal-gtk
 
-      # Showoff dashboard dependencies (migrate to homeManager.showoff in Phase 3)
-      tty-clock
-      gping
-      cava
-      cmatrix
-      cbonsai
-      asciiquarium-transparent
-      sl
-      lolcat
-      cowsay
-      weathr
+      # otter-launcher dependencies (migrate to homeManager.otter-launcher in Phase 3)
+      libqalculate
+      chafa
+
+      # used by showoff-layout / waybar (migrate to display modules in Phase 3)
+      fastfetch
     ];
   };
 }
