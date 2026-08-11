@@ -8,9 +8,9 @@
 # changes, so a home-manager switch can never reset the theme.
 #
 # Transparency values are the user's preferred options (window-decoration =
-# false, background-opacity = 0.90) — background-opacity < 1 still drops
-# ghostty's .background class, so the gtk.css scoping fix from /etc/nixos/
-# assets/ghostty-transparency.md remains mandatory.
+# false, background-opacity = 0.90). The generated GTK CSS (theme module)
+# must stay palette-only per the ghostty-transparency.md postmortem — an
+# element rule on the window would kill ghostty's transparency/blur.
 #
 # INTERFACE CONTRACT (theme module):
 # - ghostty.nix is the SOLE owner of xdg.configFile."ghostty/config".

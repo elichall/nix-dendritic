@@ -19,14 +19,17 @@
 # - home.activation.initTheme re-runs the sync after every home-manager
 #   switch (bootstrap on first run, consistency re-link afterwards).
 #
-# GTK CSS TRANSPARENCY FIX (postmortem): the generated GTK CSS must NOT
-# paint an opaque background-color on the bare `window` type selector —
-# ghostty implements `background-opacity < 1` by dropping its `.background`
-# class, and an opaque `window` rule forces a full-surface opaque region so
-# the compositor skips blur/alpha. Scope the background to windows that
-# self-declare `.background`:
-#   window { color: @theme_fg_color; }
-#   window.background, .background { background-color: @theme_bg_color; ... }
+# GTK CSS CONTRACT (ghostty-transparency.md postmortem): the generated GTK
+# CSS is linked into ~/.config/gtk-{3,4}.0/gtk.css, which EVERY GTK3/GTK4 app
+# loads as user-priority CSS. It is therefore palette-ONLY — never add an
+# element rule here:
+#   - an opaque `window` background forces a full-surface opaque region
+#     (ghostty transparency/blur dead — the 2026-08-11 incident);
+#   - `label { color: ... }` leaked into waybar's workspace numbers
+#     (uniform-white incident, same day);
+#   - `.drag` themed ripdrag's pill; removed, ripdrag uses Adwaita-dark.
+# Apps pick their own element styling. If an app needs restyling, do it in
+# that app's own config, never in this file.
 #
 # INTERFACE CONTRACT (ghostty): ghostty.nix is the SOLE owner of
 # xdg.configFile."ghostty/config". This module does NOT declare it — it only
@@ -229,16 +232,13 @@
       gradient_color_5 = '#$C2_GREEN'
       CAVA
 
-      # GTK theme: remap the palette every plain GTK3/GTK4 app reads via the
-      # named colors the default theme references (theme_bg_color etc.), plus a
-      # few base rules. Linked into ~/.config/gtk-{3,4}.0/gtk.css so ALL GTK
-      # apps (including ripdrag) follow the system theme.
-      #
-      # TRANSPARENCY CONTRACT (ghostty-transparency.md postmortem): the
-      # background-color must be scoped to `.background`-carrying windows, never
-      # the bare `window` type selector. Ghostty removes `.background` when
-      # `background-opacity < 1`; an opaque `window` rule would force a
-      # full-surface opaque region (no blur, no alpha).
+      # GTK theme: expose the palette as the named colors every plain GTK3/GTK4
+      # app reads via the default theme (theme_bg_color etc.). This file is linked
+      # into ~/.config/gtk-{3,4}.0/gtk.css, which EVERY GTK app loads as
+      # user-priority CSS, so it must stay palette-ONLY. Any element rule here
+      # leaks into unrelated apps (e.g. `label { color: ... }` broke waybar's
+      # workspace number colors, 2026-08-11 — see modules/_assets/
+      # ghostty-transparency.md). Apps pick their own element styling.
       cat > "$GENERATED/gtk/colors.css" <<CSS
       @define-color theme_bg_color #$BG;
       @define-color theme_fg_color #$FG;
@@ -258,30 +258,6 @@
       @define-color border_color #$C8_GRAY;
       @define-color insensitive_fg_color #$C8_GRAY;
       @define-color theme_muted_color #$C8_GRAY;
-
-      window {
-        color: @theme_fg_color;
-      }
-      window.background, .background {
-        background-color: @theme_bg_color;
-        color: @theme_fg_color;
-      }
-      headerbar, .titlebar {
-        background-color: @theme_bg_color;
-        color: @theme_fg_color;
-      }
-      label { color: @theme_fg_color; }
-      selection {
-        background-color: @theme_selected_bg_color;
-        color: @theme_selected_fg_color;
-      }
-      scrollbar { background-color: @theme_bg_color; }
-
-      .drag, .drag label {
-        background-color: @theme_muted_color;
-        color: @theme_bg_color;
-        border-radius: 12px;
-      }
       CSS
 
       cat > "$GENERATED/gtk/settings.ini" <<INI
