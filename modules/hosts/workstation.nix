@@ -29,7 +29,6 @@
       # ==================================================================
       self.modules.nixos.cmdLine
       self.modules.nixos.nvim
-      self.modules.nixos.opencode
       self.modules.nixos.rclone
 
       # ======================================================================
@@ -59,6 +58,8 @@
               # ==============================================================
               # REMAINING HOME LVL ASPECT MODULES (not grouped)
               # ==============================================================
+              self.modules.homeManager.opencode
+              self.modules.homeManager.clipboard
               self.modules.homeManager.rclone
               self.modules.homeManager.fastfetch
             ];

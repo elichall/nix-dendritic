@@ -1,8 +1,10 @@
 # ==========================================================================
 # OPENCODE
 # ==========================================================================
+# User-scale (Home Manager): AI CLI on the user profile. No system-level
+# consumer, so no nixos.* aspect.
 { inputs, ... }: {
-  flake.modules.nixos.opencode = { pkgs, ... }: {
-    environment.systemPackages = [ pkgs.opencode ];
+  flake.modules.homeManager.opencode = { pkgs, ... }: {
+    home.packages = [ pkgs.opencode ];
   };
 }
