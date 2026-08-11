@@ -1,14 +1,37 @@
 # nixos.network — Networking, firewall & remote access (system scale).
 #
-# Template for leaning out modules/configuration.nix (nixos.main).
-# Planned content (currently in nixos.main, lines ~74-102):
-#   - networking.hostName / networkmanager
-#   - services.openssh (PermitRootLogin, PasswordAuthentication, MaxAuthTries)
-#   - services.tailscale + TS_DEBUG_FIREWALL_MODE env
-#   - networking.nftables / firewall (trustedInterfaces, tailscale port, allowPing)
-#   - systemd.network.wait-online disable (initrd + main)
-#
-# NOT wired into any host until populated.
+# Leaned out of modules/configuration.nix (nixos.main).
+# Wired into workstation.nix via `self.modules.nixos.network`.
 { inputs, ... }: {
-  flake.modules.nixos.network = { ... }: { };
+  flake.modules.nixos.network = { config, ... }: {
+    networking.hostName = "t480-nixos";
+    networking.networkmanager.enable = true;
+
+    services.openssh = {
+      enable = true;
+      settings = {
+        PermitRootLogin = "no";
+        PasswordAuthentication = true;
+        MaxAuthTries = 3;
+      };
+    };
+
+    services.tailscale.enable = true;
+    systemd.services.tailscaled.serviceConfig.Environment = [
+      "TS_DEBUG_FIREWALL_MODE=nftables"
+    ];
+
+    networking.nftables.enable = true;
+    networking.firewall = {
+      enable = true;
+      trustedInterfaces = [ config.services.tailscale.interfaceName ];
+      allowedTCPPorts = [ ];
+      allowedUDPPorts = [ config.services.tailscale.port ]; # Tailscale WireGuard
+      allowPing = false;
+    };
+
+    # network optimizations
+    systemd.network.wait-online.enable = false;
+    boot.initrd.systemd.network.wait-online.enable = false;
+  };
 }

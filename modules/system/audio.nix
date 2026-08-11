@@ -1,11 +1,15 @@
 # nixos.audio — Audio stack (system scale).
 #
-# Template for leaning out modules/configuration.nix (nixos.main).
-# Planned content (currently in nixos.main):
-#   - security.rtkit.enable
-#   - services.pipewire (alsa, alsa.support32Bit, pulse)
-#
-# NOT wired into any host until populated.
+# Leaned out of modules/configuration.nix (nixos.main).
+# Wired into workstation.nix via `self.modules.nixos.audio`.
 { inputs, ... }: {
-  flake.modules.nixos.audio = { ... }: { };
+  flake.modules.nixos.audio = { ... }: {
+    security.rtkit.enable = true;
+    services.pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+    };
+  };
 }

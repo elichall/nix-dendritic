@@ -25,6 +25,10 @@
       self.modules.nixos.cmdLine
       self.modules.nixos.mime
       self.modules.nixos.battery
+      self.modules.nixos.network
+      self.modules.nixos.hardware
+      self.modules.nixos.audio
+      self.modules.nixos.security
       self.modules.nixos.nvim
       self.modules.nixos.opencode
       self.modules.nixos.hyprland
