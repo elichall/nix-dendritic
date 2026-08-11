@@ -1,9 +1,8 @@
 # ==========================================================================
 # MIME TYPES & DEFAULT APPLICATIONS
 # ==========================================================================
-# Ported from the legacy /etc/nixos/modules/mime.nix. The browser desktop ID
-# (previously centralised in var.nix) is inlined; a DRY refactor is a stretch
-# goal.
+# Ported from the legacy /etc/nixos/modules/mime.nix. The browser desktop ID is
+# centralised in modules/_lib/browser.nix (shared with future zen modules).
 #
 # Lives in system/ because it is system-scale desktop/XDG integration, not a
 # program or service. Future system-level base config (the leaned-out
@@ -12,7 +11,7 @@
 { inputs, ... }: {
   flake.modules.nixos.mime = { pkgs, lib, ... }:
   let
-    browserDesktop = "app.zen_browser.zen.desktop";
+    browserDesktop = (import ../_lib/browser.nix).desktop;
 
     engineeringMimes = {
       "model/step" = { comment = "STEP 3D model"; globs = [ "*.step" "*.stp" ]; };
