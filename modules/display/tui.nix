@@ -116,6 +116,10 @@
           bluetui
           jolt-tui
 
+          # Launcher deps for the *-open wrappers (AGENTS.md Rule 4)
+          ghostty
+          yazi
+
           # Non-nixpkgs packages (flake imported)
           wlctl
 
