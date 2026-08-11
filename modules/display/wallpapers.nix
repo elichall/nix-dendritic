@@ -6,29 +6,11 @@
 # module references these exact paths in its profiles, and waypaper --restore
 # reads the same directory. Assets are tracked in modules/_assets so the
 # flake evaluates purely (import-tree ignores underscore-prefixed paths).
+# The file list is single-sourced in ../_lib/wallpapers.nix (shared with
+# homeManager.theme, which asserts its profiles against it).
 { inputs, ... }: {
   flake.modules.homeManager.wallpapers = { lib, config, ... }: let
-    wallpaperFiles = [
-      # Theme profile wallpapers (12)
-      "beach.jpg"
-      "boat-mountain.jpg"
-      "lake-mountain.jpg"
-      "mountain-birds.png"
-      "mountain-green.jpg"
-      "outer-wilds.jpg"
-      "rain-lake.jpg"
-      "snow-peak.jpg"
-      "space-purple.jpg"
-      "sunset-elk.jpg"
-      "sunset-hills.jpg"
-      "zelda-botw.jpg"
-      # Waypaper library extras (5)
-      "crimson-sunset.jpg"
-      "mystic-valley.jpg"
-      "red-mountain.png"
-      "snow-mountain.jpg"
-      "sunrise-elk.jpg"
-    ];
+    wallpaperFiles = (import ../_lib/wallpapers.nix).all;
   in {
     home.file = builtins.listToAttrs (
       map (file: {

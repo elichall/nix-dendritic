@@ -97,6 +97,9 @@
     };
     DEFAULT_THEME = "journal";
 
+    # Shared provisioned wallpaper set (single-sourced in ../_lib/wallpapers.nix)
+    sharedWallpapers = (import ../_lib/wallpapers.nix).theme;
+
     writeProfilesScript = lib.concatStringsSep "\n" (
       lib.mapAttrsToList (
         name: profile: "write_profile ${name} '${builtins.toJSON ({ theme_name = name; } // profile)}'"
@@ -383,10 +386,14 @@
           ;;
       esac
     '';
-  in {
+  in
+  # Every profile wallpaper must be provisioned by homeManager.wallpapers —
+  # catches theme/wallpapers list drift at eval time instead of runtime.
+  assert lib.all (profile: lib.elem (builtins.baseNameOf profile.wallpaper) sharedWallpapers) (
+    lib.attrValues THEME_PROFILES
+  ); {
     home.packages = [
       themeCli
-      pkgs.jq
     ];
 
     home.activation.initTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
