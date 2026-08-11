@@ -1,8 +1,9 @@
 # ==========================================================================
 # AWWW (awwwww - native notification daemon)
 # ==========================================================================
-# System-scale (NixOS): binary exposure. User-scale (Home Manager): the
-# wallpaper daemon engine unit, started by the graphical session.
+# Display aspect: the wallpaper daemon engine, started by the graphical
+# session. System-scale (NixOS): binary exposure. User-scale (Home Manager):
+# the systemd user unit.
 { inputs, ... }: {
   flake.modules.nixos.awww = { pkgs, ... }: {
     environment.systemPackages = [ pkgs.awww ];

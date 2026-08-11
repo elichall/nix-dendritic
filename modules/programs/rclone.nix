@@ -1,8 +1,9 @@
 # ==========================================================================
 # RCLONE (cloud storage sync/mount)
 # ==========================================================================
-# System-scale (NixOS): binary + FUSE user-space mounting. User-scale
-# (Home Manager): the rclone-box systemd mount unit.
+# Program aspect: cloud sync/mount tooling. System-scale (NixOS): binary +
+# FUSE user-space mounting. User-scale (Home Manager): the rclone-box
+# systemd mount unit.
 { inputs, ... }: {
   flake.modules.nixos.rclone = { pkgs, ... }: {
     programs.fuse.userAllowOther = true;

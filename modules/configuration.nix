@@ -8,9 +8,9 @@
 #   ai                 -> nixos.opencode     (opencode)
 #   display            -> nixos.display       (ly, portal, WLR env)
 #   display/hyprland   -> nixos.hyprland      (compositor + hypridle)
-#   services/awww      -> nixos.awww         (awww)
-#   services/waypaper  -> nixos.waypaper     (waypaper)
-#   services/rclone    -> nixos.rclone       (rclone + fuse)
+#   display/awww       -> nixos.awww          (awww)
+#   display/waypaper   -> nixos.waypaper      (waypaper)
+#   programs/rclone    -> nixos.rclone        (rclone + fuse)
 # Remaining cohesive splits (network, hardware, audio, security) are a
 # stretch goal; they live here for now.
 { inputs, ... }: {
