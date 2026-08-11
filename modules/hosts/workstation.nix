@@ -29,6 +29,7 @@
       self.modules.nixos.awww
       self.modules.nixos.waypaper
       self.modules.nixos.rclone
+      self.modules.nixos.fastfetch
 
       # ======================================================================
       # PER USER CONFIGURATION
@@ -58,6 +59,7 @@
               self.modules.homeManager.awww
               self.modules.homeManager.waypaper
               self.modules.homeManager.rclone
+              self.modules.homeManager.fastfetch
             ];
           };
         };

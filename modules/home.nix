@@ -49,9 +49,6 @@
       # otter-launcher dependencies (migrate to homeManager.otter-launcher in Phase 3)
       libqalculate
       chafa
-
-      # used by showoff-layout / waybar (migrate to display modules in Phase 3)
-      fastfetch
     ];
   };
 }
