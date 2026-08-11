@@ -4,6 +4,11 @@
 # Ported from the legacy /etc/nixos/modules/mime.nix. The browser desktop ID
 # (previously centralised in var.nix) is inlined; a DRY refactor is a stretch
 # goal.
+#
+# Lives in system/ because it is system-scale desktop/XDG integration, not a
+# program or service. Future system-level base config (the leaned-out
+# configuration.nix: users, locale, boot, nix settings, maintenance) belongs
+# here too as system/main.nix.
 { inputs, ... }: {
   flake.modules.nixos.mime = { pkgs, lib, ... }:
   let
