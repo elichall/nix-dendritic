@@ -21,7 +21,7 @@
       # ==================================================================
       # system-level base services (battery, network, hardware, audio, security)
       self.modules.nixos.base
-      # display/wallpaper preset (display, hyprland, awww, waypaper, mime)
+      # display/wallpaper preset (display, hyprland, mime)
       self.modules.nixos.desktop
 
       # ==================================================================
@@ -52,7 +52,8 @@
               # ==============================================================
               # developer toolchain (cmdLine, git, tmux, nvim, yazi)
               self.modules.homeManager.toolbox
-              # display/wallpaper preset (ghostty, tui, zotero, showoff, awww, waypaper)
+              # display/wallpaper preset (hyprland, ghostty, tui, zotero,
+              # showoff, awww, waypaper, wallpapers, waybar, theme)
               self.modules.homeManager.desktop
 
               # ==============================================================
