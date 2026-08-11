@@ -27,9 +27,9 @@
         font-family = Noto Sans Mono CJK JP
         font-size = 13
         theme = Melange Dark
-        window-decoration = true
+        window-decoration = false
         cursor-style = block
-        background-opacity = 0.70
+        background-opacity = 0.90
         background-blur = 20
         confirm-close-surface = false
         font-feature = -calt
