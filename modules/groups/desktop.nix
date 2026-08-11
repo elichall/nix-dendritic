@@ -9,14 +9,13 @@
     imports = [
       self.modules.nixos.display
       self.modules.nixos.hyprland
-      self.modules.nixos.awww
-      self.modules.nixos.waypaper
       self.modules.nixos.mime
     ];
   };
 
   flake.modules.homeManager.desktop = {
     imports = [
+      self.modules.homeManager.hyprland
       self.modules.homeManager.ghostty
       self.modules.homeManager.tui
       self.modules.homeManager.zotero

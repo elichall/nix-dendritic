@@ -2,14 +2,12 @@
 # WAYPAPER (wallpaper manager)
 # ==========================================================================
 # Display aspect: wallpaper restoration, chained after the awww daemon.
-# System-scale (NixOS): binary exposure. User-scale (Home Manager): the
-# post-initialization wallpaper restore unit.
+# User-scale (Home Manager) only: binary on the user profile plus the
+# post-initialization wallpaper restore unit (absolute store path).
 { inputs, ... }: {
-  flake.modules.nixos.waypaper = { pkgs, ... }: {
-    environment.systemPackages = [ pkgs.waypaper ];
-  };
-
   flake.modules.homeManager.waypaper = { pkgs, ... }: {
+    home.packages = [ pkgs.waypaper ];
+
     systemd.user.services.waypaper-restore = {
       Unit = {
         Description = "Waypaper Post-Initialization Wallpaper Restoration";
