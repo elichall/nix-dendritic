@@ -13,6 +13,9 @@
       # think configuration.nix
       self.modules.nixos.main
 
+      # hardware-specific (t480): fileSystems, kernel modules, microcode
+      self.modules.nixos.hardwareConfig
+
       # pass home-manager as a module to the nixos system configuration
       inputs.home-manager.nixosModules.home-manager
 
