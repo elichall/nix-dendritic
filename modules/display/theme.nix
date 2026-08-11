@@ -40,11 +40,39 @@
 #   hypr/palette.lua, waybar/colors.css, tmux/colors.tmux,
 #   nvim/lua/lean/core/palette.lua, cava/themes/nixos-generated,
 #   gtk-{3,4}.0/gtk.css + settings.ini
-# Wallpaper paths referenced by profiles are provisioned by homeManager.wallpapers.
+# Wallpapers (profiles + waypaper library) are provisioned by this module via
+# home.file from modules/_assets/wallpapers into ~/Pictures/Wallpapers.
 { inputs, ... }: {
   flake.modules.homeManager.theme = { config, pkgs, lib, ... }: let
     themeLib = import ../_lib/theme.nix { home = config.home.homeDirectory; };
     THEME_DIR = themeLib.dir;
+
+    # Tracked wallpaper set provisioned into ~/Pictures/Wallpapers. Profile
+    # wallpapers above reference the theme subset by exact path; waypaper
+    # --restore and the waypaper app read the same directory. Keep this list
+    # and modules/_assets/wallpapers in sync.
+    wallpaperFiles = [
+      # Theme profile wallpapers (12)
+      "beach.jpg"
+      "boat-mountain.jpg"
+      "lake-mountain.jpg"
+      "mountain-birds.png"
+      "mountain-green.jpg"
+      "outer-wilds.jpg"
+      "rain-lake.jpg"
+      "snow-peak.jpg"
+      "space-purple.jpg"
+      "sunset-elk.jpg"
+      "sunset-hills.jpg"
+      "zelda-botw.jpg"
+      # Waypaper library extras (5)
+      "crimson-sunset.jpg"
+      "mystic-valley.jpg"
+      "red-mountain.png"
+      "snow-mountain.jpg"
+      "sunrise-elk.jpg"
+    ];
+
     THEME_PROFILES = {
       coffee = {
         ghostty_theme = "Monokai Pro Ristretto";
@@ -96,9 +124,6 @@
       };
     };
     DEFAULT_THEME = "journal";
-
-    # Shared provisioned wallpaper set (single-sourced in ../_lib/wallpapers.nix)
-    sharedWallpapers = (import ../_lib/wallpapers.nix).theme;
 
     writeProfilesScript = lib.concatStringsSep "\n" (
       lib.mapAttrsToList (
@@ -386,12 +411,17 @@
           ;;
       esac
     '';
-  in
-  # Every profile wallpaper must be provisioned by homeManager.wallpapers —
-  # catches theme/wallpapers list drift at eval time instead of runtime.
-  assert lib.all (profile: lib.elem (builtins.baseNameOf profile.wallpaper) sharedWallpapers) (
-    lib.attrValues THEME_PROFILES
-  ); {
+  in {
+    # Wallpaper provisioning (theme profiles + waypaper library), tracked in
+    # modules/_assets/wallpapers. Profiles reference the theme subset by exact
+    # path above — single module, so profile/provision drift is adjacent.
+    home.file = builtins.listToAttrs (
+      map (file: {
+        name = "Pictures/Wallpapers/${file}";
+        value.source = ../_assets/wallpapers/${file};
+      }) wallpaperFiles
+    );
+
     home.packages = [
       themeCli
     ];

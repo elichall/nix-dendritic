@@ -53,7 +53,7 @@
               # developer toolchain (cmdLine, git, tmux, nvim, yazi)
               self.modules.homeManager.toolbox
               # display/wallpaper preset (hyprland, ghostty, tui, zotero,
-              # showoff, awww, waypaper, wallpapers, waybar, theme)
+              # showoff, awww, waypaper, waybar, theme)
               self.modules.homeManager.desktop
 
               # ==============================================================
