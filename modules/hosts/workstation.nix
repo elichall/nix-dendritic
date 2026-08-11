@@ -31,7 +31,6 @@
       self.modules.nixos.nvim
       self.modules.nixos.opencode
       self.modules.nixos.rclone
-      self.modules.nixos.fastfetch
 
       # ======================================================================
       # PER USER CONFIGURATION
