@@ -25,7 +25,7 @@
 
   flake.modules.homeManager.hyprland = { pkgs, ... }: let
     terminal = "${pkgs.ghostty}/bin/ghostty";
-    tmux = "${terminal} -e ${pkgs.tmux}/bin/tmux new-session -A -s 'main'";
+    tmuxCmd = "${terminal} -e ${pkgs.tmux}/bin/tmux new-session -A -s 'main'";
     menu = "otter-open";
     browser = (import ../_lib/browser.nix).command;
 
@@ -41,12 +41,12 @@
     fileManager = "${terminal} -e bash -ci '${pkgs.yazi}/bin/yazi; exit'";
     systemManager = "otter-power";
 
-    waybar = "${pkgs.waybar}/bin/waybar";
+    waybarCmd = "${pkgs.waybar}/bin/waybar";
     wayEdges = "${pkgs.way-edges}/bin/way-edges";
-    waypaper = "${pkgs.waypaper}/bin/waypaper --restore";
-    hypridle = "${pkgs.hypridle}/bin/hypridle";
+    waypaperCmd = "${pkgs.waypaper}/bin/waypaper --restore";
+    hypridleCmd = "${pkgs.hypridle}/bin/hypridle";
     otterApps = "otter-apps --refresh-cache";
-    playerctl = "${pkgs.playerctl}/bin/playerctl";
+    playerctlCmd = "${pkgs.playerctl}/bin/playerctl";
   in {
     home.packages = with pkgs; [
       hypridle
@@ -89,7 +89,7 @@
         -- -- MY PROGRAMS -- --
         ---------------------
         local terminal = "${terminal}"
-        local tmux = "${tmux}"
+        local tmux = "${tmuxCmd}"
         local menu = "${menu}"
         local browser = "${browser}"
         local brightnessU = "${brightnessU}"
@@ -107,10 +107,10 @@
         -- -- AUTOSTART -- --
         -------------------
         hl.on("hyprland.start", function()
-          hl.exec_cmd("${waybar}")
+          hl.exec_cmd("${waybarCmd}")
           hl.exec_cmd("${wayEdges}")
-          hl.exec_cmd("${waypaper}")
-          hl.exec_cmd("${hypridle}")
+          hl.exec_cmd("${waypaperCmd}")
+          hl.exec_cmd("${hypridleCmd}")
           hl.exec_cmd("${otterApps}")
           hl.exec_cmd("bash -c 'systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && systemctl --user restart xdg-desktop-portal-hyprland xdg-desktop-portal'")
           -- Persistent headless ghostty server for the otter-launcher. Kept alive
@@ -229,10 +229,10 @@
         hl.bind("XF86AudioMute", hl.dsp.exec_cmd(muteAudio), { locked = true })
         hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd(muteMic), { locked = true })
 
-        hl.bind("XF86AudioNext", hl.dsp.exec_cmd("${playerctl} next"), { locked = true })
-        hl.bind("XF86AudioPause", hl.dsp.exec_cmd("${playerctl} play-pause"), { locked = true })
-        hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("${playerctl} play-pause"), { locked = true })
-        hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("${playerctl} previous"), { locked = true })
+        hl.bind("XF86AudioNext", hl.dsp.exec_cmd("${playerctlCmd} next"), { locked = true })
+        hl.bind("XF86AudioPause", hl.dsp.exec_cmd("${playerctlCmd} play-pause"), { locked = true })
+        hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("${playerctlCmd} play-pause"), { locked = true })
+        hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("${playerctlCmd} previous"), { locked = true })
 
         hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
         hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))

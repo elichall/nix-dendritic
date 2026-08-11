@@ -13,20 +13,21 @@
 # otter focused pass lands (AGENTS.md Rule 4: deps declared in home.packages).
 { inputs, ... }: {
   flake.modules.homeManager.waybar = { pkgs, ... }: let
-    ghostty = "${pkgs.ghostty}/bin/ghostty";
-    tui = app: "${ghostty} --class=com.waybar.tui -e ${app}";
-    fastfetch = "${pkgs.fastfetch}/bin/fastfetch";
-    weathr = "${pkgs.weathr}/bin/weathr";
-    wlctl = "${inputs.wlctl.packages.${pkgs.system}.default}/bin/wlctl";
-    bluetui = "${pkgs.bluetui}/bin/bluetui";
-    jolt = "${pkgs.jolt-tui}/bin/jolt";
-    btop = "${pkgs.btop}/bin/btop";
+    ghosttyBin = "${pkgs.ghostty}/bin/ghostty";
+    tui = app: "${ghosttyBin} --class=com.waybar.tui -e ${app}";
+    fastfetchBin = "${pkgs.fastfetch}/bin/fastfetch";
+    weathrBin = "${pkgs.weathr}/bin/weathr";
+    wlctlPkg = inputs.wlctl.packages.${pkgs.system}.default;
+    wlctlBin = "${wlctlPkg}/bin/wlctl";
+    bluetuiBin = "${pkgs.bluetui}/bin/bluetui";
+    joltBin = "${pkgs.jolt-tui}/bin/jolt";
+    btopBin = "${pkgs.btop}/bin/btop";
   in {
     home.packages = with pkgs; [
       ghostty
       fastfetch
       weathr
-      inputs.wlctl.packages.${pkgs.system}.default
+      wlctlPkg
       bluetui
       jolt-tui
       btop
@@ -66,7 +67,7 @@
           "custom/nixos" = {
             format = "";
             tooltip = false;
-            on-click-right = "${ghostty} --class=com.waybar.tui -e bash -c '${fastfetch}; read -n 1 -p \"Press any key to exit...\"'";
+            on-click-right = "${ghosttyBin} --class=com.waybar.tui -e bash -c '${fastfetchBin}; read -n 1 -p \"Press any key to exit...\"'";
             on-click = "otter-open";
           };
 
@@ -92,7 +93,7 @@
             tooltip = true;
             interval = 1800;
             exec = "${pkgs.curl}/bin/curl -s 'wttr.in/?format=1' | ${pkgs.gnused}/bin/sed 's/+//g'";
-            on-click = "${tui weathr}";
+            on-click = "${tui weathrBin}";
           };
 
           "network" = {
@@ -100,7 +101,7 @@
             format-ethernet = "󰈀 ";
             format-disconnected = "󰖪 ";
             format-disabled = "󰖪 ";
-            on-click = "${tui wlctl}";
+            on-click = "${tui wlctlBin}";
             on-click-right = "nmcli radio wifi | grep -q 'enabled' && nmcli radio wifi off || nmcli radio wifi on";
             tooltip-format = "    {ifname} via {gwaddr}";
             tooltip-format-wifi = "  {essid}\n    IP: {ipaddr}\n    Signal: {signalStrength}%\n {bandwidthUpBytes}   {bandwidthDownBytes}";
@@ -112,7 +113,7 @@
             format-off = "󰂲";
             format-disabled = "󰂲";
             format-connected = "";
-            on-click = "${tui bluetui}";
+            on-click = "${tui bluetuiBin}";
             on-click-right = "bluetoothctl show | grep -q 'Powered: yes' && bluetoothctl power off || bluetoothctl power on";
             tooltip-format = "{controller_alias}\t{controller_address}";
             tooltip-format-connected = "{device_alias}";
@@ -137,12 +138,12 @@
             ];
             interval = 60;
             tooltip-format = "Time Remaining: {time}\nPower Draw {power}W";
-            on-click = "${tui jolt}";
+            on-click = "${tui joltBin}";
           };
 
           "cpu" = {
             format = "  {usage}%";
-            on-click = "${tui btop}";
+            on-click = "${tui btopBin}";
             tooltip-format = "Clock Speed: {avg_frequency} GHz\n\nCore Load Breakdown:\n{usage_per_core}";
           };
 
@@ -151,12 +152,12 @@
             critical-threshold = 80;
             format = " {temperatureC}°C";
             format-critical = " {temperatureC}°C";
-            on-click = "${tui btop}";
+            on-click = "${tui btopBin}";
           };
 
           "memory" = {
             format = "  {used}GB";
-            on-click = "${tui btop}";
+            on-click = "${tui btopBin}";
             tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB ({percentage}%)\nSwap: {swapUsed:0.1f}GB / {swapTotal:0.1f}GB ({swapPercentage}%)";
           };
         };
