@@ -111,6 +111,25 @@ Plus tmpfiles rule `d /var/lib/state 0755 root root -`.
 For any service without inherent state persistence (e.g. a new radio daemon),
 add one key to `services.state.items` with its four fields. No framework change.
 
+## Theme persistence (NOT a state item)
+
+The theme engine (`modules/display/theme.nix`) deliberately does NOT use this
+framework. A user theme persists inherently: the active theme lives in
+`~/.local/share/theme/active.json`, outside the store, and survives rebuilds
+and reboots. No systemd save/restore is needed for a user file.
+
+Instead it relies on:
+- **Path indirection** — no Nix config encodes a theme value. ghostty.nix
+  declares `config-file = ~/.local/share/theme/generated/ghostty/theme.conf`
+  (stable path); the sync script rewrites that file at runtime and signals a
+  reload. A home-manager switch therefore can never reset the theme.
+- **Activation re-sync** — `home.activation.initTheme` re-runs the sync after
+  every home-manager switch, keeping generated palettes/links consistent.
+
+If impermanence / root-tmpfs is adopted later, persist the single path
+`~/.local/share/theme/` (active.json + generated/) — that maps this design
+onto the framework's role without adding per-theme units.
+
 ## Verification
 
 ```sh

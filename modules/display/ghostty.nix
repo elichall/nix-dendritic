@@ -1,23 +1,29 @@
 # ==========================================================================
 # GHOSTTY TERMINAL EMULATOR
 # ==========================================================================
-# Static terminal config. The `theme =` line is the baseline (journal
-# default); the Phase 3 theme module drives runtime switching via its
-# sync/switch scripts (which sed this file on `theme switch`).
+# Static terminal config. There is NO theme baseline here: the active theme
+# is resolved exclusively at runtime through the stable config-file path
+# below (see INTERFACE CONTRACT). The theme module's sync script rewrites
+# that file and signals ghostty to reload — the deployed config never
+# changes, so a home-manager switch can never reset the theme.
 #
-# Transparency values match the live /etc/nixos config (window-decoration =
-# true, background-opacity = 0.70) — see /etc/nixos/assets/
-# ghostty-transparency.md for the gtk.css scoping fix that makes this work.
+# Transparency values are the user's preferred options (window-decoration =
+# false, background-opacity = 0.90) — background-opacity < 1 still drops
+# ghostty's .background class, so the gtk.css scoping fix from /etc/nixos/
+# assets/ghostty-transparency.md remains mandatory.
 #
-# INTERFACE CONTRACT (Phase 3 theme module):
+# INTERFACE CONTRACT (theme module):
 # - ghostty.nix is the SOLE owner of xdg.configFile."ghostty/config".
-# - The theme module must NOT also declare xdg.configFile."ghostty/config"
-#   (that would be a conflicting option definition). It only performs
-#   runtime `theme switch` via scripts that rewrite the deployed file.
-# - If the theme module needs to know the baseline theme, reference the
-#   `theme = Melange Dark` value here as the single source of truth.
+# - The theme module must NOT declare xdg.configFile."ghostty/config"
+#   (conflicting definition). It only rewrites theme.conf (below) at runtime
+#   via sync/switch scripts, then signals ghostty to reload.
+# - config-file path is shared via ../_lib/theme.nix — keep in sync with the
+#   theme module's generated/ghostty/theme.conf.
 { inputs, ... }: {
-  flake.modules.homeManager.ghostty = { pkgs, ... }: {
+  flake.modules.homeManager.ghostty = { config, pkgs, ... }:
+  let
+    theme = import ../_lib/theme.nix { home = config.home.homeDirectory; };
+  in {
     home.packages = [ pkgs.ghostty ];
 
     xdg.configFile."ghostty/config" = {
@@ -26,7 +32,6 @@
         font-family = JetBrainsMono Nerd Font
         font-family = Noto Sans Mono CJK JP
         font-size = 13
-        theme = Melange Dark
         window-decoration = false
         cursor-style = block
         background-opacity = 0.90
@@ -36,6 +41,7 @@
         font-feature = -liga
         font-feature = -dlig
         command = ${pkgs.bash}/bin/bash
+        config-file = ${theme.ghosttyThemeConf}
       '';
     };
   };

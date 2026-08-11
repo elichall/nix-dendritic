@@ -1,11 +1,23 @@
 # ==========================================================================
-# THEME ENGINE (profiles, sync, switch CLI)
+# THEME ENGINE (profiles, sync, switch CLI) — zero-baseline, path-indirected
 # ==========================================================================
-# User-scale (Home Manager): the theme profile registry (11 profiles) plus
+# User-scale (Home Manager): the theme profile registry (12 profiles) plus
 # the sync/switch machinery. Ported from live /etc/nixos/modules/theme.nix
 # (NOT the legacy/ snapshot — that copy still carries the gtk.css
 # transparency bug, fixed live and documented in /etc/nixos/assets/
 # ghostty-transparency.md).
+#
+# ARCHITECTURE (no baseline):
+# - active.json (~/.local/share/theme/active.json) is the SINGLE source of
+#   truth for the active theme. It persists across rebuilds and reboots —
+#   the theme is inherently persistent state, not a config value.
+# - ghostty's config (owned by ghostty.nix) has no theme line at all; it
+#   pulls one in via `config-file = <stable path to generated/ghostty/
+#   theme.conf>`. sync-ghostty rewrites that file (`theme = <name>`) and
+#   signals ghostty to reload — the deployed config never changes, so a
+#   home-manager switch can never reset the theme.
+# - home.activation.initTheme re-runs the sync after every home-manager
+#   switch (bootstrap on first run, consistency re-link afterwards).
 #
 # GTK CSS TRANSPARENCY FIX (postmortem): the generated GTK CSS must NOT
 # paint an opaque background-color on the bare `window` type selector —
@@ -18,9 +30,8 @@
 #
 # INTERFACE CONTRACT (ghostty): ghostty.nix is the SOLE owner of
 # xdg.configFile."ghostty/config". This module does NOT declare it — it only
-# rewrites the deployed file at runtime via `theme switch` (sed the theme= line
-# then re-sync the palette). The baseline `theme = Melange Dark` lives in
-# ghostty.nix as the single source of truth.
+# drives the theme at runtime via the shared config-file path (../_lib/
+# theme.nix). The ghosttyThemeConf path must stay in sync with ghostty.nix.
 #
 # RUNTIME SYMLINK TARGETS (written + linked by the sync script):
 #   hypr/palette.lua, waybar/colors.css, tmux/colors.tmux,
@@ -29,7 +40,8 @@
 # Wallpaper paths referenced by profiles are provisioned by homeManager.wallpapers.
 { inputs, ... }: {
   flake.modules.homeManager.theme = { config, pkgs, lib, ... }: let
-    THEME_DIR = "${config.home.homeDirectory}/.local/share/theme";
+    themeLib = import ../_lib/theme.nix { home = config.home.homeDirectory; };
+    THEME_DIR = themeLib.dir;
     THEME_PROFILES = {
       coffee = {
         ghostty_theme = "Monokai Pro Ristretto";
@@ -93,23 +105,31 @@
 
       THEME_DIR="${THEME_DIR}"
       GENERATED="$THEME_DIR/generated"
-      GHOSTTY_CFG="${config.home.homeDirectory}/.config/ghostty/config"
+      GHOSTTY_CONF="${themeLib.ghosttyThemeConf}"
+      GHOSTTY=${pkgs.ghostty}/bin/ghostty
       JQ=${pkgs.jq}/bin/jq
 
       mkdir -p "$GENERATED/hypr" "$GENERATED/waybar" "$GENERATED/tmux" \
                "$GENERATED/nvim" "$GENERATED/cava" "$GENERATED/gtk" \
+               "$GENERATED/ghostty" \
                "${config.home.homeDirectory}/.config/hypr" \
                "${config.home.homeDirectory}/.config/waybar" \
                "${config.home.homeDirectory}/.config/tmux" \
                "${config.home.homeDirectory}/.config/nvim/lua/lean/core" \
                "${config.home.homeDirectory}/.config/cava/themes"
 
-      if [ ! -f "$GHOSTTY_CFG" ]; then
-        echo "Error: Ghostty config not found. Run home-manager switch first."
+      # The theme is resolved exclusively from active.json: write the
+      # ghostty config-file at a stable path (never sed the deployed config).
+      if [ ! -f "$THEME_DIR/active.json" ]; then
+        echo "Error: no active theme ($THEME_DIR/active.json). Run 'theme switch <name>' first."
         exit 1
       fi
+      G_THEME=$($JQ -r '.ghostty_theme' "$THEME_DIR/active.json")
+      printf 'theme = %s\n' "$G_THEME" > "$GHOSTTY_CONF"
 
-      G_CONFIG=$(ghostty +show-config 2>/dev/null || echo "")
+      # Resolve the palette from ghostty's CURRENT resolved config — which now
+      # includes the freshly written theme.conf — then regenerate consumers.
+      G_CONFIG=$("$GHOSTTY" +show-config 2>/dev/null || echo "")
 
       get_hex_base() {
         local val
@@ -334,10 +354,6 @@
       echo "Switching to theme: $PROFILE_NAME"
       $JQ -r '. + {theme_name: "'$PROFILE_NAME'"}' "$PROFILE" > "$THEME_DIR/active.json"
 
-      G_THEME=$($JQ -r '.ghostty_theme' "$THEME_DIR/active.json")
-      GHOSTTY_CFG="${config.home.homeDirectory}/.config/ghostty/config"
-      ${pkgs.gnused}/bin/sed -i "s/^theme = .*/theme = $G_THEME/" "$GHOSTTY_CFG"
-
       WALLPAPER=$($JQ -r '.wallpaper' "$THEME_DIR/active.json")
       if [ -f "$WALLPAPER" ]; then
         if command -v waypaper >/dev/null 2>&1; then
@@ -416,6 +432,11 @@
           }
         }' > "${THEME_DIR}/active.json"
       fi
+
+      # Bootstrap (first run) / re-apply (every switch): write theme.conf from
+      # active.json, regenerate palettes + links. Headless-safe — the reload
+      # commands inside sync are guarded with || true.
+      "${syncScript}"
     '';
 
     # These three paths are runtime symlinks created by the sync script; never
