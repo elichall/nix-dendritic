@@ -12,23 +12,20 @@
     modules = [
       # think configuration.nix
       self.modules.nixos.main
+      self.modules.nixos.battery
+      self.modules.nixos.network
+      self.modules.nixos.hardware
+      self.modules.nixos.audio
+      self.modules.nixos.security
 
       # hardware-specific (t480): fileSystems, kernel modules, microcode
       self.modules.nixos.hardwareConfig
-
-      # pass home-manager as a module to the nixos system configuration
-      inputs.home-manager.nixosModules.home-manager
 
       # ==========================================================================
       # IMPORT SYSTEM LVL ASPECT MODULES
       # ==========================================================================
       self.modules.nixos.cmdLine
       self.modules.nixos.mime
-      self.modules.nixos.battery
-      self.modules.nixos.network
-      self.modules.nixos.hardware
-      self.modules.nixos.audio
-      self.modules.nixos.security
       self.modules.nixos.nvim
       self.modules.nixos.opencode
       self.modules.nixos.hyprland
@@ -41,6 +38,9 @@
       # ======================================================================
       # PER USER CONFIGURATION
       # ======================================================================
+      # pass home-manager as a module to the nixos system configuration
+      inputs.home-manager.nixosModules.home-manager
+
       ({ pkgs, ... }: {
         home-manager = {
           useGlobalPkgs = true;
