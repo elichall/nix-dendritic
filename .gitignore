@@ -1,0 +1,14 @@
+# resources (root-only; modules/_assets is tracked for flake purity)
+/_assets/
+
+# development
+nixos
+nixos/
+.envrc
+.direnv/
+
+# agent 
+.agents/
+AGENTS.md
+TODO.md
+
