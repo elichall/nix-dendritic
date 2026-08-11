@@ -1,0 +1,261 @@
+#   ██████╗ ████████╗████████╗███████╗██████╗
+#  ██╔═══██╗╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
+#  ██║   ██║   ██║      ██║   █████╗  ██████╔╝█████╗
+#  ██║   ██║   ██║      ██║   ██╔══╝  ██╔══██╗╚════╝
+#  ╚██████╔╝   ██║      ██║   ███████╗██║  ██║
+#   ╚═════╝    ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
+#  ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗███████╗██████╗
+#  ██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔════╝██╔══██╗
+#  ██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║█████╗  ██████╔╝
+#  ██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔══╝  ██╔══██╗
+#  ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║███████╗██║  ██║
+#  ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+
+[general]
+default_module = "@DEFAULT_MODULE@"
+empty_module = "@EMPTY_MODULE@"
+exec_cmd = "sh -c"
+vi_mode = false
+esc_to_abort = true
+cheatsheet_entry = "?"
+cheatsheet_viewer = "less -R; clear"
+clear_screen_after_execution = false
+loop_mode = false
+external_editor = "nvim"
+delay_startup = 0
+callback = ""
+
+
+[interface]
+header = """
+  ┌ \u001B[34m$USER@$(hostname) \u001B[0m───┐
+  │ \u001B[90m󰧑  \u001B[31m  \u001B[32m  \u001B[33m󰯙  \u001B[34m󰓥  \u001B[35m  \u001B[36m  \u001B[37m \u001B[0m│
+  └ \u001B[90m󰀝  \u001B[31m󰳶  \u001B[32m  \u001B[33m  \u001B[34m󰣇  \u001B[35m  \u001B[36m  \u001B[37m \u001B[0m┘
+  ┌ \u001B[36m󱄅 \u001B[1;36m system\u001B[0m $(printf "%12s" "NixOS") ┐
+  │ \u001B[33m \u001B[1;36m window\u001B[0m $(printf "%12s" "$XDG_CURRENT_DESKTOP") │
+  │ \u001B[31m \u001B[1;36m kernel\u001B[0m $(printf "%12s" "$(uname -r)") │
+  │ \u001B[32m \u001B[1;36m uptime\u001B[0m $(printf "%12s" $(uptime | awk -F',|up' '{print $2}' | xargs) ) │
+  │ \u001B[90m \u001B[0m """
+header_cmd_trimmed_lines = 0
+place_holder = "type & search"
+suggestion_mode = "list"
+separator = ""
+footer = ""
+suggestion_lines = 1
+list_prefix = "  └ \u001B[34m  "
+selection_prefix = "  └ \u001B[34m  "
+prefix_padding = 3
+default_module_message = "@DEFAULT_MODULE_MESSAGE@"
+empty_module_message = "@EMPTY_MODULE_MESSAGE@"
+customized_list_order = false
+indicator_with_arg_module = ""
+indicator_no_arg_module = ""
+prefix_color = "\u001B[33m"
+description_color = "\u001B[39m"
+place_holder_color = "\u001B[38m"
+hint_color = "\u001B[90m"
+cursor_shape = 0
+move_interface_right = 0
+move_interface_down = 1
+
+[overlay]
+overlay_cmd = "chafa -f symbols -s x8 /etc/nixos/assets/nixos-image.png"
+overlay_trimmed_lines = 0
+overlay_height = 0
+move_overlay_right = 29
+move_overlay_down = 1
+
+
+[[modules]]
+description = " launch apps"
+prefix = "app"
+with_argument = true
+unbind_proc = false
+cmd = "otter-apps --preview {}"
+
+[[modules]]
+description = "󰏖 nix search packages"
+prefix = "nsp"
+with_argument = true
+url_encode = true
+unbind_proc = false
+cmd = """
+RAW_BROWSER=$(xdg-settings get default-web-browser)
+CLEAN_CLASS="${RAW_BROWSER%.desktop}"
+xdg-open 'https://search.nixos.org/packages?channel=26.05&query={}' >/dev/null 2>&1
+hyprctl dispatch "hl.dsp.focus({ window = 'class:${CLEAN_CLASS}' })" >/dev/null 2>&1
+"""
+
+[[modules]]
+description = " nixos edit"
+prefix = "ned"
+with_argument = true
+unbind_proc = false
+cmd = """
+FILE=$(find /etc/nixos -type f | fzf \
+-q '{}' -1 -0 \
+--info-command 'printf "files ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+--cycle \
+--color "info:8,separator:8" \
+--prompt '   >> ' )
+
+[ -n "$FILE" ] && setsid -f ghostty --class=com.special.window -e bash -c "sudoedit \"$FILE\""
+"""
+
+[[modules]]
+description = " nix rebuild"
+prefix = "nrb"
+unbind_proc = false
+cmd = """
+setsid -f ghostty --class=com.special.window -e bash -c '
+sudo nixos-rebuild switch
+status=$?
+if [ "$status" -eq 0 ]; then
+  hyprctl notify 5 6000 "rgb(2ecc71)" "nixos-rebuild succeeded" >/dev/null 2>&1
+  exit 0
+else
+  hyprctl notify 3 10000 "rgb(e74c3c)" "nixos-rebuild FAILED (exit $status)" >/dev/null 2>&1
+  echo
+  echo "Build failed - Press Enter to close..."
+  read
+fi' >/dev/null 2>&1
+"""
+
+[[modules]]
+description = " nix shell"
+prefix = "nsh"
+with_argument = true
+unbind_proc = false
+cmd = """
+setsid -f ghostty --class=com.waybar.tui -e bash -c 'nix-shell -p {}; echo; echo "Press Enter to close..."; read' >/dev/null 2>&1
+"""
+
+[[modules]]
+description = " google search"
+prefix = "gg"
+with_argument = true
+url_encode = true
+unbind_proc = false
+cmd = """
+RAW_BROWSER=$(xdg-settings get default-web-browser)
+CLEAN_CLASS="${RAW_BROWSER%.desktop}"
+xdg-open 'https://www.google.com/search?q={}' >/dev/null 2>&1
+hyprctl dispatch "hl.dsp.focus({ window = 'class:${CLEAN_CLASS}' })" >/dev/null 2>&1
+"""
+
+[[modules]]
+description = " open project (tmux)"
+prefix = "pro"
+with_argument = true
+unbind_proc = false
+cmd = """
+project_name=$(ls -1 ~/Projects | fzf \
+-q '{}' -1 -0 \
+--info-command 'printf "projects ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+--cycle \
+--color "info:8,separator:8" \
+--prompt '  󰉋 >> ' )
+[ -n "$project_name" ] && setsid -f ghostty -e tmux new-session -A -s "$project_name" -c "$HOME/Projects/$project_name"
+"""
+
+[[modules]]
+description = " power menu"
+prefix = "pow"
+with_argument = true
+cmd = """
+safe() { setsid -f "$@" >/dev/null 2>&1; }
+function power {
+if [[ -n $1 ]]; then
+case $1 in
+*"logout") session=$(loginctl session-status | awk 'NR==1{print $1}'); safe loginctl terminate-session "$session" ;;
+*"suspend") safe systemctl suspend ;;
+*"hibernate") safe systemctl hibernate ;;
+*"reboot") safe systemctl reboot ;;
+*"shutdown") safe systemctl poweroff ;;
+esac fi }
+power "$(echo -e '  shutdown\\n󰜉  reboot\\n󰍃  logout\\n󰤄  suspend\\n󰒲  hibernate' | fzf \
+-q '{}' -1 -0 \
+--cycle \
+--info-command 'printf "power menu ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+--color "info:8,separator:8" \
+--prompt '   >> ' | tail -1)"
+"""
+
+[[modules]]
+description = "󰒋 ssh connect"
+prefix = "ssh"
+with_argument = true
+unbind_proc = false
+cmd = """
+raw_host=$( (awk '/^Host[ \t]+[^*]/ {print $2}' ~/.ssh/config 2>/dev/null; awk '{print $1}' ~/.ssh/known_hosts 2>/dev/null | cut -d, -f1 | grep -v '^|1|'; tailscale status 2>/dev/null | awk '/^100\\./ {print $2}') | sort -u | fzf \
+-q '{}' -1 -0 \
+--info-command 'printf "ssh ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+--cycle  \
+--prompt '  󰒋 >> ' \
+--color "info:8,separator:8" )
+
+host=$(echo "$raw_host" | xargs)
+
+if [ -n "$host" ]; then
+    printf "    Username (Enter for default): "
+    read user
+    
+    user=$(echo "$user" | xargs)
+    target="${user:+$user@}$host"
+    
+    session_name=$(echo "$host" | tr '.' '_')
+    
+    setsid -f ghostty -e bash -c "tmux new-session -A -s '$session_name' 'ssh $target; exec bash'"
+fi
+"""
+
+[[modules]]
+description = "󰏘 theme engine switch"
+prefix = "th"
+with_argument = true
+unbind_proc = false
+cmd = """
+THEME=$( theme list --pure | fzf \
+-q '{}' -1 -0 \
+--info-command 'printf "themes ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+--cycle \
+--color "bg+:-1,pointer:1,info:8,separator:8,scrollbar:0" \
+--prompt '  󰏘 >> ' )
+theme switch $THEME
+"""
+
+[[modules]]
+description = " calculator"
+prefix = "calc"
+with_argument = true
+unbind_proc = false
+cmd = """
+input="{}"
+if [ -n "$input" ]; then
+    result=$(qalc -t "$input")
+    printf "%s" "$result" | wl-copy
+else
+    qalc
+fi
+"""
+
+[[modules]]
+# List/run/stop containers
+description = " docker/podman (wip)"
+prefix = "dk"
+cmd = ""
+
+[[modules]]
+description = " manuel pages"
+prefix = "man"
+with_argument = true
+unbind_proc = false
+cmd = """
+setsid -f ghostty --class=com.waybar.tui -e bash -c 'man {}; echo; echo "Press Enter to close..."; read' >/dev/null 2>&1
+"""
+
+[[modules]]
+# obsidian vault integration
+description = "󰙏 obsidian"
+prefix = "obs"
+cmd = ""
