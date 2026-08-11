@@ -23,6 +23,7 @@
       self.modules.homeManager.awww
       self.modules.homeManager.waypaper
       self.modules.homeManager.wallpapers
+      self.modules.homeManager.waybar
     ];
   };
 }
