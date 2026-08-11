@@ -43,7 +43,6 @@
 
     waybarCmd = "${pkgs.waybar}/bin/waybar";
     wayEdges = "${pkgs.way-edges}/bin/way-edges";
-    waypaperCmd = "${pkgs.waypaper}/bin/waypaper --restore";
     hypridleCmd = "${pkgs.hypridle}/bin/hypridle";
     otterApps = "otter-apps --refresh-cache";
     playerctlCmd = "${pkgs.playerctl}/bin/playerctl";
@@ -57,7 +56,6 @@
       yazi
       waybar
       way-edges
-      waypaper
       playerctl
     ];
 
@@ -109,7 +107,6 @@
         hl.on("hyprland.start", function()
           hl.exec_cmd("${waybarCmd}")
           hl.exec_cmd("${wayEdges}")
-          hl.exec_cmd("${waypaperCmd}")
           hl.exec_cmd("${hypridleCmd}")
           hl.exec_cmd("${otterApps}")
           hl.exec_cmd("bash -c 'systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && systemctl --user restart xdg-desktop-portal-hyprland xdg-desktop-portal'")
