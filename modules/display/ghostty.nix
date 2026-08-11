@@ -5,6 +5,10 @@
 # default); the Phase 3 theme module drives runtime switching via its
 # sync/switch scripts (which sed this file on `theme switch`).
 #
+# Transparency values match the live /etc/nixos config (window-decoration =
+# true, background-opacity = 0.70) — see /etc/nixos/assets/
+# ghostty-transparency.md for the gtk.css scoping fix that makes this work.
+#
 # INTERFACE CONTRACT (Phase 3 theme module):
 # - ghostty.nix is the SOLE owner of xdg.configFile."ghostty/config".
 # - The theme module must NOT also declare xdg.configFile."ghostty/config"
@@ -23,9 +27,9 @@
         font-family = Noto Sans Mono CJK JP
         font-size = 13
         theme = Melange Dark
-        window-decoration = false
+        window-decoration = true
         cursor-style = block
-        background-opacity = 0.90
+        background-opacity = 0.70
         background-blur = 20
         confirm-close-surface = false
         font-feature = -calt
