@@ -26,6 +26,10 @@
       weathr
       ghostty
 
+      # showoff-layout tmux pane programs (AGENTS.md Rule 4)
+      fastfetch
+      btop
+
       # Main toggle/idle/kill dispatcher
       (writeShellApplication {
         name = "showoff";
