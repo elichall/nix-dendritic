@@ -95,7 +95,7 @@ with_argument = true
 unbind_proc = false
 cmd = """
 # Config of record is the flake repo, not /etc/nixos.
-FILE=$(find "$HOME/Projects/nix-dendritic" -type f | fzf \
+FILE=$(find "$HOME/.nix" -type f | fzf \
 -q '{}' -1 -0 \
 --info-command 'printf "files ($FZF_POS/$FZF_TOTAL_COUNT)"' \
 --cycle \
@@ -111,7 +111,7 @@ prefix = "nrb"
 unbind_proc = false
 cmd = """
 setsid -f ghostty --class=com.special.window -e bash -c '
-sudo nixos-rebuild switch --flake "$HOME/Projects/nix-dendritic"
+sudo nixos-rebuild switch --flake "$HOME/.nix"
 status=$?
 if [ "$status" -eq 0 ]; then
   hyprctl notify 5 6000 "rgb(2ecc71)" "nixos-rebuild succeeded" >/dev/null 2>&1

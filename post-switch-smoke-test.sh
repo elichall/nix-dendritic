@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==========================================================================
 # POST-SWITCH SMOKE TEST — run inside the graphical session after
-#   sudo nixos-rebuild switch --flake ~/Projects/nix-dendritic#workstation
+#   sudo nixos-rebuild switch --flake ~/.nix#workstation
 #
 # Verifies the dendritic config replaced the static legacy /etc/nixos
 # configuration: keybind targets on PATH, otter launcher health, theme

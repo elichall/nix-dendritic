@@ -1,7 +1,7 @@
 # System Maintenance — Dendritic Flake vs Static `/etc/nixos`
 
 How day-to-day NixOS maintenance changes now that the system is built from the
-`nix-dendritic` flake (`~/Projects/nix-dendritic`) instead of the static
+`nix-dendritic` flake (`~/.nix`) instead of the static
 `/etc/nixos/configuration.nix` + channels setup. This is the operational
 companion to AGENTS.md; keep it updated as the repo evolves.
 
@@ -9,7 +9,7 @@ companion to AGENTS.md; keep it updated as the repo evolves.
 
 ## 1. Where the config lives now
 
-- **Repo:** `~/Projects/nix-dendritic` — a user-owned git repository. No more
+- **Repo:** `~/.nix` — a user-owned git repository. No more
   `sudo`-ing around root-owned `/etc/nixos`.
 - **Legacy references that are now inert:**
   - `/etc/nixos` — still holds the old static config. `nixos-rebuild` **defaults
@@ -29,7 +29,7 @@ repo avoids all three and makes the whole system reproducible from git history.
 ### The rebuild command (always with `--flake`)
 
 ```bash
-sudo nixos-rebuild switch --flake ~/Projects/nix-dendritic#workstation
+sudo nixos-rebuild switch --flake ~/.nix#workstation
 ```
 
 `workstation` is the host key (`flake.nixosConfigurations.workstation`).
@@ -78,7 +78,7 @@ bumping nixpkgs cascades the nixpkgs revision through all of them in one step.
 ### Update workflow (weekly is the recommended cadence)
 
 ```bash
-# in ~/Projects/nix-dendritic, as your user (NOT sudo)
+# in ~/.nix, as your user (NOT sudo)
 
 nix flake update                 # bump all inputs
 # ...or bump just one:
@@ -86,7 +86,7 @@ nix flake lock --update-input nixpkgs
 
 git add flake.lock
 git commit -m "chore: bump nixpkgs input"   # commit the lock, then switch
-sudo nixos-rebuild switch --flake ~/Projects/nix-dendritic#workstation
+sudo nixos-rebuild switch --flake ~/.nix#workstation
 ```
 
 - `nix flake update` == recreate the lock; `nix flake lock --update-input X`
@@ -182,7 +182,7 @@ Frozen as a module: `modules/system/hardware-t480.nix` (registry key
 ```nix
 system.autoUpgrade = {
   enable = true;
-  flake = "~/Projects/nix-dendritic";
+  flake = "~/.nix";
 };
 ```
 
@@ -196,10 +196,10 @@ Manual `nix flake update` + explicit switch is currently the deliberate choice.
 
 ```bash
 # Rebuild & activate
-sudo nixos-rebuild switch --flake ~/Projects/nix-dendritic#workstation
+sudo nixos-rebuild switch --flake ~/.nix#workstation
 
 # Stage for next boot only (no switch now) — servers
-sudo nixos-rebuild boot --flake ~/Projects/nix-dendritic#workstation
+sudo nixos-rebuild boot --flake ~/.nix#workstation
 
 # Dry-run build without switching
 nix build .#nixosConfigurations.workstation.config.system.build.toplevel
@@ -229,6 +229,6 @@ sudo nix-collect-garbage -d
 
 1. Edit modules; `git add` new files so the build sees them.
 2. Commit (clean tree + committed `flake.lock` = reproducible switch).
-3. `sudo nixos-rebuild switch --flake ~/Projects/nix-dendritic#workstation`.
+3. `sudo nixos-rebuild switch --flake ~/.nix#workstation`.
 4. Log in and run `./post-switch-smoke-test.sh`.
 5. Weekly: `nix flake update && git add flake.lock && git commit &&` switch.

@@ -28,8 +28,8 @@
       );
 
     # Repo-relative asset path (same assumption ned/nrb make: the config of
-    # record lives at $HOME/Projects/nix-dendritic).
-    overlayImage = "${config.home.homeDirectory}/Projects/nix-dendritic/modules/_assets/nixos-image.png";
+    # record lives at $HOME/.nix).
+    overlayImage = "${config.home.homeDirectory}/.nix/modules/_assets/nixos-image.png";
 
     appConfig = mkOtterConfig {
       DEFAULT_MODULE = "app";
