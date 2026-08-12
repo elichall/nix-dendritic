@@ -94,15 +94,14 @@ prefix = "ned"
 with_argument = true
 unbind_proc = false
 cmd = """
-# Config of record is the flake repo, not /etc/nixos.
-FILE=$(find "$HOME/.nix" -type f | fzf \
+FILE_RELATIVE=$(find "$HOME/.nix" -type f -not -name "legacy" -printf "%P\n" | fzf \
 -q '{}' -1 -0 \
 --info-command 'printf "files ($FZF_POS/$FZF_TOTAL_COUNT)"' \
 --cycle \
 --color "info:8,separator:8" \
 --prompt '   >> ' )
 
-[ -n "$FILE" ] && setsid -f ghostty --class=com.special.window -e bash -c "sudoedit \"$FILE\""
+[ -n "$FILE" ] && setsid -f ghostty --class=com.special.window -e bash -c "cd \"\$HOME/.nix\" && nvim \"$FILE_RELATIVE\""
 """
 
 [[modules]]
