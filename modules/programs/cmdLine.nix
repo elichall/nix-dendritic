@@ -45,7 +45,7 @@
         la = "ls -A --color=auto";
         l = "ls -CF --color=auto";
         grep = "grep --color=auto";
-        snorbs = "sudo nixos-rebuild switch --flake '$HOME/.nix'";
+        snorbs = "sudo nixos-rebuild switch --flake '~/.nix'";
         gdu = "gdu --no-cross";
       };
 
