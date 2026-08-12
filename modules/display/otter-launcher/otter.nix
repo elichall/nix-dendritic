@@ -1,33 +1,9 @@
 # ==========================================================================
 # OTTER-LAUNCHER (menu / app / power launcher)
 # ==========================================================================
-# Ported from legacy /etc/nixos/modules/otter-launcher/ (Phase 2 — see
-# modules/_assets/otter-strategy.md). Provisioned from the upstream flake
-# input (inputs.otter-launcher) instead of the legacy builtins.fetchTarball
-# + buildRustPackage.
-#
-# SCOPE: homeManager-only. Every otter concern is user-scale (the launcher,
-# its wrappers, the config.toml menu modules). There is deliberately no
-# nixos.otterLauncher scope — the system-scale pieces that otter touches live
-# with their owning aspects:
-#   - window rule for com.otter.launcher + keybinds (menu/systemManager) +
-#     autostarts (otter-apps --refresh-cache, persistent ghostty server):
-#     homeManager.hyprland
-#   - waybar power on-click (otter-open): homeManager.waybar
-#
-# DISMISS (phase 1 fix, NOT the broken legacy pattern): pointer-move
-# dismissal uses _lib/interaction-watch.nix with `pkill -x otter-launcher`
-# (exact comm match, verified live). The bail uses --bail-comm, an exact
-# `pgrep -x otter-launcher` comm match: it can never self-match the watcher's
-# own cmdline, nor match the ghostty server (--class=com.otter.launcher) or the
-# spawning client.
-#
-# RULE 4 (strategy guide §5 — Hybrid): every binary the config.toml menu
-# modules shell out to via `sh -c` is declared in home.packages below so it
-# reaches the launcher's PATH. System-scope binaries (hyprctl, sudo,
-# systemctl, loginctl, nixos-rebuild, xdg-settings) stay PATH-based. The
-# module-owned CLIs (theme, otter-apps) are covered by otter-diagnose + the
-# home.activation warning hook (warn, not fail).
+# Scope/provenance, dismiss contract, Rule 4 Hybrid: modules/_assets/
+# module-contracts.md (C5/C6) + otter-strategy.md.
+# ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.otterLauncher = { config, pkgs, lib, ... }: let
     # Flake-provisioned launcher binary (upstream v0.7.6 exposes

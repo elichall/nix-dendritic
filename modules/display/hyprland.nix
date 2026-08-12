@@ -1,19 +1,10 @@
 # ==========================================================================
 # HYPRLAND DESKTOP ENVIRONMENT
 # ==========================================================================
-# System-scale (NixOS): compositor + portal wiring. User-scale (Home
-# Manager): session tooling + the full user config (keybinds, autostart,
-# workspace/window rules), ported from legacy modules/hyprland.nix.
-#
-# PATH STRATEGY (Phase 3): user-scope binaries are referenced by absolute
-# store path because the graphical session does not reliably carry the
-# Home Manager profile on PATH. System-scope binaries (wpctl via
-# wireplumber, hyprctl via the compositor, systemctl, bash, flatpak) stay
-# PATH-based. Module-owned wrappers (otter-open/otter-power/otter-apps,
-# showoff) stay PATH-based until their focused passes land.
-#
-# AGENTS.md Rule 4: every binary referenced by keybinds/autostart is
-# declared in home.packages here (duplicates across modules are allowed).
+# System scale: compositor + portal wiring. User scale: session tooling +
+# full user config (keybinds, autostart, rules). PATH strategy + UWSM
+# tracking + Rule 4 deps: modules/_assets/module-contracts.md (C8/C9).
+# ==========================================================================
 { inputs, ... }: {
   flake.modules.nixos.hyprland = { pkgs, ... }: {
     programs.hyprland = {

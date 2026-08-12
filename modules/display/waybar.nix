@@ -1,16 +1,9 @@
 # ==========================================================================
 # WAYBAR STATUS BAR
 # ==========================================================================
-# User-scale (Home Manager): bar config + styling, ported from legacy
-# modules/desktop-stable.nix. Let UWSM/hyprland autostart track execution
-# instead of the baseline Home Manager daemon (systemd.enable = false).
-#
-# PATH STRATEGY (Phase 3): user-scope binaries (ghostty, tui apps) are
-# referenced by absolute store path because the graphical session does not
-# reliably carry the Home Manager profile on PATH. System-scope binaries
-# (nmcli, bluetoothctl, grep) stay on PATH — always present via the system
-# profile. Module-owned wrappers (otter-open) stay PATH-based until the
-# otter focused pass lands (AGENTS.md Rule 4: deps declared in home.packages).
+# PATH strategy + UWSM tracking: modules/_assets/module-contracts.md
+# (C8/C9). Ported from legacy modules/desktop-stable.nix.
+# ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.waybar = { pkgs, ... }: let
     ghosttyBin = "${pkgs.ghostty}/bin/ghostty";

@@ -1,23 +1,7 @@
 # ==========================================================================
-# NIXOS SYSTEM LEVEL MAIN MODULE
+# NIXOS SYSTEM LEVEL MAIN MODULE — base identity only. Full module registry
+# map + provenance: modules/_assets/module-contracts.md.
 # ==========================================================================
-# System-wide essentials ported from the legacy /etc/nixos/configuration.nix.
-# Base identity config only — feature-specific system bits live in their own
-# modules:
-#   shell              -> nixos.cmdLine      (programs.bash)
-#   editor             -> nixos.nvim         (neovim)
-#   ai                 -> homeManager.opencode (opencode, user CLI)
-#   display            -> nixos.display       (ly, portal, WLR env)
-#   display/hyprland   -> nixos.hyprland      (compositor; hypridle/grimblast/brightnessctl -> homeManager.hyprland)
-#   display/awww       -> homeManager.awww    (awww + awww-daemon unit)
-#   display/waypaper   -> homeManager.waypaper (waypaper + waypaper-restore unit)
-#   programs/rclone    -> nixos.rclone        (fuse only; rclone binary -> homeManager.rclone)
-#   system/network     -> nixos.network       (networking, ssh, tailscale, firewall)
-#   system/hardware    -> nixos.hardware      (bluetooth, fstrim, fwupd, microcode, earlyoom)
-#   system/audio       -> nixos.audio         (rtkit, pipewire)
-#   system/security    -> nixos.security      (kernel sysctl hardening)
-#   system/battery     -> nixos.battery       (TLP power management)
-#   system/clipboard   -> homeManager.clipboard (wl-clipboard)
 # nix.settings / nix.gc intentionally stay here (user choice).
 { inputs, ... }: {
   flake.modules.nixos.main = { pkgs, ... }: {

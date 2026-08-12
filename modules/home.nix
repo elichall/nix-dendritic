@@ -1,16 +1,7 @@
 # ==========================================================================
-# HOME MANAGER MAIN MODULE
+# HOME MANAGER MAIN MODULE — user-level base. Feature bits live in their own
+# aspect modules (registry map: modules/_assets/module-contracts.md).
 # ==========================================================================
-# User-level base ported from the legacy /etc/nixos/home.nix inline content.
-# - Shell stack (bash/starship/zoxide/fzf/direnv/ble.sh) -> homeManager.cmdLine
-# - Editor session vars                              -> homeManager.nvim
-# - LSPs                                             -> homeManager.nvim
-# - Terminal emulator                                -> homeManager.ghostty
-# - TUI app launcher (entries/wrappers/icons/binaries) -> homeManager.tui
-# - File manager env + config                        -> homeManager.yazi
-# - Zotero                                           -> homeManager.zotero
-# - Showoff dashboard deps                           -> homeManager.showoff
-# - otter-launcher deps (qalc/chafa)                 -> homeManager.otterLauncher
 { inputs, ... }: {
   flake.modules.homeManager.main = { config, pkgs, ... }: {
     home.stateVersion = "26.05";

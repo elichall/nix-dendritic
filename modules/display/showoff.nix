@@ -1,18 +1,8 @@
 # ==========================================================================
 # SHOWOFF — Magic Workspace Sleep Screen
 # ==========================================================================
-# User-scale (Home Manager): the dashboard helper binaries plus the three
-# writeShellApplication scripts (showoff dispatcher, showoff-layout tmux
-# grid, term-rotator secondary-monitor cycler) and the hypridle/tmux configs
-# they consume. Ported from legacy modules/showoff.nix.
-#
-# Consumers:
-#   tty-clock, gping, cava, cmatrix, cbonsai, asciiquarium-transparent,
-#   sl, lolcat, cowsay  -> showoff term-rotator / showoff-layout panes
-#   weathr              -> waybar weather on-click (homeManager.waybar)
-#   ghostty             -> showoff TERMINAL (declared here per AGENTS.md Rule 4)
-#   interaction-watch   -> pointer-dismiss helper (shared _lib; also consumed by
-#                          otter-launcher at port). Pointer move -> showoff --kill.
+# Consumers/deps surface: modules/_assets/module-contracts.md (C18).
+# ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.showoff = { pkgs, ... }:
     let

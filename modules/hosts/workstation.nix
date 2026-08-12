@@ -1,39 +1,26 @@
 # ==========================================================================
 # NixOS Workstation Host Configuration
 # ==========================================================================
+# Host wiring map + aspect groups: modules/_assets/module-contracts.md (§1).
 { inputs, self, ... }: {
   flake.nixosConfigurations.workstation = inputs.nixpkgs.lib.nixosSystem {
     pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
     specialArgs = { inherit inputs; };
 
-    # ======================================================================
-    # PER HOST CONFIGURATION
-    # ======================================================================
     modules = [
-      # think configuration.nix (base identity: boot, locale, users, nix-ld, fonts)
+      # base identity + machine-specific hardware
       self.modules.nixos.main
-
-      # hardware-specific (t480): fileSystems, kernel modules, microcode
       self.modules.nixos.hardwareConfig
 
-      # ==================================================================
-      # ASPECT GROUPS
-      # ==================================================================
-      # system-level base services (battery, network, hardware, audio, security)
+      # aspect groups (base services + display/wallpaper preset)
       self.modules.nixos.base
-      # display/wallpaper preset (display, hyprland, mime)
       self.modules.nixos.desktop
 
-      # ==================================================================
-      # REMAINING SYSTEM LVL ASPECT MODULES (not grouped)
-      # ==================================================================
+      # remaining system-level aspects (not grouped)
       self.modules.nixos.cmdLine
       self.modules.nixos.nvim
       self.modules.nixos.rclone
 
-      # ======================================================================
-      # PER USER CONFIGURATION
-      # ======================================================================
       # pass home-manager as a module to the nixos system configuration
       inputs.home-manager.nixosModules.home-manager
 
@@ -44,21 +31,14 @@
 
           users.elichall = {
             imports = [
-              # think home.nix
+              # user base
               self.modules.homeManager.main
 
-              # ==============================================================
-              # ASPECT GROUPS
-              # ==============================================================
-              # developer toolchain (cmdLine, git, tmux, nvim, yazi)
+              # aspect groups (dev toolchain + display/wallpaper preset)
               self.modules.homeManager.toolbox
-              # display/wallpaper preset (hyprland, ghostty, tui, zotero,
-              # showoff, awww, waypaper, waybar, theme)
               self.modules.homeManager.desktop
 
-              # ==============================================================
-              # REMAINING HOME LVL ASPECT MODULES (not grouped)
-              # ==============================================================
+              # remaining user-level aspects (not grouped)
               self.modules.homeManager.opencode
               self.modules.homeManager.clipboard
               self.modules.homeManager.rclone

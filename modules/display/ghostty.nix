@@ -1,24 +1,12 @@
 # ==========================================================================
 # GHOSTTY TERMINAL EMULATOR
 # ==========================================================================
-# Static terminal config. There is NO theme baseline here: the active theme
-# is resolved exclusively at runtime through the stable config-file path
-# below (see INTERFACE CONTRACT). The theme module's sync script rewrites
-# that file and signals ghostty to reload — the deployed config never
-# changes, so a home-manager switch can never reset the theme.
-#
-# Transparency values are the user's preferred options (window-decoration =
-# false, background-opacity = 0.90). The generated GTK CSS (theme module)
-# must stay palette-only per the ghostty-transparency.md postmortem — an
-# element rule on the window would kill ghostty's transparency/blur.
-#
-# INTERFACE CONTRACT (theme module):
-# - ghostty.nix is the SOLE owner of xdg.configFile."ghostty/config".
-# - The theme module must NOT declare xdg.configFile."ghostty/config"
-#   (conflicting definition). It only rewrites theme.conf (below) at runtime
-#   via sync/switch scripts, then signals ghostty to reload.
-# - config-file path is shared via ../_lib/theme.nix — keep in sync with the
-#   theme module's generated/ghostty/theme.conf.
+# Static terminal config, no theme baseline (runtime-resolved via config-file
+# path indirection). Interface contract (SOLE owner of
+# xdg.configFile."ghostty/config"): modules/_assets/module-contracts.md (C1).
+# Transparency values are the user's preferred options; the generated GTK CSS
+# must stay palette-only (ghostty-transparency.md).
+# ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.ghostty = { config, pkgs, ... }:
   let

@@ -1,33 +1,8 @@
 # Shared pointer-interaction watcher (DRY source for showoff + otter-launcher).
-#
-# Imported from feature modules via `import ../_lib/interaction-watch.nix
-# { inherit pkgs; }` — same convention as _lib/browser.nix / _lib/theme.nix.
+# Full interface spec: modules/_assets/module-contracts.md (C15).
+# Usage: interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
+#                          [--bail-pattern REGEX] [--bail-comm COMM] --on-move CMD
 # Kept out of the import-tree because it defines no `flake.modules.*`.
-#
-# The script is deliberately process-agnostic (modelled on the showoff watcher,
-# which works) rather than the otter dismiss-on-pointer pattern (which does
-# not): it never relies on grepping a specific process cmdline to decide when
-# to act. Consumers spawn it at the moment their surface appears, and it fires
-# a caller-supplied callback the first time the pointer moves.
-#
-# Interface:
-#   interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
-#                     [--bail-pattern REGEX] --on-move CMD
-#   --tag NAME        Marks the process cmdline as `interaction-watch --tag
-#                     NAME` so consumers can reap it via
-#                     `pkill -f "interaction-watch --tag NAME"`.
-#   --grace SECS      Delay before the reference cursor position is captured
-#                     (default 0.5; lets the window settle so the pointer is
-#                     not mistaken for "moved" during spawn).
-#   --interval SECS   Poll interval for `hyprctl cursorpos` (default 0.1).
-#   --bail-pattern    Optional pgrep -f regex: exit without firing when nothing
-#                     matches (e.g. the watched surface was closed by ESC).
-#   --bail-comm       Optional pgrep -x comm: exact-match alternative to
-#                     --bail-pattern. Unlike a regex it can never match this
-#                     watcher's own cmdline. Either or both may be given; the
-#                     first check that reports the surface gone ends the watch.
-#   --on-move CMD     Shell command run via `sh -c` on the first pointer move
-#                     (required). Afterwards the watcher exits.
 {
   pkgs,
 }:

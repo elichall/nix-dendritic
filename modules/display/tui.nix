@@ -1,16 +1,10 @@
 # ==========================================================================
 # TUI APP LAUNCHER (desktop entries + icons + binaries)
 # ==========================================================================
-# Isolated here rather than in nixos.main/homeManager.main because the TUI
-# apps are launcher targets surfaced by the desktop (waybar/app launcher),
-# not core system programs. Everything is user-scale (Home Manager).
-#
-# wlctl is provisioned as a flake input (see flake.nix) per the order of
-# package operations (skill: package-provisioning): not in nixpkgs, but the
-# upstream repo ships a flake exposing packages.<system>.default.
-#
-# Note on assets paths: path literals resolve relative to THIS file's
-# directory, so the tracked icons live at ../_assets/icons (from modules/display/).
+# wlctl provisioning (flake input): package-provisioning skill. Assets path
+# resolution: modules/_assets/module-contracts.md (C13). Isolated here rather
+# than main because TUI apps are launcher targets, not core system programs.
+# ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.tui =
     { pkgs, ... }:

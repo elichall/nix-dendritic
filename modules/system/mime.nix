@@ -1,13 +1,9 @@
 # ==========================================================================
 # MIME TYPES & DEFAULT APPLICATIONS
 # ==========================================================================
-# Ported from the legacy /etc/nixos/modules/mime.nix. The browser desktop ID is
-# centralised in modules/_lib/browser.nix (shared with future zen modules).
-#
-# Lives in system/ because it is system-scale desktop/XDG integration, not a
-# program or service. Future system-level base config (the leaned-out
-# configuration.nix: users, locale, boot, nix settings, maintenance) belongs
-# here too as system/main.nix.
+# Registry map + yazi.desktop contract: modules/_assets/module-contracts.md
+# (C4). Lives in system/ because it is system-scale XDG integration.
+# ==========================================================================
 { inputs, ... }: {
   flake.modules.nixos.mime = { pkgs, lib, ... }:
   let

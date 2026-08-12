@@ -1,47 +1,8 @@
 # ==========================================================================
-# THEME ENGINE (profiles, sync, switch CLI) — zero-baseline, path-indirected
+# THEME ENGINE (profiles, sync, switch CLI) — zero-baseline, path-indirected.
+# Architecture + GTK palette-only contract + interface contract + runtime
+# symlink targets: modules/_assets/module-contracts.md (C2/C3).
 # ==========================================================================
-# User-scale (Home Manager): the theme profile registry (12 profiles) plus
-# the sync/switch machinery. Ported from live /etc/nixos/modules/theme.nix
-# (NOT the legacy/ snapshot — that copy still carries the gtk.css
-# transparency bug, fixed live and documented in /etc/nixos/assets/
-# ghostty-transparency.md).
-#
-# ARCHITECTURE (no baseline):
-# - active.json (~/.local/share/theme/active.json) is the SINGLE source of
-#   truth for the active theme. It persists across rebuilds and reboots —
-#   the theme is inherently persistent state, not a config value.
-# - ghostty's config (owned by ghostty.nix) has no theme line at all; it
-#   pulls one in via `config-file = <stable path to generated/ghostty/
-#   theme.conf>`. sync-ghostty rewrites that file (`theme = <name>`) and
-#   signals ghostty to reload — the deployed config never changes, so a
-#   home-manager switch can never reset the theme.
-# - home.activation.initTheme re-runs the sync after every home-manager
-#   switch (bootstrap on first run, consistency re-link afterwards).
-#
-# GTK CSS CONTRACT (ghostty-transparency.md postmortem): the generated GTK
-# CSS is linked into ~/.config/gtk-{3,4}.0/gtk.css, which EVERY GTK3/GTK4 app
-# loads as user-priority CSS. It is therefore palette-ONLY — never add an
-# element rule here:
-#   - an opaque `window` background forces a full-surface opaque region
-#     (ghostty transparency/blur dead — the 2026-08-11 incident);
-#   - `label { color: ... }` leaked into waybar's workspace numbers
-#     (uniform-white incident, same day);
-#   - `.drag` themed ripdrag's pill; removed, ripdrag uses Adwaita-dark.
-# Apps pick their own element styling. If an app needs restyling, do it in
-# that app's own config, never in this file.
-#
-# INTERFACE CONTRACT (ghostty): ghostty.nix is the SOLE owner of
-# xdg.configFile."ghostty/config". This module does NOT declare it — it only
-# drives the theme at runtime via the shared config-file path (../_lib/
-# theme.nix). The ghosttyThemeConf path must stay in sync with ghostty.nix.
-#
-# RUNTIME SYMLINK TARGETS (written + linked by the sync script):
-#   hypr/palette.lua, waybar/colors.css, tmux/colors.tmux,
-#   nvim/lua/lean/core/palette.lua, cava/themes/nixos-generated,
-#   gtk-{3,4}.0/gtk.css + settings.ini
-# Wallpapers (profiles + waypaper library) are provisioned by this module via
-# home.file from modules/_assets/wallpapers into ~/Pictures/Wallpapers.
 { inputs, ... }: {
   flake.modules.homeManager.theme = { config, pkgs, lib, ... }: let
     themeLib = import ../_lib/theme.nix { home = config.home.homeDirectory; };
