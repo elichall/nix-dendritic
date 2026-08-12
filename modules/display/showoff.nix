@@ -11,8 +11,14 @@
 #   sl, lolcat, cowsay  -> showoff term-rotator / showoff-layout panes
 #   weathr              -> waybar weather on-click (homeManager.waybar)
 #   ghostty             -> showoff TERMINAL (declared here per AGENTS.md Rule 4)
+#   interaction-watch   -> pointer-dismiss helper (shared _lib; also consumed by
+#                          otter-launcher at port). Pointer move -> showoff --kill.
 { inputs, ... }: {
-  flake.modules.homeManager.showoff = { pkgs, ... }: {
+  flake.modules.homeManager.showoff = { pkgs, ... }:
+    let
+      interactionWatch = import ../_lib/interaction-watch.nix { inherit pkgs; };
+    in
+  {
     home.packages = with pkgs; [
       tty-clock
       gping
@@ -30,12 +36,15 @@
       fastfetch
       btop
 
+      # Shared pointer-interaction watcher (see _lib/interaction-watch.nix)
+      interactionWatch
+
       # Main toggle/idle/kill dispatcher
       (writeShellApplication {
         name = "showoff";
-        runtimeInputs = [ jq tmux hyprland procps ];
+        runtimeInputs = [ jq tmux hyprland procps interactionWatch ];
         text = ''
-          TERMINAL="ghostty"
+          TERMINAL="${pkgs.ghostty}/bin/ghostty"
           WORKSPACE_PRI="special:showoff"
           WORKSPACE_SEC="special:showoff_sec"
 
@@ -74,7 +83,7 @@
               pkill -f "$TERMINAL --class=showoff-"
               # Explicitly destroy the isolated tmux server and its socket
               tmux -L showoff_socket kill-server 2>/dev/null
-              pkill -f "showoff_watcher"
+              pkill -f "interaction-watch --tag showoff"
             fi
             exit 0
           }
@@ -129,21 +138,11 @@
           # 5. Global Input Interception
           hyprctl dispatch 'hl.dsp.submap("showoff_idle")'
 
-          (
-            exec -a showoff_watcher bash -c '
-              sleep 0.5
-              INITIAL_POS=$(hyprctl cursorpos)
-
-              while true; do
-                  CURRENT_POS=$(hyprctl cursorpos)
-                  if [ "$INITIAL_POS" != "$CURRENT_POS" ]; then
-                      showoff --kill
-                      exit 0
-                  fi
-                  sleep 0.1
-              done
-              '
-          ) &
+          # Pointer-move dismissal via the shared interaction-watch helper:
+          # once the pointer moves, showoff --kill tears the screens down.
+          # Reaped by name (pkill -f "interaction-watch --tag showoff") inside
+          # kill_showoff when a stale instance is left over.
+          interaction-watch --tag showoff --grace 0.5 --interval 0.1 --on-move "showoff --kill" &
           disown
         '';
       })

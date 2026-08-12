@@ -10,8 +10,7 @@
 # - File manager env + config                        -> homeManager.yazi
 # - Zotero                                           -> homeManager.zotero
 # - Showoff dashboard deps                           -> homeManager.showoff
-# - otter-launcher deps (qalc/chafa) live here until
-#   the homeManager.otter-launcher port (Phase 3) absorbs them.
+# - otter-launcher deps (qalc/chafa)                 -> homeManager.otterLauncher
 { inputs, ... }: {
   flake.modules.homeManager.main = { config, pkgs, ... }: {
     home.stateVersion = "26.05";
@@ -45,10 +44,6 @@
     home.packages = with pkgs; [
       # gtk.portal must live in the user profile so the daemon finds it
       xdg-desktop-portal-gtk
-
-      # otter-launcher dependencies (migrate to homeManager.otter-launcher in Phase 3)
-      libqalculate
-      chafa
     ];
   };
 }

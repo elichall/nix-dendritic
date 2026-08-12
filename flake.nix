@@ -13,6 +13,10 @@
       url = "github:aashish-thapa/wlctl/v0.1.9";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    otter-launcher = {
+      url = "github:kuokuo123/otter-launcher/v0.7.6";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     inputs:

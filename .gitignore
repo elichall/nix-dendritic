@@ -5,6 +5,7 @@ legacy/
 # development
 nixos
 nixos/
+results/
 .envrc
 .direnv/
 
