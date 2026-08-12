@@ -18,9 +18,6 @@ simply aggregate the aspects they need.
 ```bash
 # Rebuild + switch the workstation (ALWAYS pass --flake + host)
 sudo nixos-rebuild switch --flake ~/.nix#workstation
-
-# Verify the new generation (read-only, run in the graphical session)
-./post-switch-smoke-test.sh
 ```
 
 A bare `nixos-rebuild switch` (no `--flake`) reads the inert `/etc/nixos`

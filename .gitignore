@@ -1,9 +1,4 @@
-# resources (root-only; modules/_assets is tracked for flake purity)
-/_assets/
-legacy/
-
 # development
-nixos
 nixos/
 results*/
 .envrc
@@ -13,4 +8,3 @@ results*/
 .agents/
 AGENTS.md
 TODO.md
-
