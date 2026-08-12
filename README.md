@@ -11,8 +11,7 @@ user-level (Home Manager), and (future) macOS (`nix-darwin`) — and hosts
 simply aggregate the aspects they need.
 
 > Status: the **workstation** (Lenovo T480) is fully migrated and deployed via
-> this flake (2026-08-11). WSL / Ubuntu / macOS / server host stubs exist;
-> see `TODO.md` for the stretch roadmap.
+> this flake (2026-08-11). WSL / Ubuntu / macOS / server host stubs exist.
 
 ## Quick start
 
@@ -61,7 +60,6 @@ post-switch-smoke-test.sh      Read-only post-rebuild verification
 | `decisions.md` | ADR-style decision log — why the architecture and rules exist |
 | `module-contracts.md` | Module registry map + cross-module interface contracts |
 | `maintenance.md` | System upkeep vs the static `/etc/nixos` standard (updates, rollback, GC) |
-| `otter-strategy.md` | otter-launcher strategy and port guide |
 | `ghostty-transparency.md` | GTK palette-only postmortem |
 | `state-implementation.md` | `services.state.items` runtime-persistence framework |
 
@@ -74,8 +72,6 @@ post-switch-smoke-test.sh      Read-only post-rebuild verification
    user-level.
 4. **Dependency self-containment** — every module declares every package it
    uses; duplicate declarations across modules are allowed (lists merge).
-
-Full rules and the host/flag adaptation pattern: see `AGENTS.md`.
 
 ## Development & validation
 

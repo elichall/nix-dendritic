@@ -59,8 +59,8 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.tui` | `display/tui.nix` | TUI launcher: wlctl (flake input), tuiApps list, desktop entries + icons, yazi-open |
 | `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose |
 | `homeManager.showoff` | `display/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch |
-| `homeManager.awww` | `display/awww.nix` | awww binary + `awww-daemon` user unit |
-| `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary + `waypaper-restore` user unit |
+| `homeManager.awww` | `display/awww.nix` | awww binary (daemon launched via hyprland autostart, C10) |
+| `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary (restore via hyprland autostart, C10) |
 | `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps |
 | `homeManager.theme` | `display/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi |
@@ -173,14 +173,16 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 ### C9. UWSM tracks execution (systemd.enable = false)
 - `homeManager.waybar` and `homeManager.hyprland` set `systemd.enable = false`
   — UWSM autostart tracks execution instead of the HM systemd daemon.
-- Wallpaper restore: `waypaper-restore.service` (oneshot,
-  `Requires`/`After = awww-daemon.service` + `graphical-session.target`) is
-  the SOLE restore mechanism — do NOT add a `waypaper --restore` autostart.
+- Wallpaper restore runs inside hyprland's `hl.on("hyprland.start")` autostart
+  block — do NOT reintroduce a `waypaper-restore`/`awww-daemon` systemd unit
+  (graphical-session.target never activates under UWSM; see decision #23).
 
-### C10. User unit chain (awww → waypaper)
-- `awww-daemon.service` (simple, `After`/`PartOf` graphical-session) starts
-  the wallpaper daemon engine.
-- `waypaper-restore.service` chains after it with a 0.5s ExecStartPre settle.
+### C10. Wallpaper daemon + restore launch (hyprland autostart)
+- `awww-daemon` and `waypaper --restore` are launched via
+  `hl.exec_cmd` in the hyprland autostart block (absolute store paths,
+  restore deferred 0.5s after the daemon — mirrors the old unit chain).
+- Both binaries are declared in `home.packages` (Rule 4) in
+  `homeManager.hyprland`; the daemon must start before the restore fires.
 
 ### C11. Shell-integration defaults
 - `homeManager.cmdLine` explicitly disables fish/ion/nushell/zsh integration

@@ -109,14 +109,24 @@ else
   bad "hypridle: conf missing"
 fi
 
-section "8. User systemd units"
-for unit in awww-daemon rclone-box waypaper-restore; do
+section "8. Wallpaper + session services"
+for unit in rclone-box; do
   if systemctl --user is-failed "$unit" >/dev/null 2>&1; then
     bad "unit: $unit in failed state"
   else
     ok "unit: $unit not failed"
   fi
 done
+if pgrep -x awww-daemon >/dev/null 2>&1; then
+  ok "awww: daemon running"
+else
+  bad "awww: daemon not running"
+fi
+if [ -f "$HL" ] && grep -qF "waypaper --restore" "$HL"; then
+  ok "hyprland: waypaper restore wired in autostart"
+else
+  bad "hyprland: waypaper restore not wired in autostart"
+fi
 
 section "9. Wallpapers"
 COUNT=$(ls "$HOME/Pictures/Wallpapers" 2>/dev/null | wc -l)

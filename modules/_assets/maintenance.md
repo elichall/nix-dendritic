@@ -167,9 +167,11 @@ Frozen as a module: `modules/system/hardware-t480.nix` (registry key
   rewritten on each switch. Anything the legacy config created but the new one
   does not manage stays as a plain (possibly stale) file — clean those up when
   you find them.
-- **User systemd units** (`awww-daemon`, `waypaper-restore`, `rclone-box`) are
-  per-user and activate with the graphical session; they come from the HM
-  generation and are re-created on switch.
+- **User systemd units** (`rclone-box`) are per-user, activate with
+  `default.target`, and are re-created on switch. The wallpaper daemon
+  (`awww-daemon`) and restore (`waypaper --restore`) are NOT systemd units —
+  they launch from the hyprland autostart block on `hyprland.start` (see
+  decision #23 in `decisions.md`).
 
 ---
 

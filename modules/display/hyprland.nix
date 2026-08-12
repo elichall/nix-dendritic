@@ -35,10 +35,13 @@
     waybarCmd = "${pkgs.waybar}/bin/waybar";
     wayEdges = "${pkgs.way-edges}/bin/way-edges";
     hypridleCmd = "${pkgs.hypridle}/bin/hypridle";
+    awwwDaemon = "${pkgs.awww}/bin/awww-daemon";
+    waypaperRestore = "${pkgs.waypaper}/bin/waypaper --restore";
     otterApps = "otter-apps --refresh-cache";
     playerctlCmd = "${pkgs.playerctl}/bin/playerctl";
   in {
     home.packages = with pkgs; [
+      awww
       hypridle
       grimblast
       brightnessctl
@@ -47,6 +50,7 @@
       yazi
       waybar
       way-edges
+      waypaper
       playerctl
     ];
 
@@ -99,6 +103,10 @@
           hl.exec_cmd("${waybarCmd}")
           hl.exec_cmd("${wayEdges}")
           hl.exec_cmd("${hypridleCmd}")
+          -- Wallpaper daemon + restore (graphical-session.target never fires
+          -- under UWSM, so both launch here instead of systemd units; C10).
+          hl.exec_cmd("${awwwDaemon}")
+          hl.exec_cmd("sh -c 'sleep 0.5 && ${waypaperRestore}'")
           hl.exec_cmd("${otterApps}")
           hl.exec_cmd("bash -c 'systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && systemctl --user restart xdg-desktop-portal-hyprland xdg-desktop-portal'")
           -- Persistent headless ghostty server for the otter-launcher. Kept alive

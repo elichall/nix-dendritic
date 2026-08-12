@@ -244,14 +244,19 @@ profile on PATH; absolute paths guarantee the binary regardless of session
 environment. Discovered when keybinds silently failed post-switch.
 **Where:** `modules/display/waybar.nix`, `hyprland.nix` (headers → contracts).
 
-### 23. `systemd.enable = false` for waybar/hyprland; awww→waypaper chain
+### 23. `systemd.enable = false` for waybar/hyprland; awww→waypaper chain (reverted)
 **Decision:** Home Manager's systemd integration is disabled for waybar and
-hyprland — UWSM tracks their execution. Wallpaper restoration runs via
-`waypaper-restore.service` (Requires `awww-daemon.service`); the duplicate
-`waypaper --restore` autostart line was dropped.
-**Why:** UWSM is the session manager of record; parallel daemons would double
-start bars/compositors. One restore mechanism avoids racing restores.
-**Where:** `modules/display/waybar.nix:38`, `waypaper.nix`, `awww.nix`.
+hyprland — UWSM tracks their execution. Wallpaper restoration originally ran
+via `waypaper-restore.service` (Requires `awww-daemon.service`), replacing a
+duplicate `waypaper --restore` autostart line. **Reverted 2026-08-11:** under
+UWSM `graphical-session.target` never activates, so both units were dead code
+and wallpaper was never restored after rebuild. `awww-daemon` and
+`waypaper --restore` now launch via `hl.exec_cmd` in the hyprland autostart
+block (restore deferred 0.5s); the systemd units were removed.
+**Why:** UWSM is the session manager of record; the unit chain proved inert
+because its trigger target never fires in this session model. Launching from
+`hyprland.start` guarantees the compositor is up and WAYLAND_DISPLAY is set.
+**Where:** `modules/display/hyprland.nix`, `waypaper.nix`, `awww.nix`.
 
 ### 24. Rule 4 Hybrid — otter's module-owned CLI exception
 **Decision:** Otter gets a narrow, documented exception: the module-owned CLIs
