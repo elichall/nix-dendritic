@@ -93,16 +93,21 @@ description = " nixos edit"
 prefix = "ned"
 with_argument = true
 unbind_proc = false
-cmd = """
-FILE_RELATIVE=$(find "$HOME/.nix" -type f -not -path "legacy/*" -printf "%P\n" | fzf \
--q '{}' -1 -0 \
---info-command 'printf "files ($FZF_POS/$FZF_TOTAL_COUNT)"' \
---cycle \
---color "info:8,separator:8" \
---prompt '   >> ' )
+cmd = '''
+FILE_RELATIVE=$(find "$HOME/.nix" \
+  \( -path "$HOME/.nix/legacy" -o -path "$HOME/.nix/.git" \) -prune -o \
+  -type f \
+  ! -name "*.png" ! -name "*.svg" ! -name "*.jpg" \
+  -printf "%P\n" 2>/dev/null | \
+  fzf \
+  -q '{}' -1 \
+  --info-command 'printf "files ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+  --cycle \
+  --color "info:8,separator:8" \
+  --prompt '   >> ' )
 
 [ -n "$FILE_RELATIVE" ] && setsid -f ghostty --class=com.special.window -e bash -c "cd \"$HOME/.nix\" && nvim \"$FILE_RELATIVE\""
-"""
+'''
 
 [[modules]]
 description = " nix rebuild"
@@ -110,7 +115,7 @@ prefix = "nrb"
 unbind_proc = false
 cmd = """
 setsid -f ghostty --class=com.special.window -e bash -c '
-sudo nixos-rebuild switch --flake "$HOME/.nix"
+sudo nixos-rebuild switch --flake "$HOME/.nix#workstation"
 status=$?
 if [ "$status" -eq 0 ]; then
   hyprctl notify 5 6000 "rgb(2ecc71)" "nixos-rebuild succeeded" >/dev/null 2>&1
@@ -152,7 +157,7 @@ with_argument = true
 unbind_proc = false
 cmd = """
 project_name=$(ls -1 ~/Projects | fzf \
--q '{}' -1 -0 \
+-q '{}' -1 \
 --info-command 'printf "projects ($FZF_POS/$FZF_TOTAL_COUNT)"' \
 --cycle \
 --color "info:8,separator:8" \
@@ -176,7 +181,7 @@ case $1 in
 *"shutdown") safe systemctl poweroff ;;
 esac fi }
 power "$(echo -e '  shutdown\\n󰜉  reboot\\n󰍃  logout\\n󰤄  suspend\\n󰒲  hibernate' | fzf \
--q '{}' -1 -0 \
+-q '{}' -1 \
 --cycle \
 --info-command 'printf "power menu ($FZF_POS/$FZF_TOTAL_COUNT)"' \
 --color "info:8,separator:8" \
@@ -190,7 +195,7 @@ with_argument = true
 unbind_proc = false
 cmd = """
 raw_host=$( (awk '/^Host[ \t]+[^*]/ {print $2}' ~/.ssh/config 2>/dev/null; tailscale status 2>/dev/null | awk '/^100\\./ {print $2}') | sort -u | fzf \
--q '{}' -1 -0 \
+-q '{}' -1 \
 --info-command 'printf "ssh ($FZF_POS/$FZF_TOTAL_COUNT)"' \
 --cycle  \
 --prompt '  󰒋 >> ' \
@@ -218,7 +223,7 @@ with_argument = true
 unbind_proc = false
 cmd = """
 THEME=$( theme list --pure | fzf \
--q '{}' -1 -0 \
+-q '{}' -1 \
 --info-command 'printf "themes ($FZF_POS/$FZF_TOTAL_COUNT)"' \
 --cycle \
 --color "bg+:-1,pointer:1,info:8,separator:8,scrollbar:0" \
