@@ -17,7 +17,7 @@
     tui = app: "${ghosttyBin} --class=com.waybar.tui -e ${app}";
     fastfetchBin = "${pkgs.fastfetch}/bin/fastfetch";
     weathrBin = "${pkgs.weathr}/bin/weathr";
-    wlctlPkg = inputs.wlctl.packages.${pkgs.system}.default;
+    wlctlPkg = inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default;
     wlctlBin = "${wlctlPkg}/bin/wlctl";
     bluetuiBin = "${pkgs.bluetui}/bin/bluetui";
     joltBin = "${pkgs.jolt-tui}/bin/jolt";

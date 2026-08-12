@@ -32,7 +32,7 @@
   flake.modules.homeManager.otterLauncher = { config, pkgs, lib, ... }: let
     # Flake-provisioned launcher binary (upstream v0.7.6 exposes
     # packages.<system>.otter-launcher via flake-parts).
-    otter-launcher = inputs.otter-launcher.packages.${pkgs.system}.otter-launcher;
+    otter-launcher = inputs.otter-launcher.packages.${pkgs.stdenv.hostPlatform.system}.otter-launcher;
 
     # Shared pointer-dismiss helper (showoff + otter; see _lib/interaction-watch.nix).
     interactionWatch = import ../../_lib/interaction-watch.nix { inherit pkgs; };

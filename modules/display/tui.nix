@@ -15,7 +15,7 @@
   flake.modules.homeManager.tui =
     { pkgs, ... }:
     let
-      wlctl = inputs.wlctl.packages.${pkgs.system}.default;
+      wlctl = inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
       tuiApps = [
         {
