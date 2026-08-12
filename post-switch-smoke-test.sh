@@ -86,13 +86,20 @@ else
 fi
 
 section "6. Hyprland wiring"
-HL="$HOME/.config/hypr/hyprland.conf"
+# Recent hyprland versions use a single Lua config file (hyprland.lua);
+# older releases used hyprland.conf. Check whichever exists.
+HL="$HOME/.config/hypr/hyprland.lua"
+[ -f "$HL" ] || HL="$HOME/.config/hypr/hyprland.conf"
 if [ -f "$HL" ]; then
+  ok "hyprland: config found ($(basename "$HL"))"
+  # Window-class regexes are written with Lua-escaped dots (com\\.waybar\\.tui);
+  # strip backslashes so the checks match both the escaped and plain forms.
+  HL_PLAIN="$(tr -d '\\' < "$HL")"
   for pat in "com.otter.launcher" "com.waybar.tui" "com.special.window" "showoff_idle"; do
-    if grep -q "$pat" "$HL" 2>/dev/null; then ok "hyprland: $pat referenced"; else bad "hyprland: $pat missing"; fi
+    if grep -qF -- "$pat" <<<"$HL_PLAIN"; then ok "hyprland: $pat referenced"; else bad "hyprland: $pat missing"; fi
   done
 else
-  bad "hyprland: $HL missing"
+  bad "hyprland: $HOME/.config/hypr/hyprland.{lua,conf} missing"
 fi
 
 section "7. Showoff wiring"
