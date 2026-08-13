@@ -217,6 +217,67 @@ fi
 """
 
 [[modules]]
+description = "󰆍 tmux session manager"
+prefix = "tsm"
+with_argument = true
+unbind_proc = false
+cmd = """
+A="{}"
+set -f
+set -- $A
+action_q="${1:-}"
+session_q="${2:-}"
+
+action=$(printf 'switch\nnew\nrename\ndetach\nkill\n[cancel]' | fzf \
+-q "$action_q" -1 \
+--info-command 'printf "tsm action ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+--cycle \
+--color "info:8,separator:8" \
+--prompt '  󰆍 >> ' )
+
+[ -z "$action" ] && exit 0
+[ "$action" = "[cancel]" ] && exit 0
+
+case "$action" in
+  new)
+    name="$session_q"
+    if [ -z "$name" ]; then
+      printf '  󰆍 New session name: '
+      read name
+    fi
+    name=$(echo "$name" | xargs)
+    [ -n "$name" ] && {
+      tmux new-session -d -s "$name"
+      setsid -f ghostty -e tmux new-session -A -s "$name"
+    }
+    ;;
+  *)
+    multi=""
+    { [ "$action" = "detach" ] || [ "$action" = "kill" ]; } && multi="--multi"
+    target=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | fzf $multi -q "$session_q" -1 \
+    --info-command 'printf "sessions ($FZF_POS/$FZF_TOTAL_COUNT)"' \
+    --cycle \
+    --color "info:8,separator:8" \
+    --prompt '  󰆍 >> ' \
+    --preview 'tmux list-windows -t {1} -F "#{window_index}: #{window_name}#{?window_active,  (active),}" 2>/dev/null' \
+    --preview-window=right:50%,wrap )
+    [ -z "$target" ] && exit 0
+    case "$action" in
+      switch) setsid -f ghostty -e tmux new-session -A -s "$target" ;;
+      rename)
+        printf '  󰆍 Rename "%s" to: ' "$target"
+        read newname
+        newname=$(echo "$newname" | xargs)
+        [ -n "$newname" ] && tmux rename-session -t "$target" "$newname"
+        ;;
+      detach) printf '%s\n' "$target" | while read -r s; do tmux detach -s "$s"; done ;;
+      kill) printf '%s\n' "$target" | sort -r | while read -r s; do tmux kill-session -t "$s"; done ;;
+    esac
+    ;;
+esac
+"""
+
+[[modules]]
 description = "󰏘 theme engine switch"
 prefix = "th"
 with_argument = true

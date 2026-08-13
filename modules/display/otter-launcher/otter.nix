@@ -158,7 +158,7 @@
         check jq             "jq (th module theme preview)"
         check qalc           "qalc (calc module)"
         check wl-copy        "wl-clipboard (calc module)"
-        check tmux           "tmux (pro/ssh modules)"
+        check tmux           "tmux (pro/ssh/tsm modules)"
         check tailscale      "tailscale (ssh module)"
         check hyprctl        "hyprland"
         check xdg-open       "xdg-utils (nsp/gg modules)"
