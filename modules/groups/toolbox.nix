@@ -11,6 +11,7 @@
       self.modules.homeManager.tmux
       self.modules.homeManager.nvim
       self.modules.homeManager.yazi
+      self.modules.homeManager.opencode
     ];
   };
 }

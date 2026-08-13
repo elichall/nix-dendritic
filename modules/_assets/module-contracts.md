@@ -49,7 +49,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.tmux` | `programs/tmux.nix` | tmux config + plugins |
 | `homeManager.nvim` | `programs/nvim.nix` | neovim config + 5 LSPs + tree-sitter |
 | `homeManager.yazi` | `programs/yazi.nix` | yazi config/keymap, FILEMANAGER/TERM_FILE_CHOOSER vars, ripdrag, theme icon rules (plan dirs + config-folder package icons) |
-| `homeManager.opencode` | `programs/opencode.nix` | opencode binary (pure user CLI) |
+| `homeManager.opencode` | `programs/opencode.nix` | opencode binary + poppler-utils (PDF pipeline dep), SOLE owner of `xdg.configFile."opencode/tui.json"` + global `/pdf` command (`opencode/commands/pdf.md`) |
 | `homeManager.fastfetch` | `programs/fastfetch.nix` | fastfetch binary + chafa block-image logo config (HOME-ONLY, user directive) |
 | `homeManager.rclone` | `programs/rclone.nix` | rclone binary + rclone-box user unit |
 | `homeManager.zotero` | `programs/zotero.nix` | zotero flatpak desktop entry |

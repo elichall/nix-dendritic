@@ -39,7 +39,6 @@
               self.modules.homeManager.desktop
 
               # remaining user-level aspects (not grouped)
-              self.modules.homeManager.opencode
               self.modules.homeManager.clipboard
               self.modules.homeManager.rclone
               self.modules.homeManager.fastfetch
