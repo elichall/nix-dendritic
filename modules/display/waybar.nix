@@ -126,7 +126,7 @@
                 warning = 30;
                 critical = 15;
               };
-              format = "{icon} {capacity}%";
+              format = "{icon}{capacity}%";
               format-charging = "{icon}";
               format-plugged = "{icon}";
               format-icons = [
@@ -228,7 +228,7 @@
           /* left block */
           window#waybar #custom-nixos {
               color: #74c7ec;
-              font-size: 22px;
+              font-size: 24px;
               background-color: transparent;
               border: none;
               padding-left: 0px;
