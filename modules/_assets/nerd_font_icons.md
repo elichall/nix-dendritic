@@ -1,6 +1,8 @@
 # My Repository of Nerd Icons
 
-## Arrows
+## Dashes and Dots
+╌  ┄  ┈  ╎  ┆  ┊  ╍  ┅  ┉  ╏  ┇  ┋
+
 ┌ ┐ └ ┘
 
 ─ │ ├ ┤
@@ -15,7 +17,30 @@
 
 ╦ ╩ ╬
 
-▲ ▼ ◄ ►
+### Mixed Weight
+╼  ╾  ╽  ╿  ┯  ┰  ┱  ┲  ┵  ┶  ┷  ┸  ┹  ┺  ┝  ┠  ┡  ┢  ┥  ┦  ┧  ┨  ┩  ┪
+
+## Arrows
+▲  ▼  ◄  ►  ◣  ◢  ◤  ◥  △  ▽  ◁  ▷  ▴  ▾  ◂  ▸  ◸  ◹  ◺  ◿
+
+                            
+
+## Blocks
+▕
+▐
+█▓▒░   
+▊ 
+▋
+▌
+▍
+▎
+▏
+▂▃▄▅▆▇█
+
+▀▔
+❘❙❚▮▯
+▬▭
+■ □ ▪ ▫ ▢ ▣  ▤  ▥  ▦  ▧  ▨  ▩
 
 ## Icons
  Time/Clock
@@ -38,6 +63,8 @@
 󰠮 notes
 󰝚 music
  cpu
+ settings
+󰂚 󰵙 󰂛 notification
 󰖪 no wifi
  memory
 󱐋 lightning bolt
