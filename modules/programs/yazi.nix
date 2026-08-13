@@ -37,21 +37,73 @@
 
       theme = {
         icon = {
-          prepend_rules = [
-            { name = "Projects/";   text = "  "; fg = "#E5C07B"; }
-            { name = "Box/";        text = "  󰍲"; fg = "#61AFEF"; }
-            { name = ".nix/";       text = "  󱄅"; fg = "#7CA982"; }
-            { name = "wallpapers/"; text = "  󰸉"; fg = "#C678DD"; }
-            { name = ".var/";       text = "  "; fg = "#98C379"; }
-            { name = "vault/";      text = "  "; fg = "#56B6C2"; }
-            { name = "hyprland/";       text = "  "; }
-            { name = "hyprland.conf";   text = "  "; }
-            { name = "hyprland.lua";    text = "  "; }
-            { name = "ghostty/";        text = "  󰊠"; }
-            { name = "otter-launcher/"; text = "  "; }
-            { name = "nvim/";           text = "  "; }
-            { name = "tmux/";           text = "  "; }
-            { name = "yazi/";           text = "  󰇥"; }
+          # yazi >= 26.x icon schema: prepend_dirs / prepend_files keyed by
+          # exact name (no trailing slash); prepend_rules was removed silently.
+          prepend_dirs = [
+            {
+              name = "Projects";
+              text = "";
+              fg = "#E5C07B";
+            }
+            {
+              name = "Box";
+              text = "󰍲";
+              fg = "#61AFEF";
+            }
+            {
+              name = ".nix";
+              text = "󱄅";
+              fg = "#7CA982";
+            }
+            {
+              name = "wallpapers";
+              text = "󰸉";
+              fg = "#C678DD";
+            }
+            {
+              name = ".var";
+              text = "";
+              fg = "#98C379";
+            }
+            {
+              name = "vault";
+              text = "";
+              fg = "#56B6C2";
+            }
+            {
+              name = "hyprland";
+              text = "";
+            }
+            {
+              name = "ghostty";
+              text = "󰊠";
+            }
+            {
+              name = "otter-launcher";
+              text = "";
+            }
+            {
+              name = "nvim";
+              text = "";
+            }
+            {
+              name = "tmux";
+              text = "";
+            }
+            {
+              name = "yazi";
+              text = "󰇥";
+            }
+          ];
+          prepend_files = [
+            {
+              name = "hyprland.conf";
+              text = "  ";
+            }
+            {
+              name = "hyprland.lua";
+              text = "  ";
+            }
           ];
         };
       };
