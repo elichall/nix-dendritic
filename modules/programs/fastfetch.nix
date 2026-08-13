@@ -2,12 +2,30 @@
 # FASTFETCH
 # ==========================================================================
 # User-scale (Home Manager) only: binary exposure for showoff-layout / waybar
-# user scripts (dependency self-containment — see AGENTS.md Rule 4) + reserved
-# for future fastfetch config (theme.jsonc), empty until then.
+# user scripts + chafa block-image NixOS logo. fastfetch links libchafa
+# statically, so no runtime chafa dep (Rule 4 n/a).
+# Plan: modules/_assets/plans/fastfetch-customization.md
 { inputs, ... }: {
 
-  flake.modules.homeManager.fastfetch = { pkgs, ... }: {
-    home.packages = [ pkgs.fastfetch ];
-    # placeholder for fastfetch user config (Phase 3 theme-adjacent)
+  flake.modules.homeManager.fastfetch = { config, ... }: {
+    programs.fastfetch = {
+      enable = true;
+      settings = {
+        logo = {
+          source = "${config.home.homeDirectory}/.nix/modules/_assets/nixos-image.png";
+          type = "chafa";
+          width = 40;
+          height = 0;
+          padding = {
+            top = 1;
+            right = 1;
+          };
+          chafa = {
+            symbols = "block+semi";
+            canvas = "full";
+          };
+        };
+      };
+    };
   };
 }

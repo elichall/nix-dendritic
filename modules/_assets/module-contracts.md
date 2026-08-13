@@ -48,9 +48,9 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.git` | `programs/git.nix` | git config |
 | `homeManager.tmux` | `programs/tmux.nix` | tmux config + plugins |
 | `homeManager.nvim` | `programs/nvim.nix` | neovim config + 5 LSPs + tree-sitter |
-| `homeManager.yazi` | `programs/yazi.nix` | yazi config/keymap, FILEMANAGER/TERM_FILE_CHOOSER vars, ripdrag |
+| `homeManager.yazi` | `programs/yazi.nix` | yazi config/keymap, FILEMANAGER/TERM_FILE_CHOOSER vars, ripdrag, theme icon rules (plan dirs + config-folder package icons) |
 | `homeManager.opencode` | `programs/opencode.nix` | opencode binary (pure user CLI) |
-| `homeManager.fastfetch` | `programs/fastfetch.nix` | fastfetch binary (HOME-ONLY, user directive) |
+| `homeManager.fastfetch` | `programs/fastfetch.nix` | fastfetch binary + chafa block-image logo config (HOME-ONLY, user directive) |
 | `homeManager.rclone` | `programs/rclone.nix` | rclone binary + rclone-box user unit |
 | `homeManager.zotero` | `programs/zotero.nix` | zotero flatpak desktop entry |
 | `homeManager.clipboard` | `system/clipboard.nix` | wl-clipboard (cross-host core; future `nixos.clipboard` may grow here) |

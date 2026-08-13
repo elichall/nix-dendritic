@@ -1,5 +1,11 @@
 # Yazi Default Directory Name Icons
 
+> **STATUS: IMPLEMENTED (2026-08-12)** — `modules/programs/yazi.nix` adds
+> `theme.icon.prepend_rules` (plan dirs + config-folder package icons).
+> NOTE: `vault/` uses the obsidian glyph U+E6BB (`nf custom obsidian`), which
+> was added to Nerd Fonts in v3.5.0 — renders as "?" until nixos-26.05 bumps
+> nerd-fonts past 3.4.0 (deferred per user decision 2026-08-12).
+
 Yazi has some icons it uses by default for standard directory or file names like ...
 
 *.nix
