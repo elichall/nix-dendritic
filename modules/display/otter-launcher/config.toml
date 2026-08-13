@@ -227,7 +227,9 @@ THEME=$( theme list --pure | fzf \
 --info-command 'printf "themes ($FZF_POS/$FZF_TOTAL_COUNT)"' \
 --cycle \
 --color "bg+:-1,pointer:1,info:8,separator:8,scrollbar:0" \
---prompt '  󰏘 >> ' )
+--prompt '  󰏘 >> ' \
+--preview 'printf "\\033_Ga=d,d=A\\033\\\\"; CL=${FZF_PREVIEW_COLUMNS:-34}; LN=${FZF_PREVIEW_LINES:-15}; LN=$((LN-3)); [ "$LN" -lt 4 ] && LN=4; P=@THEME_DIR@/profiles/{1}.json; W=$(jq -r .wallpaper "$P" 2>/dev/null); S=@THEME_SWATCHES@/{1}.swatch; if [ -n "$W" ] && [ -f "$W" ]; then chafa -s "${CL}x${LN}" "$W"; i=0; while [ "$i" -lt "$LN" ]; do echo; i=$((i+1)); done; fi; if [ -f "$S" ]; then cat "$S"; else echo "  (no palette swatch)"; fi' \
+--preview-window=right:50%,wrap )
 theme switch $THEME
 """
 

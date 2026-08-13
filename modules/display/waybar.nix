@@ -126,7 +126,7 @@
                 warning = 30;
                 critical = 15;
               };
-              format = "{icon}";
+              format = "{icon} {capacity}%";
               format-charging = "{icon}";
               format-plugged = "{icon}";
               format-icons = [
@@ -204,7 +204,7 @@
           * {
               /* Prioritize the Nerd Font variant, fall back to strict monospace */
               font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
-              font-size: 14px;
+              font-size: 15px;
               font-weight: bold;
               min-height: 0;
               
@@ -219,7 +219,7 @@
 
           /* Formatting Defaults */
           #workspaces, #clock, #custom-weather, #custom-system, #network, #bluetooth, #battery, #memory, #cpu, #temperature {
-              background-color: rgba(0, 0, 0, 0.4);
+              background-color: rgba(0, 0, 0, 0.5);
               color: rgba(190, 190, 190, 1.0);
               padding: 4px 18px;
               /* margin: 4px; the underlying window buffer space */ 

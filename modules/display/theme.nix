@@ -332,6 +332,57 @@
       exec "$SYNC_SCRIPT"
     '';
 
+    # Per-theme ANSI 16-color swatches for the otter `th` module preview.
+    # Each profile's ghostty theme is resolved headless via an isolated
+    # XDG_CONFIG_HOME so only `theme = <name>` applies (proven mechanism —
+    # same `+show-config` palette extraction sync-ghostty uses, looped over
+    # all 12 profiles). Swatches are static per profile; regenerated on every
+    # switch so new/edited profiles always have fresh ones. Format: a single
+    # line of 16 ANSI background blocks (no label/column text). Guarded: a
+    # failing ghostty resolve skips that swatch (the otter preview falls back
+    # to wallpaper-only). Contract: theme.nix owns generated/previews/*.swatch;
+    # otter consumes them (modules/_assets/module-contracts.md C5).
+    swatchScript = pkgs.writeShellScript "theme-swatches" ''
+      set -u
+
+      THEME_DIR="${THEME_DIR}"
+      PREVIEWS="$THEME_DIR/generated/previews"
+      GHOSTTY=${pkgs.ghostty}/bin/ghostty
+      JQ=${pkgs.jq}/bin/jq
+
+      mkdir -p "$PREVIEWS"
+
+      for P in "$THEME_DIR"/profiles/*.json; do
+        [ -f "$P" ] || continue
+        name=$(basename "$P" .json)
+        GT=$("$JQ" -r '.ghostty_theme' "$P") || continue
+        [ -n "$GT" ] || continue
+
+        tmpdir=$(mktemp -d)
+        mkdir -p "$tmpdir/ghostty"
+        printf 'theme = %s\n' "$GT" > "$tmpdir/ghostty/config"
+        G_CONFIG=$(XDG_CONFIG_HOME="$tmpdir" "$GHOSTTY" +show-config 2>/dev/null || echo "")
+        rm -rf "$tmpdir"
+        [ -n "$G_CONFIG" ] || continue
+
+        hex() {
+          printf '%s\n' "$G_CONFIG" | grep -E "^palette[[:space:]]*=[[:space:]]*''${1}=" | head -n1 | cut -d'#' -f2 | tr -d '[:space:]'
+        }
+
+        {
+          printf '  '
+          i=0
+          while [ "$i" -lt 16 ]; do
+            h=$(hex "$i")
+            h=''${h:-000000}
+            printf '\033[48;2;%d;%d;%dm  \033[0m' "$((16#''${h:0:2}))" "$((16#''${h:2:2}))" "$((16#''${h:4:2}))"
+            i=$((i+1))
+          done
+          printf '\n'
+        } > "$PREVIEWS/$name.swatch" 2>/dev/null || true
+      done
+    '';
+
     themeCli = pkgs.writeShellScriptBin "theme" ''
       THEME_DIR="${THEME_DIR}"
 
@@ -411,6 +462,9 @@
       # active.json, regenerate palettes + links. Headless-safe — the reload
       # commands inside sync are guarded with || true.
       "${syncScript}"
+
+      # Regenerate per-theme palette swatches for the otter th preview.
+      "${swatchScript}"
     '';
 
     # These three paths are runtime symlinks created by the sync script; never

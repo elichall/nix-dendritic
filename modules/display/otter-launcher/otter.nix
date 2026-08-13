@@ -13,6 +13,10 @@
     # Shared pointer-dismiss helper (showoff + otter; see _lib/interaction-watch.nix).
     interactionWatch = import ../../_lib/interaction-watch.nix { inherit pkgs; };
 
+    # Shared theme-engine paths (contract: theme.nix owns profiles/ +
+    # generated/previews/; the otter th module preview reads them).
+    themeLib = import ../../_lib/theme.nix { home = config.home.homeDirectory; };
+
     # config.toml is a template: the injectable lines use @TOKEN@ placeholders.
     # mkOtterConfig substitutes them, so each menu variant (app, pow, ...) is
     # just an attrset of values. Add a token in config.toml + a field here.
@@ -35,12 +39,16 @@
       DEFAULT_MODULE = "app";
       DEFAULT_MODULE_MESSAGE = "  └ \\u001B[34m  \\u001B[33mapp \\u001B[0m launch apps";
       OVERLAY_IMAGE = overlayImage;
+      THEME_DIR = themeLib.dir;
+      THEME_SWATCHES = "${themeLib.generated}/previews";
     };
 
     powConfig = mkOtterConfig {
       DEFAULT_MODULE = "pow";
       DEFAULT_MODULE_MESSAGE = "  └ \\u001B[34m  \\u001B[33mpow \\u001B[0m power menu";
       OVERLAY_IMAGE = overlayImage;
+      THEME_DIR = themeLib.dir;
+      THEME_SWATCHES = "${themeLib.generated}/previews";
     };
 
     otter-launch-inner = pkgs.writeShellApplication {
@@ -146,7 +154,8 @@
         check ghostty        "ghostty (Rule 4 declared)"
         check nvim           "nvim (config.toml external_editor)"
         check fzf            "fzf (app-launcher / menu pickers)"
-        check chafa          "chafa (app-launcher preview / overlay)"
+        check chafa          "chafa (app-launcher preview / overlay / th preview)"
+        check jq             "jq (th module theme preview)"
         check qalc           "qalc (calc module)"
         check wl-copy        "wl-clipboard (calc module)"
         check tmux           "tmux (pro/ssh modules)"
@@ -188,6 +197,7 @@
         ghostty
         fzf
         chafa
+        jq
         libqalculate
         wl-clipboard
         neovim

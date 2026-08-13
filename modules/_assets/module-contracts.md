@@ -57,12 +57,12 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.ghostty` | `display/ghostty.nix` | ghostty binary + SOLE owner of `xdg.configFile."ghostty/config"` |
 | `homeManager.hyprland` | `display/hyprland.nix` | hyprland user config (keybinds, autostart, rules) + deps (hypridle, grimblast, brightnessctl, playerctl, waybar, way-edges, tmux, yazi, ghostty) |
 | `homeManager.tui` | `display/tui.nix` | TUI launcher: wlctl (flake input), tuiApps list, desktop entries + icons, yazi-open |
-| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose |
+| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose; `th` preview consumes theme profiles + swatches (C19) |
 | `homeManager.showoff` | `display/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch |
 | `homeManager.awww` | `display/awww.nix` | awww binary (daemon launched via hyprland autostart, C10) |
 | `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary (restore via hyprland autostart, C10) |
 | `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps |
-| `homeManager.theme` | `display/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning |
+| `homeManager.theme` | `display/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19) |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi |
 | `homeManager.desktop` | `groups/desktop.nix` | Preset: hyprland, ghostty, tui, otterLauncher, zotero, showoff, awww, waypaper, waybar, theme |
 
@@ -158,7 +158,41 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   `mkOtterConfig` substitutes them; each menu variant (app/pow) is an attrset
   override. Adding a token = edit both `config.toml` and `otter.nix`.
 - Current tokens: `DEFAULT_MODULE`, `DEFAULT_MODULE_MESSAGE`, `OVERLAY_IMAGE`
-  (→ repo asset `modules/_assets/nixos-image.png`).
+  (→ repo asset `modules/_assets/nixos-image.png`), `THEME_DIR` (→
+  `_lib/theme.nix` `dir`), `THEME_SWATCHES` (→ `_lib/theme.nix` `generated` +
+  `/previews`).
+
+### C19. Theme swatch ↔ otter `th` preview (theme ↔ otterLauncher)
+- `homeManager.theme` **owns** both `profiles/*.json` (data) and
+  `generated/previews/*.swatch` (derived artifacts). `swatchScript` runs from
+  `initTheme` after sync on every activation (one loop over all profiles,
+  headless ghostty palette resolve, guarded `|| continue` per profile).
+- `homeManager.otterLauncher` **consumes** them read-only: the `th` preview
+  reads `@THEME_DIR@/profiles/{1}.json` wallpaper via `jq -r .wallpaper`,
+  renders `chafa -s "${FZF_PREVIEW_COLUMNS:-34}x$((FZF_PREVIEW_LINES-3))"`
+  (kitty-protocol image sized to the pane), then cats
+  `@THEME_SWATCHES@/{1}.swatch` (`--preview-window=right:50%,wrap`).
+- Rule 4 deps: `jq` declared in `homeManager.otterLauncher` (consumed by the
+  preview) — do not rely on the theme module's jq; `chafa` already a declared
+  dep. `otter-diagnose` gained a `jq` check.
+- Adding a new profile requires no otter change; swatches regenerate on the
+  next activation.
+- **otter `{}` pitfall (postmortem 2026-08-13)**: otter-launcher substitutes
+  every bare `{}` in a module `cmd` with the module argument (empty for the
+  `th` picker) before `sh -c` (`mod_exec.rs`). NEVER use bare `{}` in otter
+  module cmds; use fzf's `{1}` (whole line) / `{+}` placeholders. A bare `{}`
+  becomes an empty string, silently breaking `-f` checks and `-q`.
+- **Kitty-graphics preview**: `chafa` without `-f symbols` emits kitty protocol
+  images which fzf's text-based preview clearing cannot erase. Any image
+  preview must (a) emit the kitty delete-all sequence first
+  (`printf "\033_Ga=d,d=A\033\\"` — escapes doubled for TOML), (b) size chafa
+  from `FZF_PREVIEW_COLUMNS/LINES` so it fits the launcher pane (550x250 →
+  ~26–34 x 12–15 cells; a fixed size overflows and covers the swatch), and (c)
+  emit `$LN` blank lines after chafa — fzf lays out preview text independently
+  of the kitty image, so without the padding the swatch text lands at the top
+  of the pane, under the image box (image = rows 0..LN-1, swatch at row LN+1).
+- Swatches are a single blocks-only line (16 ANSI backgrounds, no label or
+  column numbers).
 
 ### C8. PATH strategy for desktop configs
 - User-scope binaries referenced by **absolute store path** (graphical session
