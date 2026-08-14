@@ -29,7 +29,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `nixos.hardware` | `system/hardware.nix` | bluetooth (powerOnBoot + profiles), fstrim, fwupd, microcode, earlyoom |
 | `nixos.audio` | `system/audio.nix` | rtkit, pipewire (alsa + pulse + 32-bit) |
 | `nixos.security` | `system/security.nix` | kernel sysctl hardening ONLY |
-| `nixos.battery` | `system/battery.nix` | TLP power management (+ power-profiles-daemon disable) |
+| `nixos.battery` | `system/battery.nix` | TLP power mgmt (+ ppd disable): charge thresholds 75/80 on BOTH BAT0+BAT1 (T480 dual-battery); `PLATFORM_PROFILE_*` kept for Framework 13 Pro (no-op on T480 — no `platform_profile` sysfs) |
 | `nixos.mime` | `system/mime.nix` | custom-mime package + `xdg.mime.defaultApplications` |
 | `nixos.display` | `display/display.nix` | WLR/OZONE session vars, XDG portal, ly display manager |
 | `nixos.hyprland` | `display/hyprland.nix` | Compositor (programs.hyprland) ONLY; user tooling → `homeManager.hyprland` |
@@ -47,6 +47,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.cmdLine` | `programs/cmdLine.nix` | bash/starship/zoxide/fzf/direnv/ble.sh config, aliases, dotfiles |
 | `homeManager.git` | `programs/git.nix` | git config |
 | `homeManager.tmux` | `programs/tmux.nix` | tmux config + plugins |
+| `homeManager.initProject` | `programs/utils/initProject.nix` | `init-project` scaffold CLI (writeShellApplication, shellcheck at build): git init `-b main`, `uv init`, minimal flake devShell (nix/python/cpp toolchain, pure-eval `x86_64-linux` template), `use flake` envrc, .gitignore, agent dirs, `direnv allow` + initial commit; bails in existing git repo |
 | `homeManager.nvim` | `programs/nvim.nix` | neovim config + 5 LSPs + tree-sitter |
 | `homeManager.yazi` | `programs/yazi.nix` | yazi config/keymap, FILEMANAGER/TERM_FILE_CHOOSER vars, ripdrag, theme icon rules via 26.x `prepend_dirs`/`prepend_files` (exact names, no trailing slash) |
 | `homeManager.opencode` | `programs/opencode.nix` | opencode binary + poppler-utils (PDF pipeline dep), SOLE owner of `xdg.configFile."opencode/tui.json"` + global `/pdf` command (`opencode/commands/pdf.md`) |
@@ -64,13 +65,14 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps |
 | `homeManager.theme` | `display/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19) |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi |
+| `homeManager.utils` | `groups/utils.nix` | Preset: initProject |
 | `homeManager.desktop` | `groups/desktop.nix` | Preset: hyprland, ghostty, tui, otterLauncher, zotero, showoff, awww, waypaper, waybar, theme |
 
 ### Host wiring (`hosts/workstation.nix`)
 
 - System: `main`, `hardwareConfig`, `base`, `desktop`, `cmdLine`, `nvim`, `rclone`.
 - User (`home-manager.users.elichall.imports`): `main`, `toolbox`, `desktop`,
-  `opencode`, `clipboard`, `rclone`, `fastfetch`.
+  `opencode`, `clipboard`, `rclone`, `fastfetch`, `utils`.
 - `home-manager.useGlobalPkgs/useUserPackages = true`.
 
 ### Legacy provenance

@@ -37,6 +37,7 @@
               # aspect groups (dev toolchain + display/wallpaper preset)
               self.modules.homeManager.toolbox
               self.modules.homeManager.desktop
+              self.modules.homeManager.utils
 
               # remaining user-level aspects (not grouped)
               self.modules.homeManager.clipboard

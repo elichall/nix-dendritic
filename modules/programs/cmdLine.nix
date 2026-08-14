@@ -2,12 +2,6 @@
   flake.modules.nixos.cmdLine = { pkgs, ... }: {
     # enables
     programs.bash.enable = true;
-
-    # enables system-wide direnv sandbox store path integration
-    programs.direnv = {
-      enable = true;
-      nix-direnv.enable = true;
-    };
   };
 
   flake.modules.homeManager.cmdLine = { pkgs, ... }: {
@@ -129,6 +123,10 @@
       enableBashIntegration = false;
       nix-direnv.enable = true;
       silent = true;
+      config.global = {
+        hide_env_diff = true; # no export +N -M dump
+        log_filter = "^$"; # suppress loading/using-flake status lines
+      };
       stdlib = ''
         # Load nix-direnv stdlib (provides use_nix, use flake)
         source ${pkgs.nix-direnv}/share/nix-direnv/direnvrc
