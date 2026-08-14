@@ -93,10 +93,10 @@
             };
 
             "network" = {
-              format-wifi = "{icon}";
-              format-ethernet = "󰈀";
-              format-disconnected = "󰤫";
-              format-disabled = "󰤮";
+              format-wifi = "{icon} ";
+              format-ethernet = "󰈀 ";
+              format-disconnected = "󰤫 ";
+              format-disabled = "󰤮 ";
               on-click = "${tui wlctlBin}";
               on-click-right = "nmcli radio wifi | grep -q 'enabled' && nmcli radio wifi off || nmcli radio wifi on";
               tooltip-format = "    {ifname} via {gwaddr}";
@@ -127,8 +127,8 @@
                 critical = 15;
               };
               format = "{icon} {capacity}%";
-              format-charging = "{icon}";
-              format-plugged = "{icon}";
+              format-charging = "{icon} {capacity}%";
+              format-plugged = "{icon} {capacity}%";
               format-icons = [
                 "󰁺"
                 "󰁻"
@@ -141,6 +141,7 @@
                 "󰂂"
                 "󰁹"
               ];
+              full-at = 80;
               interval = 60;
               tooltip-format = "Time Remaining: {time}\nPower Draw {power}W";
               on-click = "${tui joltBin}";
@@ -258,6 +259,16 @@
           #workspaces { padding: 2px 6px; }
           #workspaces button { color: rgba(190, 190, 190, 0.70); padding: 0 4px; }
           #workspaces button.active { color: rgba(200, 200, 200, 1.0); }
+
+          /* Hover: workspaces-style rounded pill darken. Modules are windowed Gtk::EventBoxes
+             (that's why :hover fires) that paint background + border-radius — so darkening the
+             whole pill gives the same rounded-box hover the workspace buttons have. Pill stays
+             opaque (boundary not washed out); background-color keeps the existing 0.5 base. */
+          #clock:hover, #custom-weather:hover, #cpu:hover, #temperature:hover, #memory:hover, #custom-system:hover, #bluetooth:hover, #network:hover, #battery:hover {
+              background-color: rgba(0, 0, 0, 0.65);
+          }
+          /* Workspaces keeps the full-fill hover (transparent button, no pill boundary) */
+          #workspaces button:hover { background-color: rgba(0, 0, 0, 0.2); }
 
           /* center block */
           #clock {

@@ -62,7 +62,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.showoff` | `display/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch |
 | `homeManager.awww` | `display/awww.nix` | awww binary (daemon launched via hyprland autostart, C10) |
 | `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary (restore via hyprland autostart, C10) |
-| `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps |
+| `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps; battery `full-at = 80` (TLP-capped batteries → full icon at 80%); workspaces-style rounded pill darken on hover for every module except the nixos logo (`background-color: rgba(0,0,0,0.65)` on `#<module>:hover` — modules are windowed `Gtk::EventBox`es that paint rounded backgrounds; pill stays opaque, boundary not washed out) |
 | `homeManager.theme` | `display/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19) |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi |
 | `homeManager.utils` | `groups/utils.nix` | Preset: initProject |
