@@ -220,7 +220,7 @@
           /* Formatting Defaults */
           #workspaces, #clock, #custom-weather, #custom-system, #network, #bluetooth, #battery, #memory, #cpu, #temperature {
               background-color: rgba(0, 0, 0, 0.5);
-              color: rgba(190, 190, 190, 1.0);
+              color: rgba(200, 200, 200, 1.0);
               padding: 4px 18px;
               /* margin: 4px; the underlying window buffer space */ 
           }
@@ -229,11 +229,14 @@
           window#waybar #custom-nixos {
               color: #74c7ec;
               font-size: 24px;
-              background-color: transparent;
+              background-color: rgba(0, 0, 0, 0.5);
               border: none;
-              padding-left: 0px;
-              padding-right: 8px;
               min-width: 32px;
+              padding-left: 4px;
+              margin-right: 0px;
+              padding-right: 8px;
+              border-right-width: 0px;
+              border-radius: 14px 0px 0px 14px;
               text-shadow: 
                   -1px -1px 0 #000000,  1px -1px 0 #000000,
                   -1px  1px 0 #000000,  1px  1px 0 #000000,
@@ -247,10 +250,14 @@
               border-width: 2px;
               border-radius: 14px;
               padding: 2px 12px;
+              margin-left: 0px;
+              padding-left: 12px;
+              border-left-width: 0px;
+              border-radius: 0px 14px 14px 0px;
           }
           #workspaces { padding: 2px 6px; }
           #workspaces button { color: rgba(190, 190, 190, 0.70); padding: 0 4px; }
-          #workspaces button.active { color: rgba(190, 190, 190, 1.0); }
+          #workspaces button.active { color: rgba(200, 200, 200, 1.0); }
 
           /* center block */
           #clock {
