@@ -42,6 +42,13 @@
       awwwDaemon = "${pkgs.awww}/bin/awww-daemon";
       waypaperRestore = "${pkgs.waypaper}/bin/waypaper --restore";
       otterApps = "otter-apps --refresh-cache";
+      # Persistent headless ghostty server that `otter-launch` hands off to via
+      # `ghostty +new-window --class=com.otter.launcher`. Started FIRST in the
+      # autostart block so the very first menu press hand-offs instead of
+      # cold-starting ghostty. --initial-window=false keeps it invisible;
+      # --quit-after-last-window-closed=false keeps it alive; --gtk-single-instance
+      # makes it the IPC target for +new-window.
+      otterServer = "${terminal} --class=com.otter.launcher --initial-window=false --quit-after-last-window-closed=false --gtk-single-instance=true";
       playerctlCmd = "${pkgs.playerctl}/bin/playerctl";
     in
     {
@@ -105,6 +112,11 @@
           -- -- AUTOSTART -- --
           -------------------
           hl.on("hyprland.start", function()
+            -- Persistent headless ghostty server for the otter-launcher. Started
+            -- FIRST so the very first `otter-open`/`otter-power` press hand-offs
+            -- via `+new-window` instead of cold-starting ghostty (2-5s). Invisible
+            -- (no window), survives last-window-close, single-instance IPC target.
+            hl.exec_cmd("${otterServer}")
             -- Boot the tmux server headlessly so continuum restores saved
             -- sessions and the otter `tsm` module can see them without a
             -- manual tmux launch. `main` guarantees the server survives.
@@ -118,9 +130,6 @@
             hl.exec_cmd("sh -c 'sleep 0.5 && ${waypaperRestore}'")
             hl.exec_cmd("${otterApps}")
             hl.exec_cmd("bash -c 'systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && systemctl --user restart xdg-desktop-portal-hyprland xdg-desktop-portal'")
-            -- Persistent headless ghostty server for the otter-launcher. Kept alive
-            -- so `ghostty +new-window --class=com.otter.launcher` opens near-instantly.
-            hl.exec_cmd("${terminal} --class=com.otter.launcher --initial-window=false --quit-after-last-window-closed=false --gtk-single-instance=true")
           end)
 
           -------------------------------
