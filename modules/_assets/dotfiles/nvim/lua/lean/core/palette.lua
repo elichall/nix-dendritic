@@ -1,0 +1,1 @@
+/home/elichall/.local/share/theme/generated/nvim/palette.lua

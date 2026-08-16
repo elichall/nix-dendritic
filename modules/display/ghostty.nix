@@ -8,29 +8,31 @@
 # must stay palette-only (ghostty-transparency.md).
 # ==========================================================================
 { inputs, ... }: {
-  flake.modules.homeManager.ghostty = { config, pkgs, ... }:
-  let
-    theme = import ../_lib/theme.nix { home = config.home.homeDirectory; };
-  in {
-    home.packages = [ pkgs.ghostty ];
+  flake.modules.homeManager.ghostty =
+    { config, pkgs, ... }:
+    let
+      theme = import ../_lib/theme.nix { home = config.home.homeDirectory; };
+    in
+    {
+      home.packages = [ pkgs.ghostty ];
 
-    xdg.configFile."ghostty/config" = {
-      force = true;
-      text = ''
-        font-family = JetBrainsMono Nerd Font
-        font-family = Noto Sans Mono CJK JP
-        font-size = 13
-        window-decoration = false
-        cursor-style = block
-        background-opacity = 0.90
-        background-blur = 20
-        confirm-close-surface = false
-        font-feature = -calt
-        font-feature = -liga
-        font-feature = -dlig
-        command = ${pkgs.bash}/bin/bash
-        config-file = ${theme.ghosttyThemeConf}
-      '';
+      xdg.configFile."ghostty/config" = {
+        force = true;
+        text = ''
+          font-family = JetBrainsMono Nerd Font
+          font-family = Noto Sans Mono CJK JP
+          font-size = 13
+          window-decoration = false
+          cursor-style = block
+          background-opacity = 0.80
+          background-blur = 30
+          confirm-close-surface = false
+          font-feature = -calt
+          font-feature = -liga
+          font-feature = -dlig
+          command = ${pkgs.bash}/bin/bash
+          config-file = ${theme.ghosttyThemeConf}
+        '';
+      };
     };
-  };
 }
