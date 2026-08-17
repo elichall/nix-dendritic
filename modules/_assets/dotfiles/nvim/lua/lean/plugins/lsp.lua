@@ -1,4 +1,30 @@
 -- lua/lean/plugins/lsp.lua
+-- Dictionary extension: ltex-ls is a grammar + spelling LSP for md/tex. Its
+-- en-US dictionary is seeded from the same declarative wordlist as the vim
+-- spellfile (config/spell/en.utf-8.add) so both engines share one source of
+-- truth. See _assets/plans/dictionary-expansion.md.
+local function load_scientific_dictionary()
+  local dir = vim.fn.stdpath("config") .. "/spell/"
+  local path = dir .. "en.utf-8.expanded"
+  local f = io.open(path, "r")
+  if not f then
+    path = dir .. "en.utf-8.add"
+    f = io.open(path, "r")
+  end
+  if not f then
+    return {}
+  end
+  local words = {}
+  for line in f:lines() do
+    local w = line:match("^([%a%d%-]+)%/?.*$") or line:match("^_([%a%d%-]+)%/?.*$")
+    if w then
+      words[#words + 1] = w
+    end
+  end
+  f:close()
+  return words
+end
+
 return {
   -- NVIM LSPCONFIG LAYER (default configs for server names)
   {
@@ -50,6 +76,7 @@ return {
         "texlab",
         "bashls",
         "nil_ls",
+        "ltex",
       }
 
       -- Custom Configuration Tables for Native Injection
@@ -84,6 +111,16 @@ return {
               forwardSearch = {
                 executable = vim.fn.executable("zathura") == 1 and "zathura" or "evince",
                 args = { "--synctex-forward", "%l:1:%f", "%p" },
+              },
+            },
+          },
+        },
+        ["ltex"] = {
+          settings = {
+            ltex = {
+              language = "en-US",
+              dictionary = {
+                ["en-US"] = load_scientific_dictionary(),
               },
             },
           },

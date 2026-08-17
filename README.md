@@ -20,9 +20,6 @@ simply aggregate the aspects they need.
 sudo nixos-rebuild switch --flake ~/.nix#workstation
 ```
 
-A bare `nixos-rebuild switch` (no `--flake`) reads the inert `/etc/nixos`
-legacy config — never run it without `--flake`.
-
 ## How it works
 
 - `flake.nix` passes `./modules` to `import-tree`, which recursively imports
@@ -30,7 +27,7 @@ legacy config — never run it without `--flake`.
 - Each file exports `flake.modules.nixos.<feature>` (system scope) and/or
   `flake.modules.homeManager.<feature>` (user scope) — the *registry*.
 - `modules/hosts/<hostname>.nix` aggregates registry modules into a
-  `nixosConfiguration`; aspect groups (`base`, `desktop`, `toolbox`) are
+  `nixosConfiguration` or `homeManagerConfiguration` (if host isn't NixOS); aspect groups (`base`, `desktop`, `toolbox`) are
   presets that bundle related aspects.
 - `flake.lock` is the only version pin — there are no channels. Inputs
   `home-manager`, `wlctl`, and `otter-launcher` follow the pinned nixpkgs
@@ -47,7 +44,6 @@ modules/                 The dendritic root (auto-imported by import-tree)
   groups/                Aspect-group presets (base, desktop, toolbox)
   system/ display/ programs/   Feature aspects
 legacy/                  (gitignored) frozen snapshot of the pre-flake config
-post-switch-smoke-test.sh      Read-only post-rebuild verification
 ```
 
 ## Documentation (`modules/_assets/`)

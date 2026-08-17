@@ -1,0 +1,197 @@
+-- tools/harvest-spellbad
+-- Triage aid: scan md/tex/plaintext files for words vim's spell would flag,
+-- sorted by frequency, so the declarative wordlist can be extended.
+--
+-- The wordlist is the SOURCE OF TRUTH (repo + rebuild). This tool only tells
+-- you what's currently missing — the words you add must be curated manually.
+-- It is strictly additive: it only READS the wordlist and prints candidates to
+-- stdout, it never writes anywhere, so manual additions can never be clobbered.
+--
+-- Known-word exclusion covers base forms AND generated inflections, so plural
+-- / possessive tokens (pdes, afsd's, AFSD's) aren't reported as missing. The
+-- build output spell/en.utf-8.expanded is preferred; when only the bare
+-- en.utf-8.add is available the inflections are re-derived inline (mirrors
+-- the plural rules in modules/programs/nvim.nix — keep them in sync).
+--
+-- Wordlist resolution order:
+--   1. --wordlist PATH        (explicit file override)
+--   2. <scriptdir>/../spell/  (this repo tree, expanded then add)
+--   3. <config>/spell/        (deployed nvim, expanded then add)
+--
+-- Usage (nvim is a build/process dependency only, not on PATH):
+--   nvim -u NONE -l harvest-spellbad [--min-count N] [--wordlist PATH] <dir-or-file>...
+--
+-- Notes:
+--   - `vim.fn.argv()` is empty under `-l`; we parse `vim.v.argv` past the
+--     last `-l` entry instead.
+--   - `vim.fn.spellbadword()` returns a LIST {word, type}; index it directly.
+vim.opt.spelllang = "en_us"
+vim.opt.spell = true
+vim.cmd("redraw")
+
+local argv = vim.v.argv
+local start = 1
+for i, a in ipairs(argv) do
+  if a == "-l" then
+    start = i + 1
+  end
+end
+
+local min_count = 1
+local wordlist_file
+local args = {}
+for i = start, #argv do
+  local a = argv[i]
+  if a == "--min-count" and argv[i + 1] then
+    min_count = tonumber(argv[i + 1]) or 1
+    i = i + 1
+  elseif a == "--wordlist" and argv[i + 1] then
+    wordlist_file = argv[i + 1]
+    i = i + 1
+  else
+    args[#args + 1] = a
+  end
+end
+
+if not wordlist_file then
+  local script_dir = arg[0]:match("^(.*)[/\\][^/\\]+$") or "."
+  local bases = { script_dir .. "/../spell/", vim.fn.stdpath("config") .. "/spell/" }
+  for _, base in ipairs(bases) do
+    for _, name in ipairs({ "en.utf-8.expanded", "en.utf-8.add" }) do
+      local p = base .. name
+      if vim.loop.fs_stat(p) then
+        wordlist_file = p
+        break
+      end
+    end
+    if wordlist_file then
+      break
+    end
+  end
+end
+
+local counts = {}
+local order = {}
+
+-- Inflection rules mirrored from modules/programs/nvim.nix (pluralSkip,
+-- possessive + plural generation). Used only when the bare .add is read.
+local plural_skip = { moduli = true, minima = true }
+
+local function plural_of(w)
+  if plural_skip[w] then
+    return nil
+  end
+  if w:find("s$") then
+    return nil
+  end
+  if w:find("ly$") then
+    return nil
+  end
+  if w:find("%d$") then
+    return nil
+  end
+  if w:find("y$") then
+    return w:sub(1, -2) .. "ies"
+  end
+  if w:find("[xz]$") then
+    return w .. "es"
+  end
+  return w .. "s"
+end
+
+local known = {}
+do
+  local f = io.open(wordlist_file, "r")
+  if f then
+    local expanded = wordlist_file:find("expanded") ~= nil
+    for line in f:lines() do
+      local w = line:match("^([%a%d'%-]+)$")
+      if w then
+        local wl = w:lower()
+        known[wl] = true
+        if not expanded then
+          known[wl .. "'s"] = true
+          local p = plural_of(wl)
+          if p then
+            known[p] = true
+          end
+        end
+      end
+    end
+    f:close()
+  end
+end
+
+local function add(w)
+  if #w < 4 then
+    return
+  end
+  if not w:match("^[%a%d%-]+$") then
+    return
+  end
+  if known[w] then
+    return
+  end
+  local res = vim.fn.spellbadword(w)
+  local bad, typ = res[1], res[2]
+  if bad ~= "" and typ ~= "" and typ ~= "file" then
+    if not counts[w] then
+      counts[w] = 0
+      order[#order + 1] = w
+    end
+    counts[w] = counts[w] + 1
+  end
+end
+
+local function scan(file)
+  local f = io.open(file, "r")
+  if not f then
+    return
+  end
+  for line in f:lines() do
+    for w in line:gmatch("[%a%d%-]+") do
+      add(w:lower())
+    end
+  end
+  f:close()
+end
+
+local function walk(path)
+  local t = vim.loop.fs_lstat(path)
+  if not t then
+    return
+  end
+  if t.type == "directory" then
+    local fs = vim.loop.fs_scandir(path)
+    if fs then
+      while true do
+        local name = vim.loop.fs_scandir_next(fs)
+        if not name then
+          break
+        end
+        walk(path .. "/" .. name)
+      end
+    end
+  elseif t.type == "file" then
+    if path:match("%.md$") or path:match("%.tex$") or path:match("%.txt$") then
+      scan(path)
+    end
+  end
+end
+
+for _, a in ipairs(args) do
+  walk(a)
+end
+
+table.sort(order, function(a, b)
+  if counts[a] ~= counts[b] then
+    return counts[a] > counts[b]
+  end
+  return a < b
+end)
+
+for _, w in ipairs(order) do
+  if counts[w] >= min_count then
+    io.write(counts[w], "\t", w, "\n")
+  end
+end
