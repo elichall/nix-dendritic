@@ -118,10 +118,10 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   `waybar/colors.css`, `tmux/colors.tmux`, `nvim/lua/lean/core/palette.lua`,
   `cava/themes/nixos-generated`, `gtk-{3,4}.0/gtk.css` + `settings.ini`.
 
-### C3. Wallpaper provisioning sync (theme.nix ↔ `_assets/wallpapers`)
+### C3. Wallpaper provisioning sync (theme.nix ↔ `_assets/aesthetics/wallpapers`)
 - `theme.nix` provisions 17 wallpapers via `home.file` into
   `~/Pictures/Wallpapers`: 12 theme-profile + 5 waypaper library.
-- The `wallpaperFiles` list and `modules/_assets/wallpapers/` must stay in
+- The `wallpaperFiles` list and `modules/_assets/aesthetics/wallpapers/` must stay in
   sync; waypaper `--restore` and the waypaper app read the same directory.
 
 ### C4. yazi.desktop ↔ mime (tui ↔ mime)
@@ -160,7 +160,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   `mkOtterConfig` substitutes them; each menu variant (app/pow) is an attrset
   override. Adding a token = edit both `config.toml` and `otter.nix`.
 - Current tokens: `DEFAULT_MODULE`, `DEFAULT_MODULE_MESSAGE`, `OVERLAY_IMAGE`
-  (→ repo asset `modules/_assets/nixos-image.png`), `THEME_DIR` (→
+  (→ repo asset `modules/_assets/aesthetics/nixos-image.png`), `THEME_DIR` (→
   `_lib/theme.nix` `dir`), `THEME_SWATCHES` (→ `_lib/theme.nix` `generated` +
   `/previews`).
 
@@ -233,8 +233,8 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 
 ### C13. Assets path resolution
 - Path literals resolve from the consuming file's OWN directory against the
-  tracked git tree. `modules/home.nix` (depth 1) → `./_assets/icons`;
-  `modules/display/tui.nix` (depth 2) → `../_assets/icons`.
+  tracked git tree. `modules/home.nix` (depth 1) → `./_assets/aesthetics/icons`;
+  `modules/display/tui.nix` (depth 2) → `../_assets/aesthetics/icons`.
 - Everything in `modules/_assets/` must be tracked (root `.gitignore` rule is
   root-anchored `/_assets/`; do not un-anchor).
 

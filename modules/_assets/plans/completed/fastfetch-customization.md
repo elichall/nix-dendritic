@@ -1,7 +1,7 @@
 # Fastfetch Customization
 
 > **STATUS: IMPLEMENTED (2026-08-12)** — `modules/programs/fastfetch.nix`.
-> Logo renders `modules/_assets/nixos-image.png` as chafa block image
+> Logo renders `modules/_assets/aesthetics/nixos-image.png` as chafa block image
 > (`logo.type = "chafa"`, `symbols = "block"`, width 40, tunable).
 > `logo.height` is NOT set — the fastfetch schema accepts only `null` (auto,
 > aspect-ratio-preserving default) or an integer ≥ 1; `0` errors with

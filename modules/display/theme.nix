@@ -18,7 +18,7 @@
       # Tracked wallpaper set provisioned into ~/Pictures/Wallpapers. Profile
       # wallpapers above reference the theme subset by exact path; waypaper
       # --restore and the waypaper app read the same directory. Keep this list
-      # and modules/_assets/wallpapers in sync.
+      # and modules/_assets/aesthetics/wallpapers in sync.
       wallpaperFiles = [
         # Theme profile wallpapers (12)
         "beach.jpg"
@@ -433,12 +433,12 @@
     in
     {
       # Wallpaper provisioning (theme profiles + waypaper library), tracked in
-      # modules/_assets/wallpapers. Profiles reference the theme subset by exact
+      # modules/_assets/aesthetics/wallpapers. Profiles reference the theme subset by exact
       # path above — single module, so profile/provision drift is adjacent.
       home.file = builtins.listToAttrs (
         map (file: {
           name = "Pictures/Wallpapers/${file}";
-          value.source = ../_assets/wallpapers/${file};
+          value.source = ../_assets/aesthetics/wallpapers/${file};
         }) wallpaperFiles
       );
 

@@ -33,7 +33,7 @@
 
     # Repo-relative asset path (same assumption ned/nrb make: the config of
     # record lives at $HOME/.nix).
-    overlayImage = "${config.home.homeDirectory}/.nix/modules/_assets/nixos-image.png";
+    overlayImage = "${config.home.homeDirectory}/.nix/modules/_assets/aesthetics/nixos-image.png";
 
     appConfig = mkOtterConfig {
       DEFAULT_MODULE = "app";

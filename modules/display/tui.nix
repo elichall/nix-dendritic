@@ -58,8 +58,8 @@
 
       tuiOpenWrappers = map mkTuiOpen tuiApps;
 
-      # Auto-discover icon files in ../_assets/icons/
-      availableIcons = builtins.readDir ../_assets/icons;
+      # Auto-discover icon files in ../_assets/aesthetics/icons/
+      availableIcons = builtins.readDir ../_assets/aesthetics/icons;
       iconFiles = builtins.filter (f: availableIcons.${f} == "regular") (
         builtins.attrNames availableIcons
       );
@@ -72,7 +72,7 @@
         in
         pkgs.runCommandLocal "icon-${file}" { } ''
           mkdir -p $out/share/icons/hicolor/${dir}/apps
-          cp ${../_assets/icons + "/${file}"} $out/share/icons/hicolor/${dir}/apps/${file}
+          cp ${../_assets/aesthetics/icons + "/${file}"} $out/share/icons/hicolor/${dir}/apps/${file}
         '';
 
       tuiIconPackages = map mkTuiIcon iconFiles;

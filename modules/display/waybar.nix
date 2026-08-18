@@ -86,6 +86,7 @@
 
             "custom/weather" = {
               format = " {}";
+              # add a formate for when it is not working/wifi is off so the module stays visually present
               tooltip = true;
               interval = 1800;
               exec = "${pkgs.curl}/bin/curl -s 'wttr.in/?format=%t' | ${pkgs.gnused}/bin/sed 's/+//g'";

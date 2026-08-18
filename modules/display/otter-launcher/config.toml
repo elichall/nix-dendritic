@@ -60,7 +60,7 @@ move_interface_down = 1
 
 [overlay]
 # @OVERLAY_IMAGE@ is substituted by otter.nix mkOtterConfig at build time
-# (repo-tracked modules/_assets/nixos-image.png).
+# (repo-tracked modules/_assets/aesthetics/nixos-image.png).
 overlay_cmd = "chafa -f symbols -s x8 @OVERLAY_IMAGE@"
 overlay_trimmed_lines = 0
 overlay_height = 0

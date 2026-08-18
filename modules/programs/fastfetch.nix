@@ -13,7 +13,7 @@
       enable = true;
       settings = {
         logo = {
-          source = "${config.home.homeDirectory}/.nix/modules/_assets/nixos-image.png";
+          source = "${config.home.homeDirectory}/.nix/modules/_assets/aesthetics/nixos-image.png";
           type = "chafa";
           width = 40;
           # height omitted: auto-detect from aspect ratio (schema requires
