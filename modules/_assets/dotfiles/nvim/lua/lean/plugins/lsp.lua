@@ -140,6 +140,21 @@ return {
         vim.lsp.config(server_name, config)
         vim.lsp.enable(server_name)
       end
+
+      -- ==============================================================================
+      -- FEATURE-CONTRIBUTED LSP SERVERS
+      -- ==============================================================================
+      -- Optional feature modules (e.g. lean.research) can register additional
+      -- LSP servers. Each feature returns { servers = {...}, configs = {...} }.
+      local ok, research_feature = pcall(require, "lean.research")
+      if ok and research_feature and research_feature.lsp then
+        for _, server_name in ipairs(research_feature.lsp.servers or {}) do
+          local config = research_feature.lsp.configs[server_name] or {}
+          config.capabilities = vim.tbl_deep_extend("force", config.capabilities or {}, capabilities)
+          vim.lsp.config(server_name, config)
+          vim.lsp.enable(server_name)
+        end
+      end
     end,
   },
 }

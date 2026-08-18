@@ -350,6 +350,34 @@ its nushell integration and trips an assertion (requires fzf ≥ 0.73.0).
   rule) — deliberately kept as legacy (phase-3 decision, void).
 - `dk`/`obs` config.toml menu stubs — left as-is (phase-3 decision).
 
+### 34. Adaptive nvim plugin framework
+**Decision:** Feature modules contribute nvim plugin specs, completion sources,
+and LSP servers via generated Lua files that are activation-merged into the
+nvim config directory. Base configs use `pcall(require, "lean.<feature>")`
+to load features at runtime — missing features degrade silently.
+**Why:** The base nvim config deploys as a store symlink via
+`xdg.configFile."nvim"`. Feature modules can't add files alongside a store
+symlink (HM can't write inside store paths). The activation hook resolves the
+symlink, copies the directory, and layers feature files on top. This keeps
+nvim light when features aren't imported — zero plugins, zero LSPs, zero cost.
+**Where:** `modules/research/obsidian.nix` (activation hook + feature files),
+`_assets/dotfiles/nvim/init.lua` (pcall pattern), `lsp.lua` (feature LSP
+merge), `module-contracts.md` C21.
+
+### 35. Research group (dedicated preset)
+**Decision:** Research-aspect modules aggregate into `homeManager.researchGroup`
+(`groups/research.nix`) — separate from `toolbox` (core dev tools, no GUI)
+and `desktop` (display/compositor). The group contains `research` (pandoc +
+texlive), `obsidian` (nvim vault integration), and `zotero` (flatpak desktop
+entry).
+**Why:** Toolbox is deliberately core developer tools only (shell, git, tmux,
+nvim base, yazi, opencode). Research tools are GUI-adjacent (pandoc produces
+docx/pdf, Zotero is a GUI app) and carry nvim extension baggage (obsidian.nvim,
+blink-cmp-bibtex). A dedicated group keeps concerns isolated and lets hosts
+opt in to the full research stack with one import.
+**Where:** `modules/groups/research.nix`, `workstation.nix`,
+`module-contracts.md` C16.
+
 ---
 
 ## Appendix — decision source index
@@ -389,3 +417,5 @@ its nushell integration and trips an assertion (requires fzf ≥ 0.73.0).
 | 31 | _assets tracking | — | Phase 2 | assets-lib | — |
 | 32 | shell integrations off | — | Bootstrap | flake-validator | — |
 | 33 | frozen items | — | stretch/Phase 3 | — | otter-strategy §7 |
+| 34 | adaptive nvim framework | — | research workflow | — | module-contracts C21 |
+| 35 | research group | — | research workflow | — | module-contracts C16 |

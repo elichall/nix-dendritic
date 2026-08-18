@@ -2,10 +2,26 @@
 
 Terminal-centric research pipeline: Neovim as primary editor for an
 Obsidian vault, Zotero/Better BibTeX for bibliography, Pandoc for
-markdown-to-.docx compilation with built-in citeproc. Vault lives at
+markdown-to-.docx/pdf compilation with built-in citeproc. Vault lives at
 `~/Documents/me/vault/research`.
 
-**Status**: PLAN — not yet implemented.
+**Status**: PARTIALLY IMPLEMENTED — core modules wired, adaptive nvim
+framework active, remaining: otter `obs` module, Better BibTeX setup.
+
+### Implementation notes
+
+- **texlive slimmed**: only pandoc template deps (geometry, hyperref,
+  graphicx, longtable, fancyhdr, titlesec, xcolor, listings, fancyvrb)
+  + latexmk + biber + bibtex. No collections (~30-50MB vs ~400-600MB).
+- **biber included**: user exports BibLaTeX format from Zotero, needs
+  biber (not just bibtex).
+- **Adaptive nvim framework** (decision #34, contract C21): feature modules
+  generate Lua files → activation-merged into nvim config. Base uses
+  pcall for graceful degradation. See `module-contracts.md` C21.
+- **Research group** (`homeManager.researchGroup`): aggregates research,
+  obsidian, zotero. Separate from toolbox (core dev) and desktop (display).
+- **File locations**: `modules/research/default.nix` (pandoc/texlive),
+  `modules/research/obsidian.nix` (nvim integration), `modules/research/zotero.nix`.
 
 ---
 
@@ -54,47 +70,47 @@ Obsidian vault ◀──obsidian.nvim── Neovim ──Pandoc keymap──▶ 
 
 ## 3. Implementation plan
 
-### 3a. New file: `modules/programs/research.nix`
+### 3a. File: `modules/research/default.nix`
 
-`homeManager.research` module — user-scale pandoc + texlive.
+`homeManager.research` module — user-scale pandoc + texlive. IMPLEMENTED.
 
 ```nix
-# ==========================================================================
-# RESEARCH WORKFLOW
-# ==========================================================================
-# User-scale research toolchain: Pandoc (markdown→docx compilation with
-# citeproc), TeX Live (latexmk + biber + bibtex for vimtex and pandoc
-# PDF output).
-#
-# Requires: Better BibTeX plugin installed in Zotero (manual step —
-# configure auto-export to ~/Documents/me/vault/research/references.bib).
-# ==========================================================================
-{ inputs, ... }: {
-  flake.modules.homeManager.research = { pkgs, ... }: {
-    programs.pandoc = {
-      enable = true;
-      defaults = {
-        citeproc = true;
-        pdf-engine = "xelatex";
+{ ... }: {
+  flake.modules.homeManager.research =
+    { pkgs, ... }:
+    {
+      programs.pandoc = {
+        enable = true;
+        defaults = {
+          citeproc = true;
+          pdf-engine = "xelatex";
+          variables = {
+            geometry = [ "margin=1in" ];
+          };
+        };
+      };
+
+      programs.texlive = {
+        enable = true;
+        extraPackages = tpkgs: {
+          inherit (tpkgs)
+            latexmk # build tool (vimtex + pandoc)
+            biber # biblatex processor
+            bibtex # traditional bibtex processor
+            # pandoc default xelatex template dependencies:
+            geometry
+            hyperref
+            graphicx
+            longtable
+            fancyhdr
+            titlesec
+            xcolor
+            listings
+            fancyvrb
+            ;
+        };
       };
     };
-
-    programs.texlive = {
-      enable = true;
-      extraPackages = tpkgs: {
-        inherit (tpkgs)
-          latexmk
-          biber
-          bibtex
-          collection-fontsrecommended
-          collection-latexextra;
-      };
-    };
-
-    home.packages = with pkgs; [
-      ripgrep # obsidian.nvim hard-dependency
-    ];
-  };
 }
 ```
 
@@ -284,32 +300,19 @@ setsid -f ghostty --class=com.waybar.tui -e bash -c 'cd ~/Documents/me/vault/res
 """
 ```
 
-### 3f. Modify: `groups/desktop.nix`
+### 3f. groups/desktop.nix + groups/research.nix
 
-Add `research` to `homeManager.desktop` imports.
+Desktop group unchanged (no research modules). New `groups/research.nix`
+aggregates `research`, `obsidian`, `zotero` into `homeManager.researchGroup`.
 
-### 3g. Modify: `hosts/workstation.nix`
+### 3g. hosts/workstation.nix
 
-Add `homeManager.research` to user imports.
+`homeManager.researchGroup` added to user imports (alongside toolbox, desktop).
 
-### 3h. Modify: `module-contracts.md`
+### 3h. module-contracts.md
 
-Add registry row:
-
-```
-| `homeManager.research` | `programs/research.nix` | pandoc (HM module, citeproc defaults) + texlive (latexmk/biber/bibtex/collections) + ripgrep |
-```
-
-Add contract:
-
-```
-### C20. Research vault path
-- Vault: `~/Documents/me/vault/research`
-- `blink-cmp-bibtex` auto-discovers `references.bib` from this path.
-- `obsidian.nvim` workspace points here.
-- Better BibTeX auto-export: manual Zotero setup (install plugin, configure
-  auto-export to `references.bib` in Better BibTeX format).
-```
+Registry rows added for `research`, `obsidian`, `researchGroup`. Contracts
+C20 (vault path) and C21 (adaptive nvim framework) added.
 
 ### 3i. Modify: `TODO.md`
 

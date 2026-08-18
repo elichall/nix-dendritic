@@ -53,7 +53,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.opencode` | `programs/opencode.nix` | opencode binary + poppler-utils (PDF pipeline dep), SOLE owner of `xdg.configFile."opencode/tui.json"` + global `/pdf` command (`opencode/commands/pdf.md`) |
 | `homeManager.fastfetch` | `programs/fastfetch.nix` | fastfetch binary + chafa block-image logo config (`symbols = "block"`), auto height, explicit `modules` list = default structure (2.63.1 prints NOTHING but the logo without it) (HOME-ONLY, user directive) |
 | `homeManager.rclone` | `programs/rclone.nix` | rclone binary + rclone-box user unit |
-| `homeManager.zotero` | `programs/zotero.nix` | zotero flatpak desktop entry |
+| `homeManager.zotero` | `research/zotero.nix` | zotero flatpak desktop entry |
 | `homeManager.clipboard` | `system/clipboard.nix` | wl-clipboard (cross-host core; future `nixos.clipboard` may grow here) |
 | `homeManager.ghostty` | `display/ghostty.nix` | ghostty binary + SOLE owner of `xdg.configFile."ghostty/config"` |
 | `homeManager.hyprland` | `display/hyprland.nix` | hyprland user config (keybinds, autostart, rules) + deps (hypridle, grimblast, brightnessctl, playerctl, waybar, way-edges, tmux, yazi, ghostty); autostart block starts a headless ghostty server FIRST (`otterServer`: `--class=com.otter.launcher --initial-window=false --quit-after-last-window-closed=false --gtk-single-instance=true`) so the first `otter-open`/`otter-power` press hand-offs via `+new-window` (0.09s) instead of cold-starting ghostty (2-5s) |
@@ -64,15 +64,18 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary (restore via hyprland autostart, C10) |
 | `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps; battery `full-at = 80` (TLP-capped batteries → full icon at 80%); workspaces-style rounded pill darken on hover for every module except the nixos logo (`background-color: rgba(0,0,0,0.65)` on `#<module>:hover` — modules are windowed `Gtk::EventBox`es that paint rounded backgrounds; pill stays opaque, boundary not washed out) |
 | `homeManager.theme` | `display/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19) |
-| `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi |
+| `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi, opencode (core dev tools — no GUI, no extensions) |
 | `homeManager.utils` | `groups/utils.nix` | Preset: initProject |
-| `homeManager.desktop` | `groups/desktop.nix` | Preset: hyprland, ghostty, tui, otterLauncher, zotero, showoff, awww, waypaper, waybar, theme |
+| `homeManager.desktop` | `groups/desktop.nix` | Preset: hyprland, ghostty, tui, otterLauncher, showoff, awww, waypaper, waybar, theme |
+| `homeManager.researchGroup` | `groups/research.nix` | Preset: research (pandoc/texlive), obsidian (nvim vault integration), zotero (flatpak desktop entry) |
+| `homeManager.research` | `research/default.nix` | pandoc (HM module, citeproc + xelatex defaults) + texlive (slim: latexmk/biber/bibtex + pandoc template deps only); user-scale |
+| `homeManager.obsidian` | `research/obsidian.nix` | obsidian.nvim + blink-cmp-bibtex + obsidian_ls LSP; generates lean/research feature Lua files → activation-merged into nvim config (adaptive framework, see C21) |
 
 ### Host wiring (`hosts/workstation.nix`)
 
 - System: `main`, `hardwareConfig`, `base`, `desktop`, `cmdLine`, `nvim`, `rclone`.
 - User (`home-manager.users.elichall.imports`): `main`, `toolbox`, `desktop`,
-  `opencode`, `clipboard`, `rclone`, `fastfetch`, `utils`.
+  `researchGroup`, `opencode`, `clipboard`, `rclone`, `fastfetch`, `utils`.
 - `home-manager.useGlobalPkgs/useUserPackages = true`.
 
 ### Legacy provenance
@@ -264,9 +267,10 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 ### C16. Registry groups are presets
 - `nixos.base` = battery, network, hardware, audio, security.
 - `nixos.desktop` = display, hyprland, mime.
-- `homeManager.desktop` = hyprland, ghostty, tui, otterLauncher, zotero,
-  showoff, awww, waypaper, waybar, theme.
-- `homeManager.toolbox` = cmdLine, git, tmux, nvim, yazi.
+- `homeManager.desktop` = hyprland, ghostty, tui, otterLauncher, showoff,
+  awww, waypaper, waybar, theme.
+- `homeManager.toolbox` = cmdLine, git, tmux, nvim, yazi, opencode.
+- `homeManager.researchGroup` = research, obsidian, zotero.
 - Individual keys remain importable alongside groups.
 
 ### C17. hardwareConfig wrap requirement
@@ -280,6 +284,30 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   asciiquarium-transparent, sl, lolcat, cowsay (term-rotator/layout panes),
   weathr (waybar weather on-click), ghostty (TERMINAL, absolute path),
   fastfetch + btop (tmux panes), interaction-watch (pointer dismiss).
+
+### C20. Research vault path
+- Vault: `~/Documents/me/vault/research`
+- `blink-cmp-bibtex` auto-discovers `references.bib` from this path.
+- `obsidian.nvim` workspace points here.
+- Better BibTeX auto-export: manual Zotero setup (install plugin, configure
+  auto-export to `references.bib` in Better BibTeX format).
+
+### C21. Adaptive nvim plugin framework
+- Base nvim config (`homeManager.nvim`) deploys via `xdg.configFile."nvim"`
+  = `{ source = derivation; recursive = true; }` — a store symlink.
+- Feature modules cannot add files alongside a store symlink via
+  `xdg.configFile` (HM can't write inside store paths).
+- Solution: feature modules use `home.activation` hooks to resolve the
+  symlink, copy the directory, and layer feature files on top.
+- Base `init.lua` loads features via `pcall(require, "lean.<feature>")`.
+  Each feature returns `{ plugins, lsp }`. Missing features degrade silently.
+- Base `lsp.lua` merges feature LSP servers via pcall after the base loop.
+- Feature plugin specs for shared plugins (e.g. blink.cmp) use lazy.nvim's
+  deep-merge: multiple specs for the same plugin merge their `opts`.
+- Pattern: `modules/<aspect>/` generates `lua/lean/<feature>/init.lua` +
+  optional `lsp.lua` via `pkgs.runCommand` → merged by activation hook.
+- Currently active features: `research` (obsidian.nvim, blink-cmp-bibtex,
+  obsidian_ls).
 
 ---
 

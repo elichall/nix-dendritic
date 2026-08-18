@@ -43,32 +43,17 @@ return {
         },
       },
 
-      -- Target Behavior Adjustments
-      completion = {
-      --   -- Enforces strict case-insensitive prefix matching limits
-      --   keyword = {
-      --     range = "prefix",
-      --   },
+      -- Feature-contributed sources are merged at runtime by init.lua's
+      -- pcall → lean.research pattern. Each feature module returns a
+      -- completions table that gets spliced into providers/per_filetype.
 
+      completion = {
         list = {
           selection = {
-            preselect = true,    -- Automatically highlights top candidate line item
-            auto_insert = false, -- Prevents text line pollution until confirmed
+            preselect = true,
+            auto_insert = false,
           },
         },
-
-        -- -- High-Contrast Symmetrical Window Definitions
-        -- menu = {
-        --   border = "rounded",
-        --   draw = {
-        --     columns = { { "label", "label_description", gap = 1 }, { "kind_icon", "kind" } },
-        --   },
-        -- },
-        -- documentation = {
-        --   auto_show = true,
-        --   auto_show_delay_ms = 200,
-        --   window = { border = "rounded" },
-        -- },
       },
     },
   },

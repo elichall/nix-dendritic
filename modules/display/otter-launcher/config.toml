@@ -324,8 +324,11 @@ cmd = """
 setsid -f ghostty --class=com.waybar.tui -e bash -c 'man {}; echo; echo "Press Enter to close..."; read' >/dev/null 2>&1
 """
 
-# obsidian vault integration (WIP — commented out until implemented)
-# [[modules]]
-# description = "obsidian"
-# prefix = "obs"
-# cmd = ""
+[[modules]]
+description = "obsidian vault"
+prefix = "obs"
+with_argument = false
+unbind_proc = false
+cmd = """
+setsid -f ghostty --class=com.waybar.tui -e bash -c 'cd "$HOME/Documents/me/vault/research" && nvim' >/dev/null 2>&1
+"""
