@@ -286,11 +286,12 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   fastfetch + btop (tmux panes), interaction-watch (pointer dismiss).
 
 ### C20. Research vault path
-- Vault: `~/Documents/me/vault/research`
-- `blink-cmp-bibtex` auto-discovers `references.bib` from this path.
-- `obsidian.nvim` workspace points here.
+- Vault: `~/Documents/me/vault`
+- Research subfolder: `~/Documents/me/vault/research`
+- `blink-cmp-bibtex` auto-discovers `.bib` files from the vault.
+- `obsidian.nvim` workspace points at the vault root.
 - Better BibTeX auto-export: manual Zotero setup (install plugin, configure
-  auto-export to `references.bib` in Better BibTeX format).
+  auto-export to `.bib` files in Better BibTeX format).
 
 ### C21. Adaptive nvim plugin framework
 - Base nvim config (`homeManager.nvim`) deploys via `xdg.configFile."nvim"`

@@ -26,7 +26,7 @@ require("lazy").setup({
   spec = {
     { import = "lean.plugins" },
     -- Optional feature modules: loaded via pcall so missing features
-    -- degrade silently. Each feature file returns { plugins, completions, lsp }.
+    -- degrade silently. Each feature file returns { plugins, lsp }.
     (function()
       local ok, research = pcall(require, "lean.research")
       if ok and research then

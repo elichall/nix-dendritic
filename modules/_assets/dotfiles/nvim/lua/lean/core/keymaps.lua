@@ -14,6 +14,7 @@ key.set("n", "<leader>x", "<cmd>close<cr>", { silent = true, desc = "Close Curre
 key.set("n", "<leader>w", "<cmd>write!<CR>", { silent = true, desc = "Save Current Buffer" })
 key.set("n", "<leader>s", "<cmd>update!<CR><cmd>source<CR>", { silent = true, desc = "Save and Source Active File" })
 key.set("n", "<leader>q", "<cmd>write!<CR><cmd>quitall!<CR>", { silent = true, desc = "Quit Current Nvim Instance" })
+key.set("n", "db", "<cmd>write!<CR><cmd>bd<CR>", { silent = true, desc = "Save and Close Current Buffer" })
 
 -- ==============================================================================
 -- REGISTER MANIPULATION (Yanking / Deleting to System Clipboard)

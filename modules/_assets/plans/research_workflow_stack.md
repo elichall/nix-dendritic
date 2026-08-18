@@ -3,25 +3,27 @@
 Terminal-centric research pipeline: Neovim as primary editor for an
 Obsidian vault, Zotero/Better BibTeX for bibliography, Pandoc for
 markdown-to-.docx/pdf compilation with built-in citeproc. Vault lives at
-`~/Documents/me/vault/research`.
+`~/Documents/me/vault`.
 
-**Status**: PARTIALLY IMPLEMENTED — core modules wired, adaptive nvim
-framework active, remaining: otter `obs` module, Better BibTeX setup.
+**Status**: IMPLEMENTED — all modules wired, adaptive nvim framework active,
+bibtex trigger + auto-discovery working, keymaps configured.
 
 ### Implementation notes
 
 - **texlive slimmed**: only pandoc template deps (geometry, hyperref,
-  graphicx, longtable, fancyhdr, titlesec, xcolor, listings, fancyvrb)
-  + latexmk + biber + bibtex. No collections (~30-50MB vs ~400-600MB).
+  graphics, longtable, fancyhdr, titlesec, xcolor, listings, fancyvrb,
+  fontspec, unicode-math, amsmath) + collection-latex + latexmk + biber
+  + bibtex + xetex. ~30-50MB store cost.
 - **biber included**: user exports BibLaTeX format from Zotero, needs
   biber (not just bibtex).
 - **Adaptive nvim framework** (decision #34, contract C21): feature modules
   generate Lua files → activation-merged into nvim config. Base uses
-  pcall for graceful degradation. See `module-contracts.md` C21.
+  pcall for graceful degradation.
 - **Research group** (`homeManager.researchGroup`): aggregates research,
   obsidian, zotero. Separate from toolbox (core dev) and desktop (display).
 - **File locations**: `modules/research/default.nix` (pandoc/texlive),
-  `modules/research/obsidian.nix` (nvim integration), `modules/research/zotero.nix`.
+  `modules/research/obsidian.nix` (nvim integration + activation hook),
+  `modules/research/zotero.nix` (flatpak desktop entry).
 
 ---
 
@@ -29,19 +31,19 @@ framework active, remaining: otter `obs` module, Better BibTeX setup.
 
 | Layer | Tool | Role |
 |-------|------|------|
-| **Storage** | Obsidian vault (`~/Documents/me/vault/research/`) | Flat markdown files; Obsidian app as secondary visual canvas |
+| **Storage** | Obsidian vault (`~/Documents/me/vault/`) | Flat markdown files; Obsidian app as secondary visual canvas |
 | **Editor** | Neovim + obsidian.nvim | Primary editing interface; in-process LSP for wiki-link completion, backlinks, rename |
-| **Bibliography** | Zotero + Better BibTeX → `references.bib` | Citation key database; live-updating `.bib` file |
-| **Citation completion** | blink-cmp-bibtex | Native blink.cmp source; parses `.bib`, shows APA/IEEE previews |
-| **Compilation** | Pandoc (built-in citeproc) | Markdown → .docx with bibliography resolution and corporate template overlay |
+| **Bibliography** | Zotero + Better BibTeX → `.bib` files | Citation key database; auto-discovered across vault |
+| **Citation completion** | blink-cmp-bibtex | Native blink.cmp source; parses `.bib`, shows APA previews |
+| **Compilation** | Pandoc (built-in citeproc) | Markdown → .docx/pdf with bibliography resolution |
 | **LaTeX** | vimtex + texlive (latexmk/biber/bibtex) | LaTeX compilation for .tex files; pandoc PDF fallback |
 | **Workspace** | Tmux + Ghostty | Splits editing buffer from compilation outputs |
 
 ### Data flow
 
 ```
-Zotero ──Better BibTeX──▶ references.bib ──blink-cmp-bibtex──▶ @citekey autocomplete
-                                                                            │
+Zotero ──Better BibTeX──▶ .bib files ──blink-cmp-bibtex──▶ @citekey autocomplete
+                                                                    │
 Obsidian vault ◀──obsidian.nvim── Neovim ──Pandoc keymap──▶ .docx output
 ```
 
@@ -58,21 +60,13 @@ Obsidian vault ◀──obsidian.nvim── Neovim ──Pandoc keymap──▶ 
 - Tmux: full config with plugins
 - Ghostty: terminal with theme integration
 
-### What's missing
-
-- No pandoc, latexmk, bibtex, or biber on PATH
-- No obsidian.nvim plugin
-- No citation completion source for blink.cmp
-- No Pandoc compilation keymap
-- No `.bib` files in vault (Better BibTeX not yet configured in Zotero)
-
 ---
 
-## 3. Implementation plan
+## 3. Implementation (final state)
 
-### 3a. File: `modules/research/default.nix`
+### 3a. `modules/research/default.nix`
 
-`homeManager.research` module — user-scale pandoc + texlive. IMPLEMENTED.
+`homeManager.research` module — user-scale pandoc + slim texlive. IMPLEMENTED.
 
 ```nix
 { ... }: {
@@ -94,19 +88,10 @@ Obsidian vault ◀──obsidian.nvim── Neovim ──Pandoc keymap──▶ 
         enable = true;
         extraPackages = tpkgs: {
           inherit (tpkgs)
-            latexmk # build tool (vimtex + pandoc)
-            biber # biblatex processor
-            bibtex # traditional bibtex processor
-            # pandoc default xelatex template dependencies:
-            geometry
-            hyperref
-            graphicx
-            longtable
-            fancyhdr
-            titlesec
-            xcolor
-            listings
-            fancyvrb
+            latexmk biber bibtex collection-latex xetex
+            fontspec unicode-math amsmath
+            geometry hyperref graphics fancyhdr titlesec
+            xcolor listings fancyvrb
             ;
         };
       };
@@ -114,209 +99,44 @@ Obsidian vault ◀──obsidian.nvim── Neovim ──Pandoc keymap──▶ 
 }
 ```
 
-**Design rationale:**
-- `programs.pandoc` (Home Manager module) wraps pandoc with `--defaults` injection;
-  `citeproc = true` enables built-in citation processing (pandoc ≥ 2.11 has
-  citeproc integrated — no external `pandoc-citeproc` filter needed).
-- `programs.texlive` with `latexmk` (vimtex build tool, `lsp.lua:107`), `biber` +
-  `bibtex` (bibliography processors), `collection-fontsrecommended` +
-  `collection-latexextra` (common LaTeX packages for document compilation).
-- `ripgrep` declared here as obsidian.nvim hard-depends on it for search features.
-  List merge deduplicates harmlessly if declared elsewhere.
-- All user-scale per architecture directive — no `nixos.research` aspect.
+### 3b. `modules/research/obsidian.nix`
 
-**Store cost:** texlive collections are ~200-400MB. pandoc is ~50MB. Acceptable
-for a research workflow; can slim texlive later if only `latexmk` is needed.
+Nvim feature module — generates `lean/research/init.lua` + `lean/research/lsp.lua`
+via `pkgs.runCommand`, merged into nvim config via `home.activation.mergeNvimFeatures`
+hook. This is NOT a standalone Lua file — it's a Nix module that produces Lua
+as a derivation.
 
-### 3b. New file: `modules/_assets/dotfiles/nvim/lua/lean/plugins/research.lua`
+**Key implementation details:**
+- `legacy_commands = false` — uses new `:Obsidian <cmd>` API (decision #35)
+- `picker = { name = "mini.pick" }` — forced explicitly (auto-detect failed)
+- `ui.enable = false` — lean_sync colorscheme handles rendering
+- Explicit `keys` for `gl`, `[o`, `]o` — custom keymaps via lazy.nvim spec
+- `discover_bib_files()` — recursively globs vault dirs for `.bib` files (decision #37)
+- `override.get_trigger_characters` — returns `{ "@" }` for bibtex source (decision #36)
+- Two workspaces: `research` → vault, `test` → test vault
 
-lazy.nvim plugin spec for obsidian.nvim + blink-cmp-bibtex.
+**Activation hook:** Resolves store symlink → copies dir → fixes read-only perms
+→ layers feature files. Uses `lib.hm.dag.entryAfter [ "linkGeneration" ]`.
 
-```lua
-return {
-  -- ========================================================================
-  -- OBSIDIAN VAULT INTEGRATION
-  -- ========================================================================
-  -- Neovim as primary editor for the Obsidian vault. Provides an in-process
-  -- LSP server (obsidian_ls) that understands [[wiki-links]], backlinks,
-  -- note renaming with vault-wide link updates, tags, and daily notes.
-  --
-  -- Picker falls back to built-in native UI for obsidian-specific pickers
-  -- (:ObsidianBacklinks, :ObsidianTags, :ObsidianToc). General file finding
-  -- stays with mini.pick.
-  --
-  -- Completion flows through blink.cmp's LSP source → obsidian_ls — no
-  -- nvim-cmp dependency.
-  -- ========================================================================
-  {
-    "obsidian-nvim/obsidian.nvim",
-    version = "*",
-    ft = "markdown",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-    },
-    opts = {
-      workspaces = {
-        {
-          name = "research",
-          path = "~/Documents/me/vault/research",
-        },
-      },
+**blink-cmp bibtex merge:** Uses lazy.nvim deep-merge of the `saghen/blink.cmp`
+plugin spec to add bibtex provider + per_filetype entries. No direct
+modification of `completion.lua` needed.
 
-      completion = {
-        min_chars = 2,
-        match_case = false,
-        create_new = false, -- don't prompt to create notes on failed completion
-      },
+**LSP merge:** `obsidian_ls` server returned in `lsp.servers` table, consumed
+by `lsp.lua`'s pcall loop. No direct modification of `lsp.lua` needed.
 
-      -- Built-in native picker (no telescope/fzf-lua dep).
-      -- Auto-detects mini.pick for general use; obsidian-specific pickers
-      -- (:ObsidianBacklinks, :ObsidianTags, :ObsidianToc) use the fallback.
-      picker = {
-        name = nil,
-      },
+### 3c. `modules/research/zotero.nix`
 
-      -- Disable obsidian UI decorations — lean_sync colorscheme + md-view.nvim
-      -- handle rendering. Obsidian's conceal marks would conflict.
-      ui = {
-        enable = false,
-      },
+Flatpak desktop entry for Zotero. Wires `org.zotero.Zotero` into
+application menu with MIME types.
 
-      follow_url_func = function(url)
-        vim.fn.jobstart({ "xdg-open", url })
-      end,
+### 3d. `modules/groups/research.nix`
 
-      daily_notes = {
-        folder = "daily",
-        date_format = "%Y-%m-%d",
-        alias_format = "%B %-d, %Y",
-        default_tags = { "daily" },
-        template = nil,
-      },
+Aggregates `research`, `obsidian`, `zotero` into `homeManager.researchGroup`.
 
-      attachments = {
-        img_folder = "attachments",
-        img_name_func = function()
-          return string.format("%s-%s",
-            os.date("%Y-%m-%d-%H%M%S"),
-            vim.fn.input("Image name: "))
-        end,
-      },
-    },
-  },
+### 3e. `modules/hosts/workstation.nix`
 
-  -- ========================================================================
-  -- BIBTEX CITATION COMPLETION (blink.cmp source)
-  -- ========================================================================
-  -- Native blink.cmp source that parses .bib files and provides @citekey
-  -- completion with APA/IEEE title+author+year previews.
-  --
-  -- Auto-discovers .bib from:
-  --   1. global_files config (references.bib in vault root)
-  --   2. \addbibresource{} in LaTeX files
-  --   3. YAML bibliography: field in markdown frontmatter
-  -- ========================================================================
-  {
-    "krissen/blink-cmp-bibtex",
-    ft = { "markdown", "tex", "plaintex" },
-    dependencies = {
-      "saghen/blink.cmp",
-    },
-    opts = {
-      global_files = {
-        vim.fn.expand("~/Documents/me/vault/research/references.bib"),
-      },
-      preview_style = "apa",
-    },
-  },
-}
-```
-
-**obsidian.nvim unique features (not replicable by oil + mini.pick):**
-
-| Feature | Why it matters |
-|---------|---------------|
-| Backlinks (`:ObsidianBacklinks`) | Finds all notes referencing the current note by ID/alias — vault-wide semantic grep understanding `[[wiki-links]]` |
-| Rename with link update (`:ObsidianRename`) | Renames a note AND updates every backlink across the entire vault |
-| In-process LSP (`obsidian_ls`) | Wiki-link completion (`[[`), tag completion (`#`), footnote completion (`[^`) — semantic markdown knowledge |
-| `[[wiki-link]]` navigation | `<CR>` follows links, creates target note on-the-fly if it doesn't exist |
-| Daily notes | Date-aware note creation with configurable format/aliases/templates |
-| Image paste | `:Obsidian paste_img` saves clipboard image to vault attachments folder |
-
-**Picker strategy:** `picker.name = nil` → auto-detects mini.pick → falls back
-to built-in native picker for obsidian-specific pickers. This avoids adding
-telescope or fzf-lua as dependencies.
-
-### 3c. Modify: `completion.lua`
-
-Add `bibtex` provider and wire it into markdown/tex filetypes:
-
-```lua
--- Add to sources.providers:
-providers = {
-  -- ... existing spell provider ...
-  bibtex = {
-    name = "BibTeX",
-    module = "blink-cmp-bibtex",
-    opts = {},
-    async = true,
-    min_keyword_length = 2,
-  },
-},
-
--- Update per_filetype to include bibtex:
-per_filetype = {
-  markdown = { "lsp", "path", "snippets", "buffer", "spell", "bibtex" },
-  text = { "path", "snippets", "buffer", "spell" },
-  tex = { "lsp", "path", "snippets", "buffer", "spell", "bibtex" },
-  plaintex = { "lsp", "path", "snippets", "buffer", "spell", "bibtex" },
-},
-```
-
-### 3d. Modify: `lsp.lua`
-
-Add `obsidian_ls` to the LSP server registry so blink.cmp can consume its
-completion items (wiki-links, tags, footnotes):
-
-```lua
--- Add to target_servers list (after "ltex"):
-"obsidian_ls",
-```
-
-`obsidian_ls` is provided by obsidian.nvim's runtime — no extra nix package
-needed. nvim-lspconfig has a built-in server config for it.
-
-### 3e. Modify: `otter-launcher/config.toml`
-
-Uncomment and complete the `obs` module — opens the vault root in nvim
-(Oil.nvim takes over as file explorer):
-
-```toml
-[[modules]]
-description = "vault"
-prefix = "obs"
-cmd = """
-setsid -f ghostty --class=com.waybar.tui -e bash -c 'cd ~/Documents/me/vault/research && exec nvim .'
-"""
-```
-
-### 3f. groups/desktop.nix + groups/research.nix
-
-Desktop group unchanged (no research modules). New `groups/research.nix`
-aggregates `research`, `obsidian`, `zotero` into `homeManager.researchGroup`.
-
-### 3g. hosts/workstation.nix
-
-`homeManager.researchGroup` added to user imports (alongside toolbox, desktop).
-
-### 3h. module-contracts.md
-
-Registry rows added for `research`, `obsidian`, `researchGroup`. Contracts
-C20 (vault path) and C21 (adaptive nvim framework) added.
-
-### 3i. Modify: `TODO.md`
-
-Add entries for the research workflow module.
+`homeManager.researchGroup` added to user imports.
 
 ---
 
@@ -325,14 +145,10 @@ Add entries for the research workflow module.
 | Component | Deps Added | Conflict | Cost |
 |-----------|-----------|----------|------|
 | `pandoc` (HM module) | 1 derivation | None | ~50MB store |
-| `texlive` (HM module) | latexmk + biber + bibtex + 2 collections | None | ~200-400MB store |
-| `obsidian.nvim` | `plenary.nvim` (light, often already present) | None — completion flows through LSP, not nvim-cmp | Minimal |
+| `texlive` (HM module) | latexmk + biber + bibtex + collection-latex + xetex + individual pkgs | None | ~30-50MB store |
+| `obsidian.nvim` | `plenary.nvim` (light) | None — completion flows through LSP | Minimal |
 | `blink-cmp-bibtex` | Pure Lua, zero external deps | None — native blink.cmp source | Zero |
-| `ripgrep` | 1 derivation | May already be declared; list merge deduplicates | Harmless |
 | `obsidian_ls` | Provided by obsidian.nvim runtime | nvim-lspconfig has built-in config | Zero |
-
-**Heaviest dep:** texlive with collections. Can slim to just `latexmk + bibtex + biber`
-if full LaTeX compilation isn't needed (vimtex only needs latexmk).
 
 ---
 
@@ -340,39 +156,57 @@ if full LaTeX compilation isn't needed (vimtex only needs latexmk).
 
 1. **Better BibTeX in Zotero**: Install from
    https://retorquere.github.io/zotero-better-bibtex/installation/
-   Then configure auto-export of a collection to
-   `~/Documents/me/vault/research/references.bib` (Better BibTeX format).
+   Then configure auto-export of collections to `.bib` files in vault.
+   `.bib` files are auto-discovered by recursive glob — no config edits needed.
 
 2. **Corporate template** (optional): Generate base template with
    `pandoc -o corporate-template.docx --print-default-data-file reference.docx`,
-   customize fonts/headers in Microsoft Word, save to vault root.
-   Reference in pandoc keymap via `--reference-doc=`.
+   customize in Word, save to vault root. Reference via `--reference-doc=`.
 
-3. **CSL style** (optional): Download a `.csl` file (APA, IEEE, Harvard, etc.)
-   from https://www.zotero.org/styles and place in vault root.
-   Reference via `--csl=style.csl` in pandoc command.
+3. **CSL style** (optional): Download a `.csl` file from
+   https://www.zotero.org/styles and place in vault root.
 
 ---
 
-## 6. Pandoc compilation keymap (future addition to `research.lua`)
+## 6. Pandoc compilation keymap (deferred)
 
-A `<space>om` keymap for markdown → .docx compilation. Deferred to
-implementation — here for reference:
+A `<space>om` keymap for markdown → .docx compilation. Deferred — not yet
+implemented. See plan code at bottom of file for reference.
+
+---
+
+## 7. Design decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| User-scale only (no nixos aspect) | All research tools are user binaries; no system-level consumer |
+| `programs.pandoc` over bare `home.packages` | HM module provides `--defaults` injection, template management |
+| obsidian.nvim with `ui.enable = false` | lean_sync colorscheme handles rendering; conceal marks would conflict |
+| obsidian.nvim with `picker = "mini.pick"` | Auto-detect failed; forces mini.pick to avoid built-in native UI |
+| `legacy_commands = false` | Uses new `:Obsidian <cmd>` API; silences deprecation warnings |
+| Explicit `keys` for custom keymaps | Ensures `gl`/`[o`/`]o` work regardless of obsidian.nvim's autocmd setup |
+| blink-cmp-bibtex trigger override | Pandoc matcher declares no trigger chars; override forces activation on `@` |
+| BibTeX auto-discovery via glob | User has many `.bib` files; manual listing is unsustainable |
+| `attachments.folder` (not `img_folder`) | v4 renamed the option; `img_folder` is deprecated |
+| No `follow_url_func` | Default `vim.ui.open` works; no need to override |
+| blink-cmp-bibtex over cmp-zotero | Native blink.cmp source; parses .bib directly |
+| texlive slim (1 collection + individual pkgs) | pandoc xelatex template deps only; ~30-50MB vs ~400-600MB full |
+
+---
+
+## 8. Pandoc compilation keymap (future)
 
 ```lua
 vim.keymap.set("n", "<leader>om", function()
   local file = vim.api.nvim_buf_get_name(0)
   local output = file:gsub("%.md$", ".docx")
-  local bib_file = vim.fn.expand("~/Documents/me/vault/research/references.bib")
-  local reference_doc = vim.fn.expand("~/Documents/me/vault/research/corporate-template.docx")
+  local bib_file = vim.fn.expand("~/Documents/me/vault/references.bib")
+  local reference_doc = vim.fn.expand("~/Documents/me/vault/corporate-template.docx")
 
   local cmd = { "pandoc", file, "-o", output }
-
-  -- Only add bibliography if the .bib file exists
   if vim.fn.filereadable(bib_file) == 1 then
     table.insert(cmd, "--bibliography=" .. bib_file)
   end
-  -- Only add reference-doc if the template exists
   if vim.fn.filereadable(reference_doc) == 1 then
     table.insert(cmd, "--reference-doc=" .. reference_doc)
   end
@@ -388,17 +222,3 @@ vim.keymap.set("n", "<leader>om", function()
   })
 end, { desc = "Compile Research Note to MS Word (.docx)" })
 ```
-
----
-
-## 7. Design decisions
-
-| Decision | Rationale |
-|----------|-----------|
-| User-scale only (no nixos aspect) | All research tools are user binaries; no system-level consumer |
-| `programs.pandoc` over bare `home.packages` | HM module provides `--defaults` injection, template management, and CSL installation |
-| obsidian.nvim with `ui.enable = false` | lean_sync colorscheme handles rendering; obsidian's conceal marks would conflict |
-| obsidian.nvim with `picker.name = nil` | Avoids telescope/fzf-lua dependency; built-in picker handles obsidian-specific commands |
-| blink-cmp-bibtex over cmp-zotero | Native blink.cmp source; no compat layer needed; parses .bib directly (no Zotero sqlite coupling) |
-| `references.bib` in vault root | Single source of truth; blink-cmp-bibtex auto-discovers from global_files + markdown YAML frontmatter |
-| texlive with full collections | Research workflow needs diverse LaTeX packages; can slim later if store cost is a concern |

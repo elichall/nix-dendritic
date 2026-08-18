@@ -364,7 +364,41 @@ nvim light when features aren't imported — zero plugins, zero LSPs, zero cost.
 `_assets/dotfiles/nvim/init.lua` (pcall pattern), `lsp.lua` (feature LSP
 merge), `module-contracts.md` C21.
 
-### 35. Research group (dedicated preset)
+### 35. Obsidian.nvim legacy_commands + explicit keymaps
+**Decision:** Set `legacy_commands = false` in obsidian.nvim opts and define
+custom keymaps (`gl`, `[o`, `]o`) via lazy.nvim's `keys` spec. Picker forced
+to `mini.pick` (auto-detect failed).
+**Why:** obsidian.nvim v4 deprecated CamelCase commands (`:ObsidianFollowLink`)
+in favor of `:Obsidian <cmd>` subcommands. Setting `legacy_commands = false`
+silences deprecation warnings and ensures new API usage. `ui.enable = false`
+does NOT control keymaps — `vim.g.obsidian_default_keymap` does (defaults to
+true). Explicit `keys` entries ensure the custom keymaps work regardless of
+obsidian.nvim's internal autocmd setup. Auto-detect for picker failed; forcing
+`mini.pick` avoids falling back to the built-in native UI.
+**Where:** `modules/research/obsidian.nix` lines 52-55, 58, 68.
+
+### 36. Blink-cmp-bibtex trigger override
+**Decision:** Use `provider.override.get_trigger_characters` to return
+`{ "@" }` for the bibtex source, rather than relying on blink.cmp's default
+trigger detection.
+**Why:** The pandoc citation matcher (which detects `@citekey` syntax) does NOT
+declare any trigger characters. Without the override, blink.cmp never invokes
+the bibtex source on `@` keystrokes — it only triggers from the buffer source's
+fallback. The override forces blink.cmp to activate the bibtex source when the
+user types `@`.
+**Where:** `modules/research/obsidian.nix` lines 113-117.
+
+### 37. BibTeX auto-discovery via recursive glob
+**Decision:** Replace hardcoded `global_files` list with a `discover_bib_files()`
+Lua function that recursively globs `~/Documents/me/vault/**/*.bib` and
+`~/Documents/test/**/*.bib` at load time.
+**Why:** User has many `.bib` files across their research career (e.g.
+`~/Documents/me/vault/class/26-summer/DBM/dbm_paper.bib`). Manual listing is
+unsustainable and requires config edits whenever a new `.bib` file is created.
+Recursive glob auto-discovers all bibliography files in vault directories.
+**Where:** `modules/research/obsidian.nix` lines 29-43, 91.
+
+### 38. Research group (dedicated preset)
 **Decision:** Research-aspect modules aggregate into `homeManager.researchGroup`
 (`groups/research.nix`) — separate from `toolbox` (core dev tools, no GUI)
 and `desktop` (display/compositor). The group contains `research` (pandoc +
@@ -418,4 +452,7 @@ opt in to the full research stack with one import.
 | 32 | shell integrations off | — | Bootstrap | flake-validator | — |
 | 33 | frozen items | — | stretch/Phase 3 | — | otter-strategy §7 |
 | 34 | adaptive nvim framework | — | research workflow | — | module-contracts C21 |
-| 35 | research group | — | research workflow | — | module-contracts C16 |
+| 35 | obsidian.nvim legacy_commands + keymaps | — | research workflow | — | research.md |
+| 36 | blink-cmp-bibtex trigger override | — | research workflow | — | research.md |
+| 37 | BibTeX auto-discovery glob | — | research workflow | — | research.md |
+| 38 | research group | — | research workflow | — | module-contracts C16 |

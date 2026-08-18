@@ -43,9 +43,9 @@ return {
         },
       },
 
-      -- Feature-contributed sources are merged at runtime by init.lua's
-      -- pcall → lean.research pattern. Each feature module returns a
-      -- completions table that gets spliced into providers/per_filetype.
+      -- Feature-contributed sources (e.g. bibtex) are merged at runtime via
+      -- lazy.nvim's deep-merge of the blink.cmp plugin spec in init.lua's
+      -- pcall → lean.research pattern. No splice mechanism needed.
 
       completion = {
         list = {
