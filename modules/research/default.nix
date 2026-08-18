@@ -44,6 +44,8 @@
             xcolor
             listings
             fancyvrb
+            booktabs # pandoc default template (table rules)
+            mdwtools # pandoc default template (footnote.sty for table footnotes)
             ;
         };
       };

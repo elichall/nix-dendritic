@@ -92,6 +92,7 @@ Obsidian vault ◀──obsidian.nvim── Neovim ──Pandoc keymap──▶ 
             fontspec unicode-math amsmath
             geometry hyperref graphics fancyhdr titlesec
             xcolor listings fancyvrb
+            booktabs mdwtools
             ;
         };
       };
@@ -190,6 +191,9 @@ implemented. See plan code at bottom of file for reference.
 | `attachments.folder` (not `img_folder`) | v4 renamed the option; `img_folder` is deprecated |
 | No `follow_url_func` | Default `vim.ui.open` works; no need to override |
 | blink-cmp-bibtex over cmp-zotero | Native blink.cmp source; parses .bib directly |
+| `default = function(list)` pattern | Appends bibtex to base source list; no `per_filetype` rewrite needed |
+| `frontmatter = { enabled = false }` | Prevents auto-formatting YAML on save; community consensus |
+| `checkbox = { create_new = false, order = { " ", "x" } }` | No paragraph→checkbox on Enter; 2 states only |
 | texlive slim (1 collection + individual pkgs) | pandoc xelatex template deps only; ~30-50MB vs ~400-600MB full |
 
 ---

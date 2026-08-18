@@ -36,7 +36,7 @@ Individual keys are importable standalone if you only need part of the stack.
 - `pandoc` with citeproc enabled and xelatex as default PDF engine
 - Slim texlive: latexmk, biber, bibtex, collection-latex, xetex, fontspec,
   unicode-math, amsmath, geometry, hyperref, graphics, fancyhdr, titlesec,
-  xcolor, listings, fancyvrb
+  xcolor, listings, fancyvrb, booktabs, mdwtools
 
 **What's NOT installed:** No vimtex, no large collections (~30-50MB store cost).
 
@@ -160,6 +160,14 @@ conceal marks are disabled to avoid conflicts.
 
 `picker = { name = "mini.pick" }` — forced explicitly (auto-detect failed).
 Obsidian-specific pickers (backlinks, tags, toc) use mini.pick as well.
+
+`frontmatter = { enabled = false }` — disables obsidian.nvim's auto-formatting
+of YAML frontmatter on save (which would reorder keys, remove comments, add
+IDs). YAML is still read; it's just not auto-modified.
+
+`checkbox = { create_new = false, order = { " ", "x" } }` — disables turning
+normal paragraphs into checkboxes on Enter. Only two states (unchecked/checked)
+instead of the default five.
 
 ---
 

@@ -412,6 +412,30 @@ opt in to the full research stack with one import.
 **Where:** `modules/groups/research.nix`, `workstation.nix`,
 `module-contracts.md` C16.
 
+### 39. Research aspect redundancy cleanup
+**Decision:** Remove dead code, deduplicate configs, and add community-recommended
+obsidian.nvim defaults. Specifically:
+- Removed `researchLspLua` + generated `lsp.lua` — redundant with `lsp` table
+  in `init.lua`; base `lsp.lua` reads from `lean.research.lsp` via pcall.
+- Replaced hardcoded `per_filetype` rewrite in blink.cmp deep-merge with
+  `default = function(list)` pattern — appends `bibtex` to whatever the base
+  list is, eliminating the need to duplicate the source list.
+- Removed redundant `dependencies = { "saghen/blink.cmp" }` from bibtex spec.
+- Removed redundant `default` list in blink.cmp deep-merge spec.
+- Added `frontmatter = { enabled = false }` — prevents auto-formatting of YAML
+  on save (community consensus from meow_d blog, froko gist).
+- Added `checkbox = { create_new = false, order = { " ", "x" } }` — disables
+  paragraph-to-checkbox on Enter; limits to 2 standard states.
+- Added `booktabs` + `mdwtools` to texlive — required by pandoc's default
+  xelatex template for table rules and table footnotes.
+**Why:** The generated `lsp.lua` was identical to the `lsp` table already in
+`init.lua`. The `per_filetype` rewrite duplicated `completion.lua` and was
+fragile if sources changed. `frontmatter` and `checkbox` are universally
+recommended by the obsidian.nvim community. `booktabs`/`mdwtools` were
+discovered via nix-shell testing as missing template dependencies.
+**Where:** `modules/research/obsidian.nix`, `modules/research/default.nix`,
+`module-contracts.md` C21.
+
 ---
 
 ## Appendix — decision source index
@@ -456,3 +480,4 @@ opt in to the full research stack with one import.
 | 36 | blink-cmp-bibtex trigger override | — | research workflow | — | research.md |
 | 37 | BibTeX auto-discovery glob | — | research workflow | — | research.md |
 | 38 | research group | — | research workflow | — | module-contracts C16 |
+| 39 | research aspect redundancy cleanup | — | research workflow | — | research.md, module-contracts C21 |

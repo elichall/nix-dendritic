@@ -305,8 +305,10 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Base `lsp.lua` merges feature LSP servers via pcall after the base loop.
 - Feature plugin specs for shared plugins (e.g. blink.cmp) use lazy.nvim's
   deep-merge: multiple specs for the same plugin merge their `opts`.
-- Pattern: `modules/<aspect>/` generates `lua/lean/<feature>/init.lua` +
-  optional `lsp.lua` via `pkgs.runCommand` → merged by activation hook.
+  Sources are appended via `default = function(list)` pattern.
+- Pattern: `modules/<aspect>/` generates `lua/lean/<feature>/init.lua`
+  via `pkgs.runCommand` → merged by activation hook. LSP servers are
+  returned in the same `init.lua` (no separate `lsp.lua` needed).
 - Currently active features: `research` (obsidian.nvim, blink-cmp-bibtex,
   obsidian_ls).
 
