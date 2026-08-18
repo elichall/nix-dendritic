@@ -1,5 +1,5 @@
 # Shared theme-engine paths (DRY source). Path indirection architecture:
-# modules/_assets/module-contracts.md (C2). The theme engine is
+# modules/_assets/documentation/module-contracts.md (C2). The theme engine is
 # path-indirected: no Nix config encodes a theme value; ghostty.nix and
 # theme.nix must agree on these paths.
 { home }:

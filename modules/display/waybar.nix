@@ -1,7 +1,7 @@
 # ==========================================================================
 # WAYBAR STATUS BAR
 # ==========================================================================
-# PATH strategy + UWSM tracking: modules/_assets/module-contracts.md
+# PATH strategy + UWSM tracking: modules/_assets/documentation/module-contracts.md
 # (C8/C9). Ported from legacy modules/desktop-stable.nix.
 # ==========================================================================
 { inputs, ... }: {

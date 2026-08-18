@@ -175,4 +175,4 @@ app's own config, never here.
 | --- | --- |
 | `modules/display/theme.nix` | Generates `~/.config/gtk-{3,4}.0/gtk.css` (palette-only since 2026-08-11) |
 | `~/.config/gtk-4.0/gtk.css` | Live symlink into `.local/share/theme/generated/gtk/colors.css` |
-| `modules/_assets/ghostty-transparency.md` | This postmortem (tracked copy; live source `/etc/nixos/assets/ghostty-transparency.md`) |
+| `modules/_assets/documentation/ghostty-transparency.md` | This postmortem (tracked copy; live source `/etc/nixos/assets/ghostty-transparency.md`) |

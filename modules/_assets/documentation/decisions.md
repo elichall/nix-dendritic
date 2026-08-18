@@ -187,13 +187,13 @@ can never reset the theme; theme is inherently persistent state. This was the
 
 ### 17. Theme state is NOT a `services.state` item
 **Decision:** `active.json` deliberately not registered in the
-`services.state.items` framework (see `state-implementation.md`), despite
+`services.state.items` framework (see `../plans/deferred/state-implementation.md`), despite
 being persistent state.
 **Why:** That framework is systemd-based snapshot/restore for root services —
 overkill for a user file that persists naturally; it belongs on the future
 impermanence persist path instead.
-**Where:** TODO Phase 3 (zero-baseline refactor); `modules/_assets/
-state-implementation.md`.
+**Where:** TODO Phase 3 (zero-baseline refactor); `modules/_assets/plans/
+deferred/state-implementation.md`.
 
 ### 18. GTK palette-only contract
 **Decision:** The generated GTK CSS (`~/.config/gtk-{3,4}.0/gtk.css`) is
@@ -201,9 +201,9 @@ palette-only — `@define-color` lines, NO element rules.
 **Why:** It is user-priority CSS loaded by EVERY GTK3/GTK4 app. Element rules
 leaked: an opaque `window` background killed ghostty transparency/blur; a
 `label { color }` rule turned waybar's workspace numbers white; `.drag` themed
-ripdrag's pill. Postmortem: `modules/_assets/ghostty-transparency.md`.
+ripdrag's pill. Postmortem: `modules/_assets/documentation/ghostty-transparency.md`.
 **Where:** `modules/display/theme.nix` header (trimmed; see
-`module-contracts.md`), `ghostty-transparency.md`.
+`module-contracts.md`), `documentation/ghostty-transparency.md`.
 
 ### 19. Shared interaction watcher unifies showoff + otter
 **Decision:** One process-agnostic cursor watcher,
@@ -222,8 +222,7 @@ the bail check uses `--bail-comm otter-launcher` (exact `pgrep -x`).
 kills only the launcher, its window closes naturally, the persistent ghostty
 server survives. `hyprctl dispatch closewindow` is broken under the Lua config
 (`hl.dispatch` hook); regex matches over-match the ghostty server
-(`--class=com.otter.launcher`) and the spawning client. See
-`otter-strategy.md` §2/§6.
+(`--class=com.otter.launcher`) and the spawning client. See #19.
 **Where:** `modules/display/otter-launcher/otter.nix` (otter-launch + bail).
 
 ### 21. Ghostty config ownership contract
@@ -266,7 +265,7 @@ plus a `home.activation` warning hook that never fails the build.
 **Why:** Full Rule 4 compliance is impossible for wrappers another module
 owns; auditing converts "assumed present" into "warned if missing" without
 breaking rebuilds.
-**Where:** `otter-strategy.md` §5; `modules/display/otter-launcher/otter.nix`
+**Where:** this document #24; `modules/display/otter-launcher/otter.nix`
 (otter-diagnose + activation hook).
 
 ### 25. `config.toml` token protocol (mkOtterConfig)
@@ -345,7 +344,7 @@ its nushell integration and trips an assertion (requires fzf ≥ 0.73.0).
 - `homeManager.cmdLine` `bashrcExtra` hm-session-vars sourcing — user reported
   issues; do NOT touch without explicit go-ahead (TODO stretch).
 - `services.state.items` bluetooth persistence — REACH, left as-is (TODO
-  stretch; `state-implementation.md`).
+  stretch; `../plans/deferred/state-implementation.md`).
 - Ghostty window rules/classes in hyprland (incl. the dead `com.center.focus`
   rule) — deliberately kept as legacy (phase-3 decision, void).
 - `dk`/`obs` config.toml menu stubs — left as-is (phase-3 decision).
@@ -417,9 +416,6 @@ opt in to the full research stack with one import.
 obsidian.nvim defaults. Specifically:
 - Removed `researchLspLua` + generated `lsp.lua` — redundant with `lsp` table
   in `init.lua`; base `lsp.lua` reads from `lean.research.lsp` via pcall.
-- Replaced hardcoded `per_filetype` rewrite in blink.cmp deep-merge with
-  `default = function(list)` pattern — appends `bibtex` to whatever the base
-  list is, eliminating the need to duplicate the source list.
 - Removed redundant `dependencies = { "saghen/blink.cmp" }` from bibtex spec.
 - Removed redundant `default` list in blink.cmp deep-merge spec.
 - Added `frontmatter = { enabled = false }` — prevents auto-formatting of YAML
@@ -429,10 +425,13 @@ obsidian.nvim defaults. Specifically:
 - Added `booktabs` + `mdwtools` to texlive — required by pandoc's default
   xelatex template for table rules and table footnotes.
 **Why:** The generated `lsp.lua` was identical to the `lsp` table already in
-`init.lua`. The `per_filetype` rewrite duplicated `completion.lua` and was
-fragile if sources changed. `frontmatter` and `checkbox` are universally
-recommended by the obsidian.nvim community. `booktabs`/`mdwtools` were
-discovered via nix-shell testing as missing template dependencies.
+`init.lua`. `frontmatter` and `checkbox` are universally recommended by the
+obsidian.nvim community. `booktabs`/`mdwtools` were discovered via nix-shell
+testing as missing template dependencies.
+**Note:** Attempted `default = function(list)` pattern (blink.cmp's recommended
+way to extend sources) but it conflicts with obsidian.nvim's
+`check_completion_availability` — that function iterates blink.cmp's config and
+calls any functions it finds, passing nil. The `per_filetype` rewrite remains.
 **Where:** `modules/research/obsidian.nix`, `modules/research/default.nix`,
 `module-contracts.md` C21.
 
@@ -445,7 +444,7 @@ discovered via nix-shell testing as missing template dependencies.
 | 1 | Aspect modules | Rule 1 | Phase 1 | domain-classifier | — |
 | 2 | Path agnosticism | Rule 2 | Bootstrap | assets-lib | — |
 | 3 | Scope separation | Rule 3 | Phase 1/2 | domain-classifier | — |
-| 4 | Rule 4 self-containment | Rule 4 | Phase 2.5 | — | otter-strategy §5 |
+| 4 | Rule 4 self-containment | Rule 4 | Phase 2.5 | — | this doc #24 |
 | 5 | Host flags | §4 | stretch hosts | — | — |
 | 6 | 2-level registry + groups | — | Phase 2.5 groups | — | module-contracts |
 | 7 | hardwareConfig wrap | — | Phase 2.5 | assets-lib, flake-validator | — |
@@ -458,15 +457,15 @@ discovered via nix-shell testing as missing template dependencies.
 | 14 | HM release pin | — | (2026-08-11) | — | maintenance §3 |
 | 15 | _lib helpers | Rule 2 | Phase 2.5 | assets-lib | — |
 | 16 | theme path indirection | — | Phase 3 zero-baseline | — | module-contracts |
-| 17 | theme not services.state | — | Phase 3 | — | state-implementation |
+| 17 | theme not services.state | — | Phase 3 | — | this doc #17 |
 | 18 | GTK palette-only | — | Phase 3 GTK contract | — | ghostty-transparency |
-| 19 | interaction-watch | — | otter Phase 1 | — | otter-strategy §4 |
-| 20 | pkill -x dismiss | — | otter Phase 1/2 | — | otter-strategy §2 |
+| 19 | interaction-watch | — | otter Phase 1 | — | this doc #19 |
+| 20 | pkill -x dismiss | — | otter Phase 1/2 | — | this doc #20 |
 | 21 | ghostty ownership | — | Phase 2.5 | — | module-contracts |
 | 22 | PATH strategy | Rule 4 | Phase 3 bulk | — | module-contracts |
 | 23 | UWSM tracking | — | Phase 3 bulk | — | module-contracts |
-| 24 | Rule 4 Hybrid | Rule 4 | otter Phase 2 | — | otter-strategy §5 |
-| 25 | config.toml tokens | — | otter port | — | otter-strategy §3.5 |
+| 24 | Rule 4 Hybrid | Rule 4 | otter Phase 2 | — | this doc #24 |
+| 25 | config.toml tokens | — | otter port | — | this doc #25 |
 | 26 | weather/otter-open PATH | Rule 4 | otter Phase 3 | — | module-contracts |
 | 27 | validation gates | — | validation sections | flake-validator | — |
 | 28 | git dirty-tree gate | — | Bootstrap | flake-validator | maintenance §2 |
@@ -474,7 +473,7 @@ discovered via nix-shell testing as missing template dependencies.
 | 30 | legacy snapshot | — | Phase 2.5 | — | — |
 | 31 | _assets tracking | — | Phase 2 | assets-lib | — |
 | 32 | shell integrations off | — | Bootstrap | flake-validator | — |
-| 33 | frozen items | — | stretch/Phase 3 | — | otter-strategy §7 |
+| 33 | frozen items | — | stretch/Phase 3 | — | this doc #33 |
 | 34 | adaptive nvim framework | — | research workflow | — | module-contracts C21 |
 | 35 | obsidian.nvim legacy_commands + keymaps | — | research workflow | — | research.md |
 | 36 | blink-cmp-bibtex trigger override | — | research workflow | — | research.md |

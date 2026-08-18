@@ -1,7 +1,7 @@
 # ==========================================================================
 # SHOWOFF — Magic Workspace Sleep Screen
 # ==========================================================================
-# Consumers/deps surface: modules/_assets/module-contracts.md (C18).
+# Consumers/deps surface: modules/_assets/documentation/module-contracts.md (C18).
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.showoff = { pkgs, ... }:

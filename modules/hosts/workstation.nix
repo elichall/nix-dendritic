@@ -1,7 +1,7 @@
 # ==========================================================================
 # NixOS Workstation Host Configuration
 # ==========================================================================
-# Host wiring map + aspect groups: modules/_assets/module-contracts.md (§1).
+# Host wiring map + aspect groups: modules/_assets/documentation/module-contracts.md (§1).
 { inputs, self, ... }: {
   flake.nixosConfigurations.workstation = inputs.nixpkgs.lib.nixosSystem {
     pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;

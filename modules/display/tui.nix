@@ -2,7 +2,7 @@
 # TUI APP LAUNCHER (desktop entries + icons + binaries)
 # ==========================================================================
 # wlctl provisioning (flake input): package-provisioning skill. Assets path
-# resolution: modules/_assets/module-contracts.md (C13). Isolated here rather
+# resolution: modules/_assets/documentation/module-contracts.md (C13). Isolated here rather
 # than main because TUI apps are launcher targets, not core system programs.
 # ==========================================================================
 { inputs, ... }: {

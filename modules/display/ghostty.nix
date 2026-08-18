@@ -3,7 +3,7 @@
 # ==========================================================================
 # Static terminal config, no theme baseline (runtime-resolved via config-file
 # path indirection). Interface contract (SOLE owner of
-# xdg.configFile."ghostty/config"): modules/_assets/module-contracts.md (C1).
+# xdg.configFile."ghostty/config"): modules/_assets/documentation/module-contracts.md (C1).
 # Transparency values are the user's preferred options; the generated GTK CSS
 # must stay palette-only (ghostty-transparency.md).
 # ==========================================================================

@@ -146,3 +146,7 @@ sudo cp modules/state.nix /etc/nixos/modules/
 sudo cp configuration.nix /etc/nixos/
 sudo nixos-rebuild switch
 ```
+
+## 6. Status: DEFERRED — Under Consideration
+
+Not worth it for just one state toggle, if ever I need more state persistence I can implement a modular system and use it for bluetooth.

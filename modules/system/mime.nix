@@ -1,7 +1,7 @@
 # ==========================================================================
 # MIME TYPES & DEFAULT APPLICATIONS
 # ==========================================================================
-# Registry map + yazi.desktop contract: modules/_assets/module-contracts.md
+# Registry map + yazi.desktop contract: modules/_assets/documentation/module-contracts.md
 # (C4). Lives in system/ because it is system-scale XDG integration.
 # ==========================================================================
 { inputs, ... }: {

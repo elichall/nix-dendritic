@@ -48,13 +48,15 @@ legacy/                  (gitignored) frozen snapshot of the pre-flake config
 
 ## Documentation (`modules/_assets/`)
 
-| Doc | Purpose |
+| Dir | Purpose |
 |---|---|
-| `decisions.md` | ADR-style decision log — why the architecture and rules exist |
-| `module-contracts.md` | Module registry map + cross-module interface contracts |
-| `maintenance.md` | System upkeep vs the static `/etc/nixos` standard (updates, rollback, GC) |
-| `ghostty-transparency.md` | GTK palette-only postmortem |
-| `state-implementation.md` | `services.state.items` runtime-persistence framework |
+| `documentation/` | Decision logs, module contracts, and rationale (the project knowledge base) |
+| `documentation/user/` | User-facing guides (maintenance, research workflow) |
+| `plans/` | Active work plans (top-level `.md` files) |
+| `plans/completed/` | Finished plans (reference only) |
+| `plans/deferred/` | Paused or deferred plans |
+| `aesthetics/` | Icons, wallpapers, and visual assets |
+| `dotfiles/` | Nix-managed application dotfiles (e.g. `dotfiles/nvim/`) |
 
 ## Architecture rules (summary)
 

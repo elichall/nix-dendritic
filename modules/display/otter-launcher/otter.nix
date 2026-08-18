@@ -2,7 +2,7 @@
 # OTTER-LAUNCHER (menu / app / power launcher)
 # ==========================================================================
 # Scope/provenance, dismiss contract, Rule 4 Hybrid: modules/_assets/
-# module-contracts.md (C5/C6) + otter-strategy.md.
+# documentation/module-contracts.md (C5/C6) + documentation/decisions.md.
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.otterLauncher = { config, pkgs, lib, ... }: let
@@ -127,7 +127,7 @@
 
     # Dependency audit: lists every binary the launcher shells out to, its
     # provider, and whether it is reachable on PATH. Covers the Rule 4 Hybrid
-    # exception (AGENTS.md / modules/_assets/otter-strategy.md §5): the
+    # exception (AGENTS.md / modules/_assets/documentation/decisions.md #24): the
     # module-owned CLIs (theme, otter-apps) cannot be re-declared as
     # home.packages here, so they are audited instead of assumed. Exit code is
     # non-zero when anything is missing so the home.activation hook below can

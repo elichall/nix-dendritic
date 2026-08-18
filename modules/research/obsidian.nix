@@ -96,17 +96,20 @@
                 preview_style = "apa",
               },
             },
-            -- Append bibtex source to blink.cmp's default list.
-            -- Uses the official `default` function pattern so we don't
-            -- need to rewrite per_filetype or duplicate the base source list.
+            -- Merge bibtex provider into blink.cmp sources.
+            -- lazy.nvim deep-merges opts for the same plugin across specs.
+            -- NOTE: Can't use `default = function(list)` pattern because
+            -- obsidian.nvim's check_completion_availability iterates blink.cmp
+            -- config and calls any functions it finds, passing nil.
             {
               "saghen/blink.cmp",
               opts = {
                 sources = {
-                  default = function(list)
-                    table.insert(list, "bibtex")
-                    return list
-                  end,
+                  per_filetype = {
+                    markdown = { "lsp", "path", "snippets", "buffer", "spell", "bibtex" },
+                    tex = { "lsp", "path", "snippets", "buffer", "spell", "bibtex" },
+                    plaintex = { "lsp", "path", "snippets", "buffer", "spell", "bibtex" },
+                  },
                   providers = {
                     bibtex = {
                       name = "BibTeX",

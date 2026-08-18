@@ -1,6 +1,6 @@
 # ==========================================================================
 # NIXOS SYSTEM LEVEL MAIN MODULE — base identity only. Full module registry
-# map + provenance: modules/_assets/module-contracts.md.
+# map + provenance: modules/_assets/documentation/module-contracts.md.
 # ==========================================================================
 # nix.settings / nix.gc intentionally stay here (user choice).
 { inputs, ... }: {

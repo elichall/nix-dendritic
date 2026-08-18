@@ -1,7 +1,7 @@
 # ==========================================================================
 # THEME ENGINE (profiles, sync, switch CLI) — zero-baseline, path-indirected.
 # Architecture + GTK palette-only contract + interface contract + runtime
-# symlink targets: modules/_assets/module-contracts.md (C2/C3).
+# symlink targets: modules/_assets/documentation/module-contracts.md (C2/C3).
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.theme =
@@ -348,7 +348,7 @@
       # line of 16 ANSI background blocks (no label/column text). Guarded: a
       # failing ghostty resolve skips that swatch (the otter preview falls back
       # to wallpaper-only). Contract: theme.nix owns generated/previews/*.swatch;
-      # otter consumes them (modules/_assets/module-contracts.md C5).
+      # otter consumes them (modules/_assets/documentation/module-contracts.md C5).
       swatchScript = pkgs.writeShellScript "theme-swatches" ''
         set -u
 

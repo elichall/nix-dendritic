@@ -3,7 +3,7 @@
 # ==========================================================================
 # System scale: compositor + portal wiring. User scale: session tooling +
 # full user config (keybinds, autostart, rules). PATH strategy + UWSM
-# tracking + Rule 4 deps: modules/_assets/module-contracts.md (C8/C9).
+# tracking + Rule 4 deps: modules/_assets/documentation/module-contracts.md (C8/C9).
 # way-edges framework guide (side-panel hub validation):
 # modules/_assets/plans/wayedges-users-guide.md.
 # ==========================================================================

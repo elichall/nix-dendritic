@@ -3,9 +3,7 @@
 Cross-module interface contracts and the module registry map. This is the
 single source of truth for how feature modules fit together; module files
 point here instead of re-encoding these contracts in their headers. Decisions
-and rationale live in `decisions.md`; tool-specific deep dives in
-`otter-strategy.md`, `ghostty-transparency.md`, `state-implementation.md`, and
-`maintenance.md`.
+and rationale live in `decisions.md`; system upkeep in `user/maintenance.md`.
 
 ---
 
@@ -330,7 +328,7 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 
 - `homeManager.cmdLine` `bashrcExtra` hm-session-vars sourcing — user-reported
   issues; frozen (TODO stretch).
-- `services.state.items` bluetooth — REACH, as-is (`state-implementation.md`).
+- `services.state.items` bluetooth — REACH, as-is (`../plans/deferred/state-implementation.md`).
 - Ghostty window rules/classes (incl. dead `com.center.focus`) — kept as legacy
   (phase-3 decision, void).
 - `dk`/`obs` config.toml stubs — left as-is.

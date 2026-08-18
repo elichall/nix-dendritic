@@ -1,6 +1,6 @@
 # ==========================================================================
 # HOME MANAGER MAIN MODULE — user-level base. Feature bits live in their own
-# aspect modules (registry map: modules/_assets/module-contracts.md).
+# aspect modules (registry map: modules/_assets/documentation/module-contracts.md).
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.main = { config, pkgs, ... }: {

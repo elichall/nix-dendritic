@@ -147,9 +147,9 @@ In markdown/tex/plaintex files, type `@` then start typing a citekey:
 - Multiple `.bib` files are merged and deduplicated
 - Preview style: APA
 
-#### LSP (obsidian_ls)
+#### LSP (obsidian-ls)
 
-- `:LspInfo` in a markdown file → should show `obsidian_ls` attached
+- `:LspInfo` in a markdown file → should show `obsidian-ls` attached
 - Hover on `[[wiki-link]]` → resolves to target note
 - Rename via LSP → propagates link updates across vault
 
@@ -255,5 +255,5 @@ Check discovered files with `:lua print(vim.inspect(require('blink-cmp-bibtex.co
 | `modules/research/zotero.nix` | flatpak desktop entry |
 | `modules/groups/research.nix` | group preset (aggregates above) |
 | `_assets/plans/research_workflow_stack.md` | implementation plan |
-| `_assets/module-contracts.md` | C20 (vault path), C21 (adaptive framework) |
-| `_assets/decisions.md` | #34 (adaptive nvim), #35 (research group) |
+| `_assets/documentation/module-contracts.md` | C20 (vault path), C21 (adaptive framework) |
+| `_assets/documentation/decisions.md` | #34 (adaptive nvim), #35 (research group) |
