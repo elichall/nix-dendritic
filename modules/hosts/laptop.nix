@@ -1,9 +1,9 @@
 # ==========================================================================
-# NixOS Workstation Host Configuration
+# NixOS Laptop Host Configuration (Experimental Desktop)
 # ==========================================================================
 # Host wiring map + aspect groups: modules/_assets/documentation/module-contracts.md (§1).
 { inputs, self, ... }: {
-  flake.nixosConfigurations.workstation = inputs.nixpkgs.lib.nixosSystem {
+  flake.nixosConfigurations.laptop = inputs.nixpkgs.lib.nixosSystem {
     pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
     specialArgs = { inherit inputs; };
 
@@ -14,7 +14,7 @@
 
       # aspect groups (base services + display/wallpaper preset)
       self.modules.nixos.base
-      self.modules.nixos.desktop
+      self.modules.nixos.desktopExp
 
       # remaining system-level aspects (not grouped)
       self.modules.nixos.cmdLine
@@ -26,7 +26,7 @@
       inputs.home-manager.nixosModules.home-manager
 
       ({ pkgs, config, ... }: {
-        custom.terminal = "foot";
+        custom.terminal = "ghostty";
 
         home-manager = {
           useGlobalPkgs = true;
@@ -43,7 +43,7 @@
 
               # aspect groups (dev toolchain + display/wallpaper preset + research)
               self.modules.homeManager.toolbox
-              self.modules.homeManager.desktop
+              self.modules.homeManager.desktopExp
               self.modules.homeManager.researchGroup
               self.modules.homeManager.utils
 

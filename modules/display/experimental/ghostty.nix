@@ -11,7 +11,7 @@
   flake.modules.homeManager.ghostty =
     { config, pkgs, ... }:
     let
-      theme = import ../_lib/theme.nix { home = config.home.homeDirectory; };
+      theme = import ../../_lib/theme.nix { home = config.home.homeDirectory; };
     in
     {
       home.packages = [ pkgs.ghostty ];

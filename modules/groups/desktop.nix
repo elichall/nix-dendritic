@@ -1,9 +1,6 @@
 # ==========================================================================
-# DESKTOP GROUP — display/wallpaper preset
+# STABLE WORKSTATION DESKTOP WITH NOCTALIA SHELL
 # ==========================================================================
-# Aggregates display-aspect modules for GUI hosts. Individual keys remain
-# importable. Wired via `self.modules.nixos.desktop` and
-# `self.modules.homeManager.desktop`.
 { self, ... }: {
   flake.modules.nixos.desktop = {
     imports = [
@@ -16,14 +13,10 @@
   flake.modules.homeManager.desktop = {
     imports = [
       self.modules.homeManager.hyprland
-      self.modules.homeManager.ghostty
+      self.modules.homeManager.foot
       self.modules.homeManager.tui
+      self.modules.homeManager.noctalia
       self.modules.homeManager.otterLauncher
-      self.modules.homeManager.showoff
-      self.modules.homeManager.awww
-      self.modules.homeManager.waypaper
-      self.modules.homeManager.waybar
-      self.modules.homeManager.theme
     ];
   };
 }

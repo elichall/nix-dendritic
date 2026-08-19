@@ -17,6 +17,10 @@
       url = "github:kuokuo123/otter-launcher/v0.7.6";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    noctalia = {
+      url = "github:noctalia-dev/noctalia";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     inputs:

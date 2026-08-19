@@ -6,10 +6,10 @@
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.waybar =
-    { pkgs, ... }:
+    { pkgs, terminalName, ... }:
     let
-      ghosttyBin = "${pkgs.ghostty}/bin/ghostty";
-      tui = app: "${ghosttyBin} --class=com.waybar.tui -e ${app}";
+      terminal = import ../../_lib/terminal.nix { inherit pkgs terminalName; };
+      tui = app: terminal.execClass "com.waybar.tui" app;
       fastfetchBin = "${pkgs.fastfetch}/bin/fastfetch";
       weathrBin = "${pkgs.weathr}/bin/weathr";
       wlctlPkg = inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default;
@@ -19,15 +19,16 @@
       btopBin = "${pkgs.btop}/bin/btop";
     in
     {
-      home.packages = with pkgs; [
-        ghostty
-        fastfetch
-        weathr
-        wlctlPkg
-        bluetui
-        jolt-tui
-        btop
-      ];
+      home.packages =
+        terminal.packages
+        ++ (with pkgs; [
+          fastfetch
+          weathr
+          wlctlPkg
+          bluetui
+          jolt-tui
+          btop
+        ]);
 
       programs.waybar = {
         enable = true;
@@ -63,7 +64,7 @@
             "custom/nixos" = {
               format = "";
               tooltip = false;
-              on-click-right = "${ghosttyBin} --class=com.waybar.tui -e bash -c '${fastfetchBin}; read -n 1 -p \"Press any key to exit...\"'";
+              on-click-right = terminal.execClass "com.waybar.tui" "bash -c '${fastfetchBin}; read -n 1 -p \"Press any key to exit...\"'";
               on-click = "otter-open";
             };
 

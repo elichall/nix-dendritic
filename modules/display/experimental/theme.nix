@@ -12,7 +12,7 @@
       ...
     }:
     let
-      themeLib = import ../_lib/theme.nix { home = config.home.homeDirectory; };
+      themeLib = import ../../_lib/theme.nix { home = config.home.homeDirectory; };
       THEME_DIR = themeLib.dir;
 
       # Tracked wallpaper set provisioned into ~/Pictures/Wallpapers. Profile
@@ -438,7 +438,7 @@
       home.file = builtins.listToAttrs (
         map (file: {
           name = "Pictures/Wallpapers/${file}";
-          value.source = ../_assets/aesthetics/wallpapers/${file};
+          value.source = ../../_assets/aesthetics/wallpapers/${file};
         }) wallpaperFiles
       );
 

@@ -2,14 +2,12 @@
 # HYPRLAND DESKTOP ENVIRONMENT
 # ==========================================================================
 # System scale: compositor + portal wiring. User scale: session tooling +
-# full user config (keybinds, autostart, rules). Rule 4 deps:
-# modules/_assets/documentation/module-contracts.md (C8/C9).
+# full user config (keybinds, autostart, rules). PATH strategy + UWSM
+# tracking + Rule 4 deps: modules/_assets/documentation/module-contracts.md (C8/C9).
+# way-edges framework guide (side-panel hub validation):
+# modules/_assets/plans/wayedges-users-guide.md.
 # ==========================================================================
-{ inputs, ... }:
-let
-  noctaliaPackage = inputs.noctalia.packages.x86_64-linux.default;
-in
-{
+{ inputs, ... }: {
   flake.modules.nixos.hyprland = { pkgs, ... }: {
     programs.hyprland = {
       enable = true;
@@ -19,11 +17,10 @@ in
   };
 
   flake.modules.homeManager.hyprland =
-    { pkgs, terminalName, ... }:
+    { pkgs, ... }:
     let
-      terminal = import ../_lib/terminal.nix { inherit pkgs terminalName; };
-      noctaliaCmd = "${noctaliaPackage}/bin/noctalia";
-      tmuxCmd = "${pkgs.tmux}/bin/tmux new-session -A -s 'main'";
+      terminal = "${pkgs.ghostty}/bin/ghostty";
+      tmuxCmd = "${terminal} -e ${pkgs.tmux}/bin/tmux new-session -A -s 'main'";
       menu = "otter-open";
       browser = (import ../_lib/browser.nix).command;
 
@@ -36,24 +33,38 @@ in
 
       screenSnip = "${pkgs.grimblast}/bin/grimblast copysave area";
       screenShot = "${pkgs.grimblast}/bin/grimblast copysave screen";
-      fileManager = terminal.exec "bash -ci '${pkgs.yazi}/bin/yazi; exit'";
+      fileManager = "${terminal} -e bash -ci '${pkgs.yazi}/bin/yazi; exit'";
       systemManager = "otter-power";
 
+      waybarCmd = "${pkgs.waybar}/bin/waybar";
+      wayEdges = "${pkgs.way-edges}/bin/way-edges";
       hypridleCmd = "${pkgs.hypridle}/bin/hypridle";
-      otterCmd = "otter-apps --refresh-cache";
+      awwwDaemon = "${pkgs.awww}/bin/awww-daemon";
+      waypaperRestore = "${pkgs.waypaper}/bin/waypaper --restore";
+      otterApps = "otter-apps --refresh-cache";
+      # Persistent headless ghostty server that `otter-launch` hands off to via
+      # `ghostty +new-window --class=com.otter.launcher`. Started FIRST in the
+      # autostart block so the very first menu press hand-offs instead of
+      # cold-starting ghostty. --initial-window=false keeps it invisible;
+      # --quit-after-last-window-closed=false keeps it alive; --gtk-single-instance
+      # makes it the IPC target for +new-window.
+      otterServer = "${terminal} --class=com.otter.launcher --initial-window=false --quit-after-last-window-closed=false --gtk-single-instance=true";
       playerctlCmd = "${pkgs.playerctl}/bin/playerctl";
     in
     {
-      home.packages =
-        terminal.packages
-        ++ (with pkgs; [
-          hypridle
-          grimblast
-          brightnessctl
-          tmux
-          yazi
-          playerctl
-        ]);
+      home.packages = with pkgs; [
+        awww
+        hypridle
+        grimblast
+        brightnessctl
+        ghostty
+        tmux
+        yazi
+        waybar
+        way-edges
+        waypaper
+        playerctl
+      ];
 
       wayland.windowManager.hyprland = {
         enable = true;
@@ -82,8 +93,8 @@ in
           ---------------------
           -- -- MY PROGRAMS -- --
           ---------------------
-          local terminal = "${terminal.term}"
-          local tmux = "${terminal.exec tmuxCmd}"
+          local terminal = "${terminal}"
+          local tmux = "${tmuxCmd}"
           local menu = "${menu}"
           local browser = "${browser}"
           local brightnessU = "${brightnessU}"
@@ -101,10 +112,23 @@ in
           -- -- AUTOSTART -- --
           -------------------
           hl.on("hyprland.start", function()
+            -- Persistent headless ghostty server for the otter-launcher. Started
+            -- FIRST so the very first `otter-open`/`otter-power` press hand-offs
+            -- via `+new-window` instead of cold-starting ghostty (2-5s). Invisible
+            -- (no window), survives last-window-close, single-instance IPC target.
+            hl.exec_cmd("${otterServer}")
+            -- Boot the tmux server headlessly so continuum restores saved
+            -- sessions and the otter `tsm` module can see them without a
+            -- manual tmux launch. `main` guarantees the server survives.
             hl.exec_cmd("bash -c '${pkgs.tmux}/bin/tmux new-session -d -s main 2>/dev/null'")
+            hl.exec_cmd("${waybarCmd}")
+            hl.exec_cmd("${wayEdges}")
             hl.exec_cmd("${hypridleCmd}")
-            hl.exec_cmd("${otterCmd}")
-            hl.exec_cmd("${noctaliaCmd} &")
+            -- Wallpaper daemon + restore (graphical-session.target never fires
+            -- under UWSM, so both launch here instead of systemd units; C10).
+            hl.exec_cmd("${awwwDaemon}")
+            hl.exec_cmd("sh -c 'sleep 0.5 && ${waypaperRestore}'")
+            hl.exec_cmd("${otterApps}")
             hl.exec_cmd("bash -c 'systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP NIXOS_OZONE_WL && systemctl --user restart xdg-desktop-portal-hyprland xdg-desktop-portal'")
           end)
 
@@ -245,6 +269,19 @@ in
           hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
           hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
+          ------------------
+          -- -- SUBMAPS -- --
+          ------------------
+          hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("showoff"))
+
+          hl.define_submap("showoff_idle", function()
+            hl.bind("catchall", hl.dsp.exec_cmd("showoff --kill"))
+            hl.bind("mouse:272", hl.dsp.exec_cmd("showoff --kill"), { mouse = true })
+            hl.bind("mouse:273", hl.dsp.exec_cmd("showoff --kill"), { mouse = true })
+            hl.bind("mouse:274", hl.dsp.exec_cmd("showoff --kill"), { mouse = true })
+            hl.bind("escape", hl.dsp.submap("reset"))
+          end)
+
           --------------------------
           -- -- WORKSPACE RULES -- --
           --------------------------
@@ -259,10 +296,20 @@ in
           end
 
           hl.workspace_rule({ workspace = "special:magic", gaps_out = { top = 40, right = 250, bottom = 40, left = 250 } })
+          hl.workspace_rule({ workspace = "special:showoff" })
+          hl.workspace_rule({ workspace = "special:showoff_sec" })
 
           -----------------------
           -- -- WINDOW RULES -- --
           -----------------------
+          hl.window_rule({
+            name = "waybar_tui_rule",
+            match = { initial_class = "^(com\\.waybar\\.tui)$" },
+            float = true,
+            center = true,
+            size = { 900, 600 },
+          })
+
           hl.window_rule({
             name = "special_workspace_window",
             match = { initial_class = "^(com\\.special\\.window)$" },

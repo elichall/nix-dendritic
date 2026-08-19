@@ -7,9 +7,10 @@
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.tui =
-    { pkgs, ... }:
+    { pkgs, terminalName, ... }:
     let
       wlctl = inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      terminal = import ../_lib/terminal.nix { inherit pkgs terminalName; };
 
       tuiApps = [
         {
@@ -54,7 +55,7 @@
         }
       ];
 
-      mkTuiOpen = app: pkgs.writeShellScriptBin "${app.name}-open" "ghostty -e bash -ci ${app.name}";
+      mkTuiOpen = app: pkgs.writeShellScriptBin "${app.name}-open" (terminal.exec "bash -ci ${app.name}");
 
       tuiOpenWrappers = map mkTuiOpen tuiApps;
 
@@ -102,8 +103,8 @@
         };
 
       home.packages =
-        with pkgs;
-        [
+        terminal.packages
+        ++ (with pkgs; [
           # TUI app binaries (previously in nixos.main systemPackages / main)
           btop
           gdu
@@ -111,15 +112,14 @@
           jolt-tui
 
           # Launcher deps for the *-open wrappers (AGENTS.md Rule 4)
-          ghostty
           yazi
 
           # Non-nixpkgs packages (flake imported)
           wlctl
 
           # commandline alias for terminal file manager
-          (writeShellScriptBin "yazi-open" ''ghostty -e bash -ci "yazi ''${1:-.}"'')
-        ]
+          (writeShellScriptBin "yazi-open" ''${terminal.term} -e bash -ci "yazi ''${1:-.}"'')
+        ])
         ++ tuiOpenWrappers
         ++ tuiIconPackages;
     };

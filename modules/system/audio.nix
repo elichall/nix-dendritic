@@ -2,8 +2,8 @@
 #
 # Leaned out of modules/configuration.nix (nixos.main).
 # Wired into workstation.nix via `self.modules.nixos.audio`.
-{ inputs, ... }: {
-  flake.modules.nixos.audio = { ... }: {
+{ ... }: {
+  flake.modules.nixos.audio = { pkgs, ... }: {
     security.rtkit.enable = true;
     services.pipewire = {
       enable = true;

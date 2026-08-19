@@ -6,7 +6,7 @@
 { inputs, ... }: {
   flake.modules.homeManager.showoff = { pkgs, ... }:
     let
-      interactionWatch = import ../_lib/interaction-watch.nix { inherit pkgs; };
+      interactionWatch = import ../../_lib/interaction-watch.nix { inherit pkgs; };
     in
   {
     home.packages = with pkgs; [
