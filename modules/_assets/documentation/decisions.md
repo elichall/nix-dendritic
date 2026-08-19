@@ -461,6 +461,33 @@ its own body in `pcall` for debuggability. Nix `''` string requires `''''`
 escaping for Lua `''` literals.
 **Where:** `modules/research/obsidian.nix`.
 
+### 42. No Podman/Docker — stay Nix-native for container images
+**Decision:** Do not enable Podman or Docker. Prefer native NixOS service modules
+(`services.*`) for all services. If a third-party OCI image is ever required,
+build it with `pkgs.dockerTools` (Nix derivation, no daemon) rather than pulling
+from a registry at runtime.
+**Why:** User has no Docker/Podman experience and the server architecture
+(`server-architecture-decisions.md`) already settled on native `services.*`
+modules for all planned services (Nextcloud, Adguard, WireGuard). Adding Podman
+introduces a foreign ecosystem (image registries, Dockerfiles, volume management)
+outside the Nix module system with no current use case. `pkgs.dockerTools` covers
+the edge case of needing to produce or consume OCI images without adopting the
+Docker/Podman runtime.
+**Where:** `modules/programs/sandbox.nix`, `modules/_assets/plans/vm-sandbox-integration.md`.
+
+### 43. Sandbox infrastructure as a program module
+**Decision:** Create `modules/programs/sandbox.nix` (`nixos.sandbox`) to enable
+virtualization infrastructure (libvirtd + KVM). No aspect group — hosts opt in
+by importing `self.modules.nixos.sandbox` directly. Actual sandbox definitions
+(vmVariant config, container declarations) stay per-project or per-host, not
+baked into the system config.
+**Why:** System-level enablement (libvirtd daemon, user groups, KVM access) requires
+root and kernel config — it belongs in NixOS scope. But sandbox *definitions*
+(the shape of each VM/container) are project-specific concerns that should travel
+with the code, not pollute the host config. The module owns the platform; hosts
+and projects own the instances.
+**Where:** `modules/programs/sandbox.nix`, `modules/_assets/documentation/module-contracts.md`.
+
 ---
 
 ## Appendix — decision source index
@@ -508,3 +535,5 @@ escaping for Lua `''` literals.
 | 39 | research aspect redundancy cleanup | — | research workflow | — | research.md, module-contracts C21 |
 | 40 | vault root workspace + templates | — | research workflow | — | research.md |
 | 41 | BibTeX hierarchical walk | — | research workflow | — | research.md |
+| 42 | no Podman/Docker | — | sandbox | — | sandbox.nix, vm-sandbox-integration.md |
+| 43 | sandbox infrastructure | — | sandbox | — | sandbox.nix, module-contracts |

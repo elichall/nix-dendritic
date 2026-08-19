@@ -113,7 +113,7 @@ they're part of nixpkgs:
 | `microvm.nix` | QEMU-microvm / Firecracker / Cloud-Hypervisor | Hardware (minimal VM) | ✅ Full NixOS inside |
 | `virtualisation.vmVariant` | QEMU + KVM (full) | Hardware (full VM) | ✅ Full NixOS inside |
 | `virtualisation.libvirtd` | libvirt + QEMU | Hardware (full VM) | ⚠️ Daemon only; VMs defined outside NixOS |
-| `virtualisation.oci-containers` | Podman / Docker | Namespace + seccomp | ⚠️ Systemd wrapper; any OCI image |
+| `virtualisation.oci-containers` | Podman / Docker | Namespace + seccomp | ⚠️ Systemd wrapper; any OCI image — **not adopted** (decision #42) |
 | `pkgs.dockerTools` | Nix-built OCI images | Build-time only | ✅ Builds images without Docker daemon |
 
 Note: `bubblewrap` (bwrap) is used internally by Nix for build sandboxing and
@@ -424,11 +424,16 @@ virtualisation.oci-containers = {
 | Security | Weaker (root shares kernel) | Stronger (seccomp blocks syscalls) |
 | NixOS-native | ✅ | ⚠️ Systemd wrapper around external tool |
 
-**Why the user probably doesn't want this:** The user said they've never used
-Docker/Podman and specifically asked about *native Nix VMs*. OCI containers
-require learning a separate ecosystem (image registries, Dockerfiles, volume
-management) that exists outside the Nix module system. For someone invested in
-NixOS-native tooling, this is a foreign layer.
+**Decision: NOT adopted.** See decision #42 in `decisions.md`. User has no
+Docker/Podman experience; server architecture uses native `services.*` modules;
+`pkgs.dockerTools` covers the OCI image edge case without runtime Podman.
+
+**Why not:** The user has never used Docker/Podman and specifically asked about
+*native Nix VMs*. The server architecture plan settled on native `services.*`
+modules. OCI containers require learning a separate ecosystem (image registries,
+Dockerfiles, volume management) that exists outside the Nix module system. If an
+OCI image is ever needed, `pkgs.dockerTools` builds it from a Nix derivation
+without requiring Podman/Docker at runtime.
 
 ### 2.5 Nix-Specific Sandboxing Paradigms (Additional)
 
@@ -475,7 +480,7 @@ produce container images for others to run, without adopting Docker yourself.
 | `nix develop` | Environment vars | Instant | 0 MB | `flake.nix` | Pinned dev toolchains |
 | `bubblewrap` (FHS) | Linux namespaces | <10 ms | Negligible | Nix derivation | Running unpatched pre-compiled binaries |
 | `nixos-container` | Namespaces + cgroups | ~500 ms | ~15-30 MB | NixOS module | Isolated background services |
-| Podman / Docker | Namespaces + seccomp | ~1 sec | ~30-50 MB | OCI / Compose | Multi-container apps (Nextcloud, Pi-hole) |
+| Podman / Docker | Namespaces + seccomp | ~1 sec | ~30-50 MB | OCI / Compose | Multi-container apps (Nextcloud, Pi-hole) — **not adopted** (decision #42) |
 | `microvm.nix` | Hypervisor (minimal VM) | <500 ms | ~64-128 MB | Nix flake / module | Untrusted builds, isolated network routing |
 | QEMU / KVM (libvirtd) | Hypervisor (full VM) | 5-15 sec | >512 MB | libvirtd XML / NixVirt | Production VMs, snapshots, migration |
 | `vmVariant` (NixOS) | Hypervisor (full VM) | 5-15 sec | >512 MB | NixOS module | Testing configs, sandboxing, review |

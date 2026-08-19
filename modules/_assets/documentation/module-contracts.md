@@ -34,6 +34,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `nixos.cmdLine` | `programs/cmdLine.nix` | programs.bash enable, direnv system-wide |
 | `nixos.nvim` | `programs/nvim.nix` | neovim system package + EDITOR/VISUAL/SUDO_EDITOR |
 | `nixos.rclone` | `programs/rclone.nix` | `programs.fuse.userAllowOther` only (binary → `homeManager.rclone`) |
+| `nixos.sandbox` | `programs/sandbox.nix` | libvirtd (QEMU/KVM VM management, swtpm); KVM via `hardware-t480.nix` kernelModules |
 | `nixos.base` | `groups/base.nix` | Preset: battery, network, hardware, audio, security |
 | `nixos.desktop` | `groups/desktop.nix` | Preset: display, hyprland, mime |
 

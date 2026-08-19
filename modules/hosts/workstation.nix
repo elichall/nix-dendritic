@@ -20,6 +20,7 @@
       self.modules.nixos.cmdLine
       self.modules.nixos.nvim
       self.modules.nixos.rclone
+      self.modules.nixos.sandbox
 
       # pass home-manager as a module to the nixos system configuration
       inputs.home-manager.nixosModules.home-manager
