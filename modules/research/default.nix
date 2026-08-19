@@ -7,6 +7,9 @@
 #
 # Slim texlive: only packages required by pandoc's default xelatex template.
 # If a document needs additional LaTeX packages, add them to extraPackages.
+#
+# Build artifacts are redirected to .build/ via .latexmkrc in the vault root.
+# Add .build/ to your .gitignore.
 # ==========================================================================
 { ... }: {
   flake.modules.homeManager.research =
@@ -49,5 +52,12 @@
             ;
         };
       };
+
+      # Redirect LaTeX build artifacts (.aux, .bbl, .blg, etc.) to .build/
+      home.file."Documents/me/vault/.latexmkrc".text = ''
+        $out_dir = ".build";
+        $pdf_mode = 5;  # xelatex
+        $bibtex_use = 2;
+      '';
     };
 }

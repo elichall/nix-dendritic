@@ -107,7 +107,7 @@ zero plugins, zero LSPs, zero cost.
 #### Workspaces
 
 Configured in the generated `init.lua`:
-- `research` → `~/Documents/me/vault/research`
+- `me` → `~/Documents/me/vault` (full vault root)
 - `test` → `~/Documents/test`
 
 To add a workspace, edit `vaultPath` and the workspaces list in
@@ -120,9 +120,17 @@ To add a workspace, edit `vaultPath` and the workspaces list in
 | `gl` | `:Obsidian follow_link` | Follow wiki-link under cursor |
 | `[o` | `:Obsidian nav_link prev` | Jump to previous link in buffer |
 | `]o` | `:Obsidian nav_link next` | Jump to next link in buffer |
+| `<leader>nt` | `:ObsidianTemplate` | Insert template from `.templates/` |
 
 `<CR>` triggers obsidian.nvim's default `smart_action` (open link, toggle
 checkbox) — this is an implicit default, not explicitly configured.
+
+#### Templates
+
+Templates live in `vault/.templates/` (7 archetypes: paper, experiment,
+concept, project, report, daily, moc). Insert via `<leader>nt` or
+`:ObsidianTemplate`. Variables `{{date}}` and `{{time}}` are substituted
+on insertion.
 
 **Commands** (with `legacy_commands = false`):
 
@@ -141,9 +149,10 @@ checkbox) — this is an implicit default, not explicitly configured.
 
 In markdown/tex/plaintex files, type `@` then start typing a citekey:
 - `@knuth` → shows `knuth1984` with APA preview
-- **Auto-discovery**: All `.bib` files are recursively scanned from configured
-  vault directories (`~/Documents/me/vault` and `~/Documents/test`). New
-  bibliography files are picked up automatically — no config changes needed.
+- **Hierarchical discovery**: `.bib` files are found by walking up from the
+  buffer's directory to the vault root, collecting `*.bib` at each level.
+  A note in `research/papers/sph/` sees its own `references.bib` plus
+  ancestors up to `vault/`, but NOT siblings like `class/`.
 - Multiple `.bib` files are merged and deduplicated
 - Preview style: APA
 
@@ -162,8 +171,7 @@ conceal marks are disabled to avoid conflicts.
 Obsidian-specific pickers (backlinks, tags, toc) use mini.pick as well.
 
 `frontmatter = { enabled = false }` — disables obsidian.nvim's auto-formatting
-of YAML frontmatter on save (which would reorder keys, remove comments, add
-IDs). YAML is still read; it's just not auto-modified.
+of YAML frontmatter on save. YAML is still read; it's just not auto-modified.
 
 `checkbox = { create_new = false, order = { " ", "x" } }` — disables turning
 normal paragraphs into checkboxes on Enter. Only two states (unchecked/checked)
@@ -239,10 +247,11 @@ The activation hook resolves a store symlink and copies files. If permissions
 break, run `sudo nixos-rebuild switch --flake ~/.nix#workstation` to re-trigger.
 
 **BibTeX completion not showing**
-All `.bib` files in configured vault directories are auto-discovered. Ensure
-`.bib` files exist under `~/Documents/me/vault` or `~/Documents/test`. You
-can also add `bibliography: path/to/references.bib` to YAML frontmatter.
-Check discovered files with `:lua print(vim.inspect(require('blink-cmp-bibtex.config').get().global_files))`.
+`.bib` files are auto-discovered per buffer — walks up from the buffer's
+directory to the vault root (`.obsidian/`), collecting `*.bib` at each level.
+Ensure `.bib` files exist in the buffer's directory chain within a vault.
+Check what the function resolves to for the current buffer:
+`:lua print(vim.inspect(require('blink-cmp-bibtex.scan').resolve_bib_paths(0, require('blink-cmp-bibtex.config').get())))`.
 
 ---
 

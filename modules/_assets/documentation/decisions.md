@@ -435,6 +435,32 @@ calls any functions it finds, passing nil. The `per_filetype` rewrite remains.
 **Where:** `modules/research/obsidian.nix`, `modules/research/default.nix`,
 `module-contracts.md` C21.
 
+### 40. Vault root workspace + templates
+**Decision:** Expand obsidian.nvim workspace from `research/` subfolder to full
+vault root (`~/Documents/me/vault`). Add `templates.folder = ".templates"`
+with `<leader>nt` keybinding for `:ObsidianTemplate`.
+**Why:** Vault restructured with 3-layer indexing (folders → faceted tags →
+wikilinks). MOCs, concept notes, class notes, and projects live outside
+`research/`. Workspace must cover full vault for wikilink resolution.
+Templates consolidated into vault-wide `.templates/` directory.
+**Where:** `modules/research/obsidian.nix`.
+
+### 41. BibTeX hierarchical walk
+**Decision:** Replace recursive `**/*.bib` glob with a `global_files` function
+that receives `bufnr` and walks up from the buffer directory to the vault root
+(directory containing `.obsidian/`), collecting `*.bib` at each level. Each
+buffer only sees `.bib` files in its directory chain up to the vault root.
+**Why:** Static `global_files` list gave every buffer access to every `.bib`
+file across all vaults. Per-buffer scoping prevents cross-vault pollution and
+matches the user's mental model (a paper sees its own references plus parent
+directories up to the vault root).
+**How:** `global_files = discover_bib_files` (function reference, not call).
+blink-cmp-bibtex's `scan.resolve_option` calls it via `pcall(value, bufnr)`
+per completion round. `pcall` silently catches errors, so the function wraps
+its own body in `pcall` for debuggability. Nix `''` string requires `''''`
+escaping for Lua `''` literals.
+**Where:** `modules/research/obsidian.nix`.
+
 ---
 
 ## Appendix — decision source index
@@ -480,3 +506,5 @@ calls any functions it finds, passing nil. The `per_filetype` rewrite remains.
 | 37 | BibTeX auto-discovery glob | — | research workflow | — | research.md |
 | 38 | research group | — | research workflow | — | module-contracts C16 |
 | 39 | research aspect redundancy cleanup | — | research workflow | — | research.md, module-contracts C21 |
+| 40 | vault root workspace + templates | — | research workflow | — | research.md |
+| 41 | BibTeX hierarchical walk | — | research workflow | — | research.md |

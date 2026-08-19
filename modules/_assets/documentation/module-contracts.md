@@ -285,11 +285,15 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 
 ### C20. Research vault path
 - Vault: `~/Documents/me/vault`
-- Research subfolder: `~/Documents/me/vault/research`
-- `blink-cmp-bibtex` auto-discovers `.bib` files from the vault.
-- `obsidian.nvim` workspace points at the vault root.
+- `obsidian.nvim` workspace points at the vault root (full vault, not just `research/`).
+- `blink-cmp-bibtex` discovers `.bib` files via `global_files` function — walks
+  up from buffer directory to vault root (`.obsidian/`), collecting `*.bib` at
+  each level. Per-buffer scoping: each buffer only sees `.bib` files in its
+  directory chain up to the vault root.
+- Canonical bib naming: `references.bib` (not `.references.bib`).
 - Better BibTeX auto-export: manual Zotero setup (install plugin, configure
-  auto-export to `.bib` files in Better BibTeX format).
+  auto-export to `references.bib` files in Better BibTeX format).
+- Templates: `vault/.templates/` (7 archetypes), inserted via `<leader>nt`.
 
 ### C21. Adaptive nvim plugin framework
 - Base nvim config (`homeManager.nvim`) deploys via `xdg.configFile."nvim"`
@@ -303,7 +307,8 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Base `lsp.lua` merges feature LSP servers via pcall after the base loop.
 - Feature plugin specs for shared plugins (e.g. blink.cmp) use lazy.nvim's
   deep-merge: multiple specs for the same plugin merge their `opts`.
-  Sources are appended via `default = function(list)` pattern.
+  Sources are listed via `per_filetype` (the `default = function(list)`
+  pattern conflicts with obsidian.nvim's config iterator).
 - Pattern: `modules/<aspect>/` generates `lua/lean/<feature>/init.lua`
   via `pkgs.runCommand` → merged by activation hook. LSP servers are
   returned in the same `init.lua` (no separate `lsp.lua` needed).
