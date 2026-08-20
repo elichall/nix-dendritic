@@ -6,7 +6,7 @@ end
 vim.g.colors_name = "lean_sync"
 
 -- Load the static palette safely
-local ok, c = pcall(require, "lean.core.palette")
+local ok, c = pcall(require, "lean.core.palette_sync")
 if not ok then
   return -- Terminates execution if structural layout file is missing
 end

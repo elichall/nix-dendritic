@@ -98,11 +98,11 @@
           prepend_files = [
             {
               name = "hyprland.conf";
-              text = "  ";
+              text = "";
             }
             {
               name = "hyprland.lua";
-              text = "  ";
+              text = "";
             }
           ];
         };

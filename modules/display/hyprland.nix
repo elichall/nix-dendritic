@@ -19,7 +19,7 @@ in
   };
 
   flake.modules.homeManager.hyprland =
-    { pkgs, terminalName, ... }:
+    { config, pkgs, terminalName, ... }:
     let
       terminal = import ../_lib/terminal.nix { inherit pkgs terminalName; };
       noctaliaCmd = "${noctaliaPackage}/bin/noctalia";
@@ -65,14 +65,21 @@ in
 
         extraConfig = ''
           -- --- SINGLE SOURCE OF TRUTH COLOR LINKING ---
-          local status, theme = pcall(require, "palette")
-          if not status then
-            theme = {
-              accent = "rgb(74, 199, 236)",
-              muted = "rgb(88, 91, 112)",
-              bg = "rgb(17, 17, 27)"
-            }
-          end
+          ${if config.programs.noctalia.enable then ''
+          local noctalia = dofile(os.getenv("HOME") .. "/.config/hypr/noctalia.lua")
+          local theme = {
+            accent = noctalia.colors.primary,
+            muted = noctalia.colors.surface,
+            bg = noctalia.colors.shadow,
+          }
+          noctalia.apply_theme()
+          '' else ''
+          local theme = {
+            accent = "rgb(74, 199, 236)",
+            muted = "rgb(88, 91, 112)",
+            bg = "rgb(17, 17, 27)"
+          }
+          ''}
 
           ------------------
           -- -- MONITORS -- --

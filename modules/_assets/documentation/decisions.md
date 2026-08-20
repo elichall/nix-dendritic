@@ -488,6 +488,114 @@ with the code, not pollute the host config. The module owns the platform; hosts
 and projects own the instances.
 **Where:** `modules/programs/sandbox.nix`, `modules/_assets/documentation/module-contracts.md`.
 
+### 44. Noctalia Shell replaces hand-rolled display stack (stable)
+**Decision:** Replace the hand-rolled waybar + theme + awww + waypaper stack
+with Noctalia Shell on the stable workstation host. Noctalia provides: theme
+engine, top bar, dock, wallpaper management, clipboard history, and
+notification daemon — all via a single `programs.noctalia.enable` HM module.
+**Why:** The hand-rolled stack (waybar config/style, theme.nix profile sync,
+awww notification daemon, waypaper wallpaper restore) carried significant
+maintenance burden and fragile autostart chains (decision #23). Noctalia is a
+purpose-built Hyprland companion with native theme generation, built-in battery
+widget (reads UPower D-Bus), and documented TOML config. Validated with
+`noctalia config validate` (zero warnings). Otter-launcher kept (user preference);
+showoff ported to terminal abstraction.
+**Where:** `modules/display/desktop/noctalia.nix`, `groups/desktop.nix`,
+`module-contracts.md` C23.
+
+### 45. Foot replaces ghostty (stable stack)
+**Decision:** Use foot terminal on the stable workstation host; ghostty remains
+on the experimental laptop host.
+**Why:** Noctalia's theme engine generates foot INI theme files natively. Foot
+is a mature, lightweight Wayland-native terminal with native HM integration
+(`programs.foot.enable`). Ghostty remains on the experimental stack (laptop)
+where the full hand-rolled theme engine is still active. The terminal is fully
+abstracted via `_lib/terminal.nix` — consumer modules never hardcode the terminal
+name.
+**Where:** `modules/display/desktop/foot.nix`, `hosts/workstation.nix`,
+`module-contracts.md` C22.
+
+### 46. 3-host split: laptop (experimental), workstation (Noctalia stable), server (headless)
+**Decision:** Split into three distinct host configurations:
+- **workstation** (`custom.terminal = "foot"`): Noctalia shell, foot terminal,
+  lean stable stack. Production desktop.
+- **laptop** (`custom.terminal = "ghostty"`): Full experimental stack (waybar,
+  ghostty, theme engine, awww, waypaper). Development/experimental desktop.
+- **server** (empty stub): Headless, no display stack. Future work.
+**Why:** The experimental stack (waybar, ghostty, theme engine) carries ongoing
+maintenance burden and instability. The stable stack (Noctalia, foot) is
+purpose-built for Hyprland and requires minimal config. Separating hosts lets
+the production workstation stay stable while the laptop serves as a sandbox for
+new features. Both hosts share core infrastructure (hyprland, tui, otter,
+showoff) via the terminal abstraction.
+**Where:** `modules/hosts/{workstation,laptop,server}.nix`,
+`module-contracts.md` host wiring section.
+
+### 47. Terminal abstraction via `_lib/terminal.nix`
+**Decision:** Create a terminal abstraction library (`_lib/terminal.nix`) that
+provides terminal-agnostic exec, execClass, and package helpers. Hosts select
+their terminal via a NixOS option (`custom.terminal`), and all consumer modules
+(hyprland, waybar, showoff, otter, tui) use the abstraction instead of
+hardcoding terminal names.
+**Why:** Multiple modules needed to launch commands in terminal windows
+(hyprland keybinds, waybar clicks, showoff dashboard, otter launcher). Without
+abstraction, every module would need a `terminalName` parameter and terminal-
+specific branching (foot `--app-id` vs ghostty `--class`). The abstraction
+centralizes this: one library owns the exec logic, consumers just call
+`terminal.exec` or `terminal.execClass`. Adding a new terminal requires editing
+only `_lib/terminal.nix` and the host's `custom.terminal` value.
+**Where:** `modules/_lib/terminal.nix`, `module-contracts.md` C22.
+
+### 48. UPower for Noctalia battery widget
+**Decision:** Enable `services.upower.enable = true` in `system/battery.nix`
+to provide battery status via D-Bus for the Noctalia battery widget.
+**Why:** Noctalia's battery widget and Control Center battery settings read
+from the UPower D-Bus service (`org.freedesktop.UPower`). Without UPower
+enabled, both are empty. UPower does NOT conflict with TLP: TLP manages power
+policies (CPU governor, charge thresholds, PCIe ASPM); UPower provides
+read-only battery status. Both can coexist — TLP is the policy engine, UPower
+is the status reporter.
+**Where:** `modules/system/battery.nix`, `module-contracts.md` C24.
+
+### 49. `--class` → `--app-id` migration for foot
+**Decision:** Replace all hardcoded `--class` flags with `terminal.execClass`
+which branches: foot uses `--app-id`, ghostty uses `--class`. This affects
+otter-launcher, showoff, and any other module spawning classified terminal
+windows.
+**Why:** Ghostty's `--class` flag is not recognized by foot. The otter-launcher
+`otter-launch` script, showoff spawn/kill logic, and all other terminal-spawning
+code silently failed with foot because `--class` is a no-op unknown flag.
+The `execClass` function in `_lib/terminal.nix` resolves this by using the
+correct flag per terminal. Showoff's class names also changed from `com.waybar.tui`
+to `showoff.dash`/`showoff.sec` (dots, not dots-as-separators) for cross-terminal
+compatibility.
+**Where:** `modules/_lib/terminal.nix` (execClass), `modules/display/otter-launcher/otter.nix`,
+`modules/display/experimental/showoff.nix`, `module-contracts.md` C5.
+
+### 50. Showoff ported to terminal abstraction
+**Decision:** Port showoff.nix to use `_lib/terminal.nix` for terminal exec
+and class flags, removing all hardcoded ghostty references.
+**Why:** Showoff spawns terminal windows for its dashboard and secondary views.
+Without the terminal abstraction, it would need its own `terminalName` parameter
+and terminal-specific branching. The port gives it the same `terminal.exec`,
+`terminal.term`, and `CLASS_FLAG` (foot: `--app-id`, ghostty: `--class`) that
+other modules use. pgrep/pkill patterns updated for foot's `--app-id` syntax.
+tmux config updated to remove ghostty-specific `terminal-overrides` line.
+**Where:** `modules/display/experimental/showoff.nix`, `module-contracts.md` C18.
+
+### 51. TUI apps inherit terminal colors — no templates needed
+**Decision:** TUI apps (nvim, btop, starship, opencode, tmux) do NOT need
+Noctalia template plugins or community templates. They inherit the full
+16-color palette from the active terminal emulator (foot) via standard
+terminal color escape sequences.
+**Why:** Noctalia's template engine generates config files for GUI apps that
+read file-based themes (GTK, Qt, VSCode, Discord, etc.). TUI apps read
+`terminal.color0`–`terminal.color15` directly from the terminal's palette.
+Our foot terminal passes the full Catppuccin 16-color palette to all child
+processes. Adding neovim/btop/starship/opencode templates would be redundant.
+**Where:** `modules/_assets/documentation/user/noctalia-guide.md` §4 ("Which
+apps need templates vs. which inherit terminal colors").
+
 ---
 
 ## Appendix — decision source index
@@ -537,3 +645,11 @@ and projects own the instances.
 | 41 | BibTeX hierarchical walk | — | research workflow | — | research.md |
 | 42 | no Podman/Docker | — | sandbox | — | sandbox.nix, vm-sandbox-integration.md |
 | 43 | sandbox infrastructure | — | sandbox | — | sandbox.nix, module-contracts |
+| 44 | Noctalia Shell replaces hand-rolled stack | — | Noctalia migration | — | module-contracts C23 |
+| 45 | Foot replaces ghostty (stable) | — | Noctalia migration | — | module-contracts C22 |
+| 46 | 3-host split | — | Noctalia migration | — | module-contracts host wiring |
+| 47 | Terminal abstraction via `_lib/terminal.nix` | — | Noctalia migration | — | module-contracts C22 |
+| 48 | UPower for battery status | — | Noctalia migration | — | module-contracts C24 |
+| 49 | `--class` → `--app-id` migration (foot) | — | Noctalia migration | — | module-contracts C5 |
+| 50 | Showoff ported to terminal abstraction | — | Noctalia migration | — | module-contracts C18 |
+| 51 | TUI apps inherit terminal colors, no templates needed | — | Noctalia migration | — | noctalia-guide.md §4 |

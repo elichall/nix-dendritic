@@ -81,11 +81,13 @@
 󱐋 jolt
  pulse
 󰃬 qcalculate
+󰏒 noctalia
  wayland
 󰇥 yazi
  Hyprland
  Linux
  Nvim
+ flatpak
  Python
 󰣇 Arch
  Tmux
@@ -93,6 +95,7 @@
  Framwork
  git
  github
+ obsidian
 
 ## Personal
 󰧑 Brain

@@ -232,3 +232,29 @@ sudo nix-collect-garbage -d
 3. `sudo nixos-rebuild switch --flake ~/.nix#workstation`.
 4. Log in and run `./post-switch-smoke-test.sh`.
 5. Weekly: `nix flake update && git add flake.lock && git commit &&` switch.
+
+---
+
+## Noctalia Shell customization
+
+Noctalia Shell v5 manages the top bar, dock, launcher, control center,
+wallpaper, clipboard, and notifications on the stable workstation. Full
+customization guide (bar widgets, plugins, theming, keybindings, Nix syntax):
+
+→ `modules/_assets/documentation/user/noctalia-guide.md`
+
+Quick reference for common tasks:
+
+```bash
+# View current settings
+noctalia msg state all | jq .settings
+
+# List available plugins
+noctalia msg plugins list
+
+# Enable a plugin
+noctalia msg plugins enable noctalia/screen_recorder
+
+# Restart Noctalia after config change
+pkill noctalia-shell  # auto-restarts from hyprland autostart
+```

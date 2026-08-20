@@ -1,5 +1,5 @@
 { ... }: {
-  flake.modules.homeManager.foot = {
+  flake.modules.homeManager.foot = { config, ... }: {
     programs.foot = {
       enable = true;
       settings = {
@@ -8,13 +8,13 @@
           font = "JetBrainsMono Nerd Font:size=7.5";
           dpi-aware = "yes";
           pad = "8x8";
-        };
-        cursor = {
-          blink = "yes";
-        };
-        mouse = {
-          "hide-when-typing" = "yes";
-        };
+        } // (if config.programs.noctalia.enable then {
+          include = "~/.config/foot/themes/noctalia";
+        } else { });
+        cursor.blink = "yes";
+        mouse.hide-when-typing = "yes";
+        scrollback.lines = "10000";
+      } // (if config.programs.noctalia.enable then { } else {
         colors-dark = {
           alpha = 0.7;
           blur = true;
@@ -38,10 +38,7 @@
           bright6 = "94E2D5";
           bright7 = "A6ADC8";
         };
-        scrollback = {
-          lines = "10000";
-        };
-      };
+      });
     };
   };
 }

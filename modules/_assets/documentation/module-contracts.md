@@ -27,16 +27,17 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `nixos.hardware` | `system/hardware.nix` | bluetooth (powerOnBoot + profiles), fstrim, fwupd, microcode, earlyoom |
 | `nixos.audio` | `system/audio.nix` | rtkit, pipewire (alsa + pulse + 32-bit) |
 | `nixos.security` | `system/security.nix` | kernel sysctl hardening ONLY |
-| `nixos.battery` | `system/battery.nix` | TLP power mgmt (+ ppd disable): charge thresholds 75/80 on BOTH BAT0+BAT1 (T480 dual-battery); `PLATFORM_PROFILE_*` kept for Framework 13 Pro (no-op on T480 — no `platform_profile` sysfs) |
+| `nixos.battery` | `system/battery.nix` | TLP power mgmt (+ ppd disable): charge thresholds 75/80 on BOTH BAT0+BAT1 (T480 dual-battery); `PLATFORM_PROFILE_*` kept for Framework 13 Pro (no-op on T480 — no `platform_profile` sysfs); **UPower** (`services.upower.enable = true`) for battery status D-Bus (consumed by Noctalia battery widget) |
 | `nixos.mime` | `system/mime.nix` | custom-mime package + `xdg.mime.defaultApplications` |
-| `nixos.display` | `display/display.nix` | WLR/OZONE session vars, XDG portal, ly display manager |
+| `nixos.display` | `display/display.nix` | WLR/OZONE session vars, XDG portal, ly display manager; `options.custom.terminal` (default `"foot"` — host-level terminal choice) |
 | `nixos.hyprland` | `display/hyprland.nix` | Compositor (programs.hyprland) ONLY; user tooling → `homeManager.hyprland` |
 | `nixos.cmdLine` | `programs/cmdLine.nix` | programs.bash enable, direnv system-wide |
 | `nixos.nvim` | `programs/nvim.nix` | neovim system package + EDITOR/VISUAL/SUDO_EDITOR |
 | `nixos.rclone` | `programs/rclone.nix` | `programs.fuse.userAllowOther` only (binary → `homeManager.rclone`) |
 | `nixos.sandbox` | `programs/sandbox.nix` | libvirtd (QEMU/KVM VM management, swtpm); KVM via `hardware-t480.nix` kernelModules |
 | `nixos.base` | `groups/base.nix` | Preset: battery, network, hardware, audio, security |
-| `nixos.desktop` | `groups/desktop.nix` | Preset: display, hyprland, mime |
+| `nixos.desktop` | `groups/desktop.nix` | Preset: display, hyprland, mime (NixOS side, shared by stable + experimental) |
+| `nixos.desktopExp` | `groups/desktopExp.nix` | Preset: display, hyprland, mime (NixOS side, same as desktop — shared compositor infra) |
 
 ### homeManager (user scale)
 
@@ -54,28 +55,45 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.rclone` | `programs/rclone.nix` | rclone binary + rclone-box user unit |
 | `homeManager.zotero` | `research/zotero.nix` | zotero flatpak desktop entry |
 | `homeManager.clipboard` | `system/clipboard.nix` | wl-clipboard (cross-host core; future `nixos.clipboard` may grow here) |
-| `homeManager.ghostty` | `display/ghostty.nix` | ghostty binary + SOLE owner of `xdg.configFile."ghostty/config"` |
-| `homeManager.hyprland` | `display/hyprland.nix` | hyprland user config (keybinds, autostart, rules) + deps (hypridle, grimblast, brightnessctl, playerctl, waybar, way-edges, tmux, yazi, ghostty); autostart block starts a headless ghostty server FIRST (`otterServer`: `--class=com.otter.launcher --initial-window=false --quit-after-last-window-closed=false --gtk-single-instance=true`) so the first `otter-open`/`otter-power` press hand-offs via `+new-window` (0.09s) instead of cold-starting ghostty (2-5s) |
+| `homeManager.ghostty` | `display/experimental/ghostty.nix` | ghostty binary + SOLE owner of `xdg.configFile."ghostty/config"` (experimental stack only) |
+| `homeManager.foot` | `display/desktop/foot.nix` | foot terminal via `programs.foot.enable` (HM native module); stable stack terminal |
+| `homeManager.noctalia` | `display/desktop/noctalia.nix` | Noctalia Shell via `programs.noctalia.enable`; stable stack shell/bar (themes, top bar, wallpaper, clipboard, notifications) |
+| `homeManager.hyprland` | `display/hyprland.nix` | hyprland user config (keybinds, autostart, rules) + deps (hypridle, grimblast, brightnessctl, playerctl, tmux, yazi); autostart block starts noctalia shell; uses `_lib/terminal.nix` abstraction (host selects foot or ghostty via `custom.terminal`) |
 | `homeManager.tui` | `display/tui.nix` | TUI launcher: wlctl (flake input), tuiApps list, desktop entries + icons, yazi-open |
-| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose; `th` preview consumes theme profiles + swatches (C19); `tsm` = tmux session manager (tmux-fzf parity: switch/new/rename/detach/kill + `tsm <action> <session>` one-liner via shell-split of the `{}` argument) |
-| `homeManager.showoff` | `display/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch |
+| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose; uses `_lib/terminal.nix` abstraction for launcher exec (foot: `--app-id`, ghostty: `--class`); `th` preview consumes theme profiles + swatches (C19); `tsm` = tmux session manager (tmux-fzf parity: switch/new/rename/detach/kill + `tsm <action> <session>` one-liner via shell-split of the `{}` argument) |
+| `homeManager.showoff` | `display/experimental/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch; uses `_lib/terminal.nix` abstraction (foot: `--app-id`, ghostty: `--class`) |
 | `homeManager.awww` | `display/awww.nix` | awww binary (daemon launched via hyprland autostart, C10) |
 | `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary (restore via hyprland autostart, C10) |
 | `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps; battery `full-at = 80` (TLP-capped batteries → full icon at 80%); workspaces-style rounded pill darken on hover for every module except the nixos logo (`background-color: rgba(0,0,0,0.65)` on `#<module>:hover` — modules are windowed `Gtk::EventBox`es that paint rounded backgrounds; pill stays opaque, boundary not washed out) |
-| `homeManager.theme` | `display/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19) |
+| `homeManager.theme` | `display/experimental/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19); experimental stack only |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi, opencode (core dev tools — no GUI, no extensions) |
 | `homeManager.utils` | `groups/utils.nix` | Preset: initProject |
-| `homeManager.desktop` | `groups/desktop.nix` | Preset: hyprland, ghostty, tui, otterLauncher, showoff, awww, waypaper, waybar, theme |
+| `homeManager.desktop` | `groups/desktop.nix` | Preset (stable): hyprland, foot, tui, noctalia, otterLauncher, showoff |
+| `homeManager.desktopExp` | `groups/desktopExp.nix` | Preset (experimental): hyprland, ghostty, tui, otterLauncher, showoff, awww, waypaper, waybar, theme |
 | `homeManager.researchGroup` | `groups/research.nix` | Preset: research (pandoc/texlive), obsidian (nvim vault integration), zotero (flatpak desktop entry) |
 | `homeManager.research` | `research/default.nix` | pandoc (HM module, citeproc + xelatex defaults) + texlive (slim: latexmk/biber/bibtex + pandoc template deps only); user-scale |
 | `homeManager.obsidian` | `research/obsidian.nix` | obsidian.nvim + blink-cmp-bibtex + obsidian_ls LSP; generates lean/research feature Lua files → activation-merged into nvim config (adaptive framework, see C21) |
 
-### Host wiring (`hosts/workstation.nix`)
+### Host wiring
 
-- System: `main`, `hardwareConfig`, `base`, `desktop`, `cmdLine`, `nvim`, `rclone`.
+#### `hosts/workstation.nix` (stable — foot + Noctalia)
+- System: `main`, `hardwareConfig`, `base`, `desktop`, `cmdLine`, `nvim`, `rclone`, `sandbox`.
 - User (`home-manager.users.elichall.imports`): `main`, `toolbox`, `desktop`,
-  `researchGroup`, `opencode`, `clipboard`, `rclone`, `fastfetch`, `utils`.
+  `researchGroup`, `utils`, `clipboard`, `rclone`, `fastfetch`.
+- `custom.terminal = "foot"` → `terminalName` bridged via `extraSpecialArgs`.
+- `noctalia.homeModules.default` shared via `home-manager.sharedModules`.
 - `home-manager.useGlobalPkgs/useUserPackages = true`.
+
+#### `hosts/laptop.nix` (experimental — ghostty + hand-rolled stack)
+- System: `main`, `hardwareConfig`, `base`, `desktopExp`, `cmdLine`, `nvim`, `rclone`, `sandbox`.
+- User (`home-manager.users.elichall.imports`): `main`, `toolbox`, `desktopExp`,
+  `researchGroup`, `utils`, `clipboard`, `rclone`, `fastfetch`.
+- `custom.terminal = "ghostty"` → `terminalName` bridged via `extraSpecialArgs`.
+- `noctalia.homeModules.default` shared via `home-manager.sharedModules`.
+- `home-manager.useGlobalPkgs/useUserPackages = true`.
+
+#### `hosts/server.nix` (stub — headless)
+- Empty placeholder.
 
 ### Legacy provenance
 
@@ -86,24 +104,30 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `system/mime.nix` | legacy `/etc/nixos/modules/mime.nix` |
 | `system/battery.nix` | legacy `/etc/nixos/modules/tlp.nix` (key renamed `nixos.tlp` → `nixos.battery`) |
 | `system/hardware-t480.nix` | `/etc/nixos/hardware-configuration.nix` |
-| `display/theme.nix` | **LIVE** `/etc/nixos/modules/theme.nix` (NOT `legacy/` — legacy carries the pre-fix gtk.css transparency bug) |
-| `display/showoff.nix` | legacy `/etc/nixos/modules/showoff.nix` |
-| `display/waybar.nix` | legacy `/etc/nixos/modules/desktop-stable.nix` |
-| `display/hyprland.nix` | legacy `/etc/nixos/modules/hyprland.nix` |
-| `display/otter-launcher/` | legacy `/etc/nixos/modules/otter-launcher/` |
+| `display/experimental/theme.nix` | **LIVE** `/etc/nixos/modules/theme.nix` (NOT `legacy/` — legacy carries the pre-fix gtk.css transparency bug); moved to experimental/ when Noctalia replaced theme engine on stable stack |
+| `display/experimental/showoff.nix` | legacy `/etc/nixos/modules/showoff.nix`; moved to experimental/ with terminal abstraction |
+| `display/experimental/waybar.nix` | legacy `/etc/nixos/modules/desktop-stable.nix`; moved to experimental/ when Noctalia replaced waybar on stable stack |
+| `display/experimental/ghostty.nix` | new (replaces the old `display/ghostty.nix` at root); stable stack uses foot instead |
+| `display/desktop/foot.nix` | new (Noctalia-era stable terminal) |
+| `display/desktop/noctalia.nix` | new (Noctalia-era stable shell/bar — replaces waybar, theme, awww) |
+| `display/hyprland.nix` | legacy `/etc/nixos/modules/hyprland.nix`; now uses terminal abstraction |
+| `display/otter-launcher/` | legacy `/etc/nixos/modules/otter-launcher/`; now uses terminal abstraction |
 | `programs/*` | legacy `/etc/nixos/modules/programs/*` |
 
 ---
 
 ## 2. Contract inventory
 
-### C1. Ghostty config ownership (ghostty ↔ theme)
+### C1. Ghostty config ownership (ghostty ↔ theme) — experimental stack only
 - `homeManager.ghostty` is the SOLE owner of `xdg.configFile."ghostty/config"`.
 - The theme module must NOT declare it (conflicting definition). It only
   rewrites the runtime `theme.conf` and signals ghostty to reload.
 - Shared path source: `_lib/theme.nix` (`ghosttyThemeConf`); ghostty.nix and
   theme.nix must agree on all paths in `_lib/theme.nix`.
 - Enforced: comment contracts; drvPath eval catches a conflict.
+- **Stable stack (workstation)**: ghostty is replaced by foot (`programs.foot.enable`);
+  theme engine replaced by Noctalia. This contract applies only to the experimental
+  stack (laptop, `custom.terminal = "ghostty"`).
 
 ### C2. Theme path indirection & GTK palette-only
 - No Nix config encodes a theme value. `~/.local/share/theme/active.json` is
@@ -135,17 +159,21 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 ### C5. Otter dismiss & window-class contract
 - Dismiss callback = `pkill -x otter-launcher` (exact comm: kills only the
   launcher; server survives). Bail = `--bail-comm otter-launcher` (exact
-  `pgrep -x`, never self-matches, never matches ghostty server/client).
+  `pgrep -x`, never self-matches, never matches the terminal server/client).
 - `hyprctl dispatch closewindow` is NOT config-agnostic (Lua `hl.dispatch`
   hook rejects plain syntax) — do not reintroduce it.
+- Window class flag is terminal-dependent: foot uses `--app-id`, ghostty uses
+  `--class`. The `_lib/terminal.nix` abstraction (`execClass`) handles the
+  branching. Otter, showoff, and all other consumers use `terminal.execClass`
+  instead of hardcoded `--class`.
 - Window classes (keep in sync between hyprland rules and config.toml):
 
   | Class | Hyprland rule | config.toml consumers |
   |---|---|---|
-  | `com.otter.launcher` | float, 550x250 centered | launcher itself |
+  | `com.otter.launcher` | float, 550x350 centered | launcher itself |
   | `com.special.window` | magic workspace 1 | `ned`, `nrb` (root terminals) |
-  | `com.waybar.tui` | float, 900x600 | `nsh`, `man` (popup terminals) |
-  | default (`ghostty`) | normal | `pro`, `ssh` (tmux sessions) |
+  | `showoff.dash` / `showoff.sec` | magic workspace 1 | showoff dashboard/secondary |
+  | default (foot/ghostty) | normal | `pro`, `ssh` (tmux sessions) |
 
 ### C6. Rule 4 Hybrid for otter (module-owned CLIs)
 - config.toml menu modules shell out via `sh -c`; every binary must be either
@@ -215,12 +243,14 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   block — do NOT reintroduce a `waypaper-restore`/`awww-daemon` systemd unit
   (graphical-session.target never activates under UWSM; see decision #23).
 
-### C10. Wallpaper daemon + restore launch (hyprland autostart)
+### C10. Wallpaper daemon + restore launch (hyprland autostart) — experimental stack only
 - `awww-daemon` and `waypaper --restore` are launched via
   `hl.exec_cmd` in the hyprland autostart block (absolute store paths,
   restore deferred 0.5s after the daemon — mirrors the old unit chain).
 - Both binaries are declared in `home.packages` (Rule 4) in
   `homeManager.hyprland`; the daemon must start before the restore fires.
+- **Stable stack (workstation)**: wallpaper management handled by Noctalia
+  shell (`programs.noctalia.enable`); no awww or waypaper needed.
 
 ### C11. Shell-integration defaults
 - `homeManager.cmdLine` explicitly disables fish/ion/nushell/zsh integration
@@ -265,9 +295,11 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 
 ### C16. Registry groups are presets
 - `nixos.base` = battery, network, hardware, audio, security.
-- `nixos.desktop` = display, hyprland, mime.
-- `homeManager.desktop` = hyprland, ghostty, tui, otterLauncher, showoff,
-  awww, waypaper, waybar, theme.
+- `nixos.desktop` = display, hyprland, mime (NixOS side, shared).
+- `nixos.desktopExp` = display, hyprland, mime (same as desktop — NixOS side shared).
+- `homeManager.desktop` = hyprland, foot, tui, noctalia, otterLauncher, showoff (stable).
+- `homeManager.desktopExp` = hyprland, ghostty, tui, otterLauncher, showoff,
+  awww, waypaper, waybar, theme (experimental).
 - `homeManager.toolbox` = cmdLine, git, tmux, nvim, yazi, opencode.
 - `homeManager.researchGroup` = research, obsidian, zotero.
 - Individual keys remain importable alongside groups.
@@ -281,8 +313,9 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 ### C18. Showoff dependency surface (Rule 4)
 - Dashboard deps: tty-clock, gping, cava, cmatrix, cbonsai,
   asciiquarium-transparent, sl, lolcat, cowsay (term-rotator/layout panes),
-  weathr (waybar weather on-click), ghostty (TERMINAL, absolute path),
-  fastfetch + btop (tmux panes), interaction-watch (pointer dismiss).
+  weathr (waybar weather on-click), terminal (via `_lib/terminal.nix` abstraction;
+  foot or ghostty depending on host), fastfetch + btop (tmux panes),
+  interaction-watch (pointer dismiss).
 
 ### C20. Research vault path
 - Vault: `~/Documents/me/vault`
@@ -316,6 +349,61 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Currently active features: `research` (obsidian.nvim, blink-cmp-bibtex,
   obsidian_ls).
 
+### C22. Terminal abstraction (`_lib/terminal.nix`)
+- `_lib/terminal.nix` provides a terminal-agnostic interface consumed by
+  hyprland, waybar, showoff, otter, and tui modules.
+- Input: `terminalName` string (from `custom.terminal` NixOS option, bridged
+  via `home-manager.extraSpecialArgs`).
+- Exports: `term` (store path), `package`, `packages` (for `home.packages`),
+  `exec cmd` (launch command in new window), `execClass class cmd` (launch
+  with window class — foot: `--app-id`, ghostty: `--class`).
+- Hosts select their terminal via `custom.terminal = "foot" | "ghostty"` in
+  `hosts/<hostname>.nix`; all consumer modules are terminal-agnostic.
+- Consumer modules MUST use `terminal.term`/`terminal.exec`/`terminal.execClass`
+  — never hardcode `foot` or `ghostty` strings.
+
+### C23. Noctalia Shell config contract
+- `homeManager.noctalia` uses `programs.noctalia.enable = true` (HM native
+  module). Config keys are documented in
+  `~config/noctalia/README.md` — ONLY documented keys are valid.
+- Validated with `noctalia config validate` (zero warnings expected).
+- Settings: `[theme]` (mode, source, builtin), `[bar.default]` (position,
+  start/end widgets), `[dock]` (enabled), `[wallpaper]` (enabled, fill_mode),
+  `[shell]` (clipboard_enabled, clipboard_history_max_entries, setup_wizard_enabled),
+  `[accessibility]` (ui_scale), `[idle.behavior.*]` (enabled), `[notification]`
+  (enable_daemon), `[battery]` (warning_threshold), `[theme.templates]`
+  (enable_builtin_templates, builtin_ids, enable_community_templates,
+  community_ids).
+- Hooks: `[hooks]` section fires shell commands on Noctalia events.
+  `colors_changed` fires after theme palette resolution and template updates
+  (startup + live GUI theme changes). Our hook patches `alpha` and `blur`
+  into `~/.config/foot/themes/noctalia` after Noctalia regenerates it
+  (idempotent via `grep -q '^alpha='` guard). Available events: `started`,
+  `colors_changed`, `theme_mode_changed`, `wallpaper_changed`,
+  `session_locked/unlocked`, `battery_*`, `power_profile_changed`.
+- Templates: built-in template IDs (`foot`, `hyprland`, `btop`, `gtk3`,
+  `gtk4`, `qt`, `kcolorscheme`, `emacs`, `helix`, `cava`, `starship`, etc.)
+  are opt-in via `builtin_ids`. Foot integration: `foot.nix` conditionally
+  `include`s `~/.config/foot/themes/noctalia` when `programs.noctalia.enable`
+  is true; hardcoded Catppuccin colors serve as fallback when Noctalia is
+  absent. Hyprland integration: `hyprland` template generates
+  `~/.config/hypr/noctalia.lua` with color vars + `apply_theme()`.
+- Autostart: noctalia launches via `hl.on("hyprland.start", ...)` using full
+  store path (`inputs.noctalia.packages.x86_64-linux.default`).
+- Battery widget requires UPower D-Bus service (see C24).
+- User guide: `modules/_assets/documentation/user/noctalia-guide.md` — full
+  reference for bar customization, plugins, theming, keybindings, and Home
+  Manager Nix syntax.
+
+### C24. UPower battery status contract
+- `services.upower.enable = true` in `system/battery.nix` provides battery
+  status via D-Bus (`org.freedesktop.UPower`).
+- Consumed by: Noctalia battery widget (Control Center + bar widget).
+- Does NOT conflict with TLP: TLP manages power policies (CPU governor,
+  charge thresholds, PCIe ASPM); UPower provides read-only battery status.
+- Without UPower enabled: Noctalia battery widget and Control Center battery
+  settings are empty.
+
 ---
 
 ## 3. Wrapper / PATH status table
@@ -324,9 +412,9 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 |---|---|---|---|
 | `otter-open` / `otter-power` / `otter-apps` | otterLauncher | PATH-based | — (module-owned, stays) |
 | `showoff` (+ layout/term-rotator) | showoff | PATH-based via HM profile | — |
-| `otter-launch` / `otter-launch-inner` | otterLauncher | absolute ghostty + PATH launcher | — |
-| hyprland keybinds/autostart | hyprland | absolute user-scope paths | — |
-| waybar on-clicks/exec | waybar | absolute user-scope, PATH system-scope | otter-open stays PATH-based |
+| `otter-launch` | otterLauncher | `terminal.execClass` abstraction (foot: `--app-id`, ghostty: `--class`) | — |
+| hyprland keybinds/autostart | hyprland | `terminal.exec`/`terminal.term` abstraction for user-scope; absolute paths for system-scope | — |
+| noctalia autostart | hyprland | `inputs.noctalia.packages.*.default` (store path) | — |
 
 ---
 
@@ -336,6 +424,9 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   issues; frozen (TODO stretch).
 - `services.state.items` bluetooth — REACH, as-is (`../plans/deferred/state-implementation.md`).
 - Ghostty window rules/classes (incl. dead `com.center.focus`) — kept as legacy
-  (phase-3 decision, void).
+  (phase-3 decision, void). Experimental stack only (laptop).
 - `dk`/`obs` config.toml stubs — left as-is.
 - `_lib/` naming (no `modules/utils/` move) — kept (phase-3 decision).
+- **Noctalia config**: only documented settings are valid; validated with
+  `noctalia config validate`. Non-existent keys silently accepted but produce no
+  effect.

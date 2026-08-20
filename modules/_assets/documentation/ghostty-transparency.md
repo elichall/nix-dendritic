@@ -1,6 +1,6 @@
 # Ghostty Background Transparency (postmortem)
 
-When did it happen: 2026-08-11. Config involved: `modules/theme.nix` (generated
+When did it happen: 2026-08-11. Config involved: `modules/display/experimental/theme.nix` (generated
 GTK CSS). Outcome: fixed by scoping one CSS rule; ghostty transparency and blur
 now work. This doc explains the mechanism so the trap is not re-introduced.
 
@@ -173,6 +173,6 @@ app's own config, never here.
 
 | File | Role |
 | --- | --- |
-| `modules/display/theme.nix` | Generates `~/.config/gtk-{3,4}.0/gtk.css` (palette-only since 2026-08-11) |
+| `modules/display/experimental/theme.nix` | Generates `~/.config/gtk-{3,4}.0/gtk.css` (palette-only since 2026-08-11); experimental stack only (laptop). Stable stack uses Noctalia theme engine |
 | `~/.config/gtk-4.0/gtk.css` | Live symlink into `.local/share/theme/generated/gtk/colors.css` |
 | `modules/_assets/documentation/ghostty-transparency.md` | This postmortem (tracked copy; live source `/etc/nixos/assets/ghostty-transparency.md`) |
