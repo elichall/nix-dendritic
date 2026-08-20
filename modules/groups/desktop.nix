@@ -17,6 +17,7 @@
       self.modules.homeManager.tui
       self.modules.homeManager.noctalia
       self.modules.homeManager.otterLauncher
+      self.modules.homeManager.showoff
     ];
   };
 }

@@ -10,6 +10,12 @@
         };
         bar.default = {
           position = "top";
+          start = [ "workspaces" ];
+          end = [
+            "battery"
+            "volume"
+            "clock"
+          ];
         };
         dock = {
           enabled = false;
@@ -29,6 +35,19 @@
         accessibility = {
           ui_scale = 1.0;
           high_contrast = false;
+        };
+        idle = {
+          behavior = {
+            lock = {
+              enabled = false;
+            };
+            screen-off = {
+              enabled = false;
+            };
+          };
+        };
+        notification = {
+          enable_daemon = true;
         };
       };
     };

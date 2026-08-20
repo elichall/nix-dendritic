@@ -40,6 +40,7 @@ in
       systemManager = "otter-power";
 
       hypridleCmd = "${pkgs.hypridle}/bin/hypridle";
+      showoff = "showoff";
       otterCmd = "otter-apps --refresh-cache";
       playerctlCmd = "${pkgs.playerctl}/bin/playerctl";
     in
@@ -96,6 +97,7 @@ in
           local screenShot = "${screenShot}"
           local fileManager = "${fileManager}"
           local systemManager = "${systemManager}"
+          local sleepScreen = "${showoff}"
 
           -------------------
           -- -- AUTOSTART -- --
@@ -202,6 +204,7 @@ in
 
           hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("[float] " .. terminal))
           hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(tmux))
+          hl.bind(mainMod .. " + S", hl.dsp.exec_cmd(sleepScreen))
           hl.bind(mainMod .. " + C", hl.dsp.window.close())
           hl.bind(mainMod .. " + escape", hl.dsp.exec_cmd(systemManager))
           hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))

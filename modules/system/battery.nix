@@ -5,6 +5,7 @@
 # Wired into workstation.nix via `self.modules.nixos.battery`.
 { inputs, ... }: {
   flake.modules.nixos.battery = { ... }: {
+    services.upower.enable = true;
     services.power-profiles-daemon.enable = false;
     services.tlp = {
       enable = true;
