@@ -12,8 +12,7 @@
       ...
     }:
     let
-      themeLib = import ../../_lib/theme.nix { home = config.home.homeDirectory; };
-      THEME_DIR = themeLib.dir;
+      THEME_DIR = config.theme.dir;
 
       # Tracked wallpaper set provisioned into ~/Pictures/Wallpapers. Profile
       # wallpapers above reference the theme subset by exact path; waypaper
@@ -104,7 +103,7 @@
 
         THEME_DIR="${THEME_DIR}"
         GENERATED="$THEME_DIR/generated"
-        GHOSTTY_CONF="${themeLib.ghosttyThemeConf}"
+        GHOSTTY_CONF="${config.theme.ghosttyThemeConf}"
         GHOSTTY=${pkgs.ghostty}/bin/ghostty
         JQ=${pkgs.jq}/bin/jq
 

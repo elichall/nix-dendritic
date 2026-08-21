@@ -62,6 +62,11 @@ list() {
     # waypaper is CLI-only here (driven by the theme engine); its GUI desktop
     # entry is intentionally excluded from the app picker.
     active && FILENAME ~ /waypaper\.desktop$/ { next }
+    # footclient/foot-server are helper binaries, not user-launchable apps.
+    active && FILENAME ~ /footclient\.desktop$/ { next }
+    active && FILENAME ~ /foot-server\.desktop$/ { next }
+    # dev.noctalia.Noctalia is the daemon entry; launching it does nothing.
+    active && FILENAME ~ /dev\.noctalia\.Noctalia\.desktop$/ { next }
     active && /^Name=/      { name = substr($0, index($0,"=")+1); next }
     active && /^Exec=/      { exec = substr($0, index($0,"=")+1); next }
     active && /^Icon=/      { icon = substr($0, index($0,"=")+1); next }

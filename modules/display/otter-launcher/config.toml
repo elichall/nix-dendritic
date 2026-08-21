@@ -106,7 +106,7 @@ FILE_RELATIVE=$(find "$HOME/.nix" \
   --color "info:8,separator:8" \
   --prompt '   >> ' )
 
-[ -n "$FILE_RELATIVE" ] && setsid -f ghostty --class=com.special.window -e bash -c "cd \"$HOME/.nix\" && nvim \"$FILE_RELATIVE\""
+[ -n "$FILE_RELATIVE" ] && setsid -f @TERMINAL@ @CLASS_FLAG@com.special.window -e bash -c "cd \"$HOME/.nix\" && nvim \"$FILE_RELATIVE\""
 '''
 
 [[modules]]
@@ -114,14 +114,14 @@ description = " nix rebuild"
 prefix = "nrb"
 unbind_proc = false
 cmd = """
-setsid -f ghostty --class=com.special.window -e bash -c '
+setsid -f @TERMINAL@ @CLASS_FLAG@com.special.window -e bash -c '
 sudo nixos-rebuild switch --flake "$HOME/.nix#workstation"
 status=$?
 if [ "$status" -eq 0 ]; then
-  hyprctl notify 5 6000 "rgb(2ecc71)" "nixos-rebuild succeeded" >/dev/null 2>&1
+  @NOTIFY_CMD@ success "nixos-rebuild succeeded"
   exit 0
 else
-  hyprctl notify 3 10000 "rgb(e74c3c)" "nixos-rebuild FAILED (exit $status)" >/dev/null 2>&1
+  @NOTIFY_CMD@ error "nixos-rebuild FAILED (exit $status)"
   echo
   echo "Build failed - Press Enter to close..."
   read
@@ -134,7 +134,7 @@ prefix = "nsh"
 with_argument = true
 unbind_proc = false
 cmd = """
-setsid -f ghostty --class=com.waybar.tui -e bash -c 'nix-shell -p {}; echo; echo "Press Enter to close..."; read' >/dev/null 2>&1
+setsid -f @TERMINAL@ @CLASS_FLAG@com.waybar.tui -e bash -c 'nix-shell -p {}; echo; echo "Press Enter to close..."; read' >/dev/null 2>&1
 """
 
 [[modules]]
@@ -162,7 +162,7 @@ project_name=$(ls -1 ~/Projects | fzf \
 --cycle \
 --color "info:8,separator:8" \
 --prompt '  󰉋 >> ' )
-[ -n "$project_name" ] && setsid -f ghostty -e tmux new-session -A -s "$project_name" -c "$HOME/Projects/$project_name"
+[ -n "$project_name" ] && setsid -f @TERMINAL@ -e tmux new-session -A -s "$project_name" -c "$HOME/Projects/$project_name"
 """
 
 [[modules]]
@@ -212,7 +212,7 @@ if [ -n "$host" ]; then
     
     session_name=$(echo "$host" | tr '.' '_')
     
-    setsid -f ghostty -e bash -c "tmux new-session -A -s '$session_name' 'ssh $target; exec bash'"
+    setsid -f @TERMINAL@ -e bash -c "tmux new-session -A -s '$session_name' 'ssh $target; exec bash'"
 fi
 """
 
@@ -248,7 +248,7 @@ case "$action" in
     name=$(echo "$name" | xargs)
     [ -n "$name" ] && {
       tmux new-session -d -s "$name"
-      setsid -f ghostty -e tmux new-session -A -s "$name"
+      setsid -f @TERMINAL@ -e tmux new-session -A -s "$name"
     }
     ;;
   *)
@@ -263,7 +263,7 @@ case "$action" in
     --preview-window=right:50%,wrap )
     [ -z "$target" ] && exit 0
     case "$action" in
-      switch) setsid -f ghostty -e tmux new-session -A -s "$target" ;;
+      switch) setsid -f @TERMINAL@ -e tmux new-session -A -s "$target" ;;
       rename)
         printf '  󰆍 Rename "%s" to: ' "$target"
         read newname
@@ -321,7 +321,7 @@ prefix = "man"
 with_argument = true
 unbind_proc = false
 cmd = """
-setsid -f ghostty --class=com.waybar.tui -e bash -c 'man {}; echo; echo "Press Enter to close..."; read' >/dev/null 2>&1
+setsid -f @TERMINAL@ @CLASS_FLAG@com.waybar.tui -e bash -c 'man {}; echo; echo "Press Enter to close..."; read' >/dev/null 2>&1
 """
 
 [[modules]]
@@ -330,5 +330,5 @@ prefix = "obs"
 with_argument = false
 unbind_proc = false
 cmd = """
-setsid -f ghostty --class=com.waybar.tui -e bash -c 'cd "$HOME/Documents/me/vault/research" && nvim' >/dev/null 2>&1
+setsid -f @TERMINAL@ @CLASS_FLAG@com.waybar.tui -e bash -c 'cd "$HOME/Documents/me/vault/research" && nvim' >/dev/null 2>&1
 """

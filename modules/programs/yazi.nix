@@ -43,36 +43,57 @@
             {
               name = "Projects";
               text = "";
-              fg = "#E5C07B";
+            }
+            {
+              name = "foot";
+              text = "󰽒";
+            }
+            {
+              name = "git";
+              text = "";
+            }
+            {
+              name = "gtk-3.0";
+              text = "";
+            }
+            {
+              name = "gtk-4.0";
+              text = "";
+            }
+            {
+              name = "noctalia";
+              text = "󰏒";
             }
             {
               name = "Box";
               text = "󰍲";
-              fg = "#61AFEF";
+              fg = "#F25022";
             }
             {
               name = ".nix";
               text = "󱄅";
-              fg = "#7CA982";
+              fg = "#5fb8f2";
             }
             {
               name = "wallpapers";
               text = "󰸉";
-              fg = "#C678DD";
             }
             {
               name = ".var";
               text = "";
-              fg = "#98C379";
             }
             {
               name = "vault";
               text = "";
-              fg = "#56B6C2";
+              fg = "#A882FF";
             }
             {
-              name = "hyprland";
+              name = "hypr";
               text = "";
+            }
+            {
+              name = "pulse";
+              text = "";
             }
             {
               name = "ghostty";
@@ -103,6 +124,14 @@
             {
               name = "hyprland.lua";
               text = "";
+            }
+            {
+              name = "foot.ini";
+              text = "󰽒";
+            }
+            {
+              name = "noctalia*";
+              text = "󰏒";
             }
           ];
         };

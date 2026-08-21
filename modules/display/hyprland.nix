@@ -19,13 +19,18 @@ in
   };
 
   flake.modules.homeManager.hyprland =
-    { config, pkgs, terminalName, ... }:
+    {
+      config,
+      pkgs,
+      terminalName,
+      ...
+    }:
     let
       terminal = import ../_lib/terminal.nix { inherit pkgs terminalName; };
       noctaliaCmd = "${noctaliaPackage}/bin/noctalia";
       tmuxCmd = "${pkgs.tmux}/bin/tmux new-session -A -s 'main'";
       menu = "otter-open";
-      browser = (import ../_lib/browser.nix).command;
+      browser = config.browser.command;
 
       brightnessU = "${pkgs.brightnessctl}/bin/brightnessctl set 5%+";
       brightnessD = "${pkgs.brightnessctl}/bin/brightnessctl set 5%-";
@@ -65,21 +70,26 @@ in
 
         extraConfig = ''
           -- --- SINGLE SOURCE OF TRUTH COLOR LINKING ---
-          ${if config.programs.noctalia.enable then ''
-          local noctalia = dofile(os.getenv("HOME") .. "/.config/hypr/noctalia.lua")
-          local theme = {
-            accent = noctalia.colors.primary,
-            muted = noctalia.colors.surface,
-            bg = noctalia.colors.shadow,
+          ${
+            if config.programs.noctalia.enable then
+              ''
+                local noctalia = dofile(os.getenv("HOME") .. "/.config/hypr/noctalia.lua")
+                local theme = {
+                  accent = noctalia.colors.primary,
+                  muted = noctalia.colors.surface,
+                  bg = noctalia.colors.shadow,
+                }
+                noctalia.apply_theme()
+              ''
+            else
+              ''
+                local theme = {
+                  accent = "rgb(74, 199, 236)",
+                  muted = "rgb(88, 91, 112)",
+                  bg = "rgb(17, 17, 27)"
+                }
+              ''
           }
-          noctalia.apply_theme()
-          '' else ''
-          local theme = {
-            accent = "rgb(74, 199, 236)",
-            muted = "rgb(88, 91, 112)",
-            bg = "rgb(17, 17, 27)"
-          }
-          ''}
 
           ------------------
           -- -- MONITORS -- --
@@ -269,6 +279,20 @@ in
           end
 
           hl.workspace_rule({ workspace = "special:magic", gaps_out = { top = 40, right = 250, bottom = 40, left = 250 } })
+
+          --------------------------
+          -- -- LAYER RULES -- --
+          --------------------------
+          hl.layer_rule({
+            name = "noctalia",
+            match = {
+              namespace = "^noctalia-(bar-.+|notification|dock|panel|attached-panel|osd|window-switcher)$",
+            },
+            no_anim = true,
+            ignore_alpha = 0.5,
+            blur = true,
+            blur_popups = true,
+          })
 
           -----------------------
           -- -- WINDOW RULES -- --
