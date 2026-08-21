@@ -3,12 +3,11 @@
 # ==========================================================================
 # Registry map + yazi.desktop contract: modules/_assets/documentation/module-contracts.md
 # (C4). Lives in system/ because it is system-scale XDG integration.
+# Default application associations moved to HM (modules/programs/mimeDefaults.nix).
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.nixos.mime = { pkgs, lib, ... }:
   let
-    browserDesktop = (import ../_lib/browser.nix).desktop;
-
     engineeringMimes = {
       "model/step" = { comment = "STEP 3D model"; globs = [ "*.step" "*.stp" ]; };
       "application/x-vtk" = { comment = "VTK data file"; globs = [ "*.vtk" ]; };
@@ -36,22 +35,5 @@
   in
   {
     environment.systemPackages = [ customMime ];
-
-    # CONTRACT: the yazi.desktop target is defined in homeManager.tui
-    # (modules/display/tui.nix) with mimeType = [ "inode/directory" ].
-    # Keep the desktop ID below in sync with that entry.
-    xdg.mime.defaultApplications = {
-      "text/html" = browserDesktop;
-      "model/step" = "org.freecad.FreeCAD.desktop";
-      "application/x-vtk" = "org.paraview.ParaView.desktop";
-      "application/x-gmsh-msh" = "org.paraview.ParaView.desktop";
-      "application/x-paraview-vtu" = "org.paraview.ParaView.desktop";
-      "application/x-paraview-vtm" = "org.paraview.ParaView.desktop";
-      "x-scheme-handler/http" = browserDesktop;
-      "x-scheme-handler/https" = browserDesktop;
-      "x-scheme-handler/about" = browserDesktop;
-      "x-scheme-handler/unknown" = browserDesktop;
-      "inode/directory" = "yazi.desktop";
-    };
   };
 }

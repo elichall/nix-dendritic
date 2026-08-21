@@ -6,8 +6,7 @@
 # writeShellApplication so shellcheck runs at build time. File templates are
 # writeText (not heredocs) so nil formatting can never misalign delimiters;
 # content is indented level with the closing '' so Nix strips it to flush.
-# ==========================================================================
-{ ... }: {
+{ self, ... }: {
   flake.modules.homeManager.initProject =
     { pkgs, ... }:
     let

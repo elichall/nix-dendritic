@@ -24,6 +24,9 @@
       self.modules.homeManager.waypaper
       self.modules.homeManager.waybar
       self.modules.homeManager.theme
+      self.modules.homeManager.browser
+      self.modules.homeManager.mimeDefaults
+      self.modules.homeManager.themePaths
     ];
   };
 }

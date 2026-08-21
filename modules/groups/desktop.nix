@@ -18,6 +18,9 @@
       self.modules.homeManager.noctalia
       self.modules.homeManager.otterLauncher
       self.modules.homeManager.showoff
+      self.modules.homeManager.browser
+      self.modules.homeManager.mimeDefaults
+      self.modules.homeManager.themePaths
     ];
   };
 }

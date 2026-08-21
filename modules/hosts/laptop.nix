@@ -41,6 +41,9 @@
               # user base
               self.modules.homeManager.main
 
+              # cross-module option declarations (must come before feature modules)
+              self.modules.homeManager.options
+
               # aspect groups (dev toolchain + display/wallpaper preset + research)
               self.modules.homeManager.toolbox
               self.modules.homeManager.desktopExp
