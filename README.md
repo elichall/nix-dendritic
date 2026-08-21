@@ -90,3 +90,19 @@ nix build .#nixosConfigurations.workstation.config.system.build.toplevel
 
 Notes: files must be `git add`ed before evaluation (the flake only sees
 tracked files), and evals must be warning-free before switching.
+
+## AI usage
+
+This project was developed with [opencode](https://opencode.ai) as the
+agentic platform. The AI contributed across four areas: authoring
+documentation (decision logs, module contracts, maintenance guides),
+executing architectural refactors (dendritic flake migration, `_lib`
+elimination, options pattern, `lib.getExe` bulk refactor), researching
+NixOS module system semantics and flake-parts conventions, and translating
+human intent into working Nix/HM syntax for hyprland, foot, waybar, theme
+engines, and Noctalia integration.
+
+The human drives architectural decisions and design philosophy; the AI
+executes implementation, proposes alternatives, and catches
+inconsistencies. The `AGENTS.md` file and `.agents/skills/<name>/SKILL.md` files encode project conventions so
+AI agents follow the same patterns as the original collaboration.

@@ -3,8 +3,3 @@ nixos/
 results*/
 .envrc
 .direnv/
-
-# agent 
-.agents/
-AGENTS.md
-TODO.md
