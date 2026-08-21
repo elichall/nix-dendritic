@@ -2,10 +2,9 @@
 # MIME TYPES & DEFAULT APPLICATIONS
 # ==========================================================================
 # Registry map + yazi.desktop contract: modules/_assets/documentation/module-contracts.md
-# (C4). Lives in system/ because it is system-scale XDG integration.
-# Default application associations moved to HM (modules/programs/mimeDefaults.nix).
+# (C4). System-scale XDG MIME registration (NixOS) + user default applications (HM).
 # ==========================================================================
-{ inputs, ... }: {
+{ ... }: {
   flake.modules.nixos.mime = { pkgs, lib, ... }:
   let
     engineeringMimes = {
@@ -35,5 +34,24 @@
   in
   {
     environment.systemPackages = [ customMime ];
+  };
+
+  flake.modules.homeManager.mimeDefaults = { config, ... }: {
+    xdg.mimeApps = {
+      enable = true;
+      defaultApplications = {
+        "text/html" = [ config.browser.desktop ];
+        "x-scheme-handler/http" = [ config.browser.desktop ];
+        "x-scheme-handler/https" = [ config.browser.desktop ];
+        "x-scheme-handler/about" = [ config.browser.desktop ];
+        "x-scheme-handler/unknown" = [ config.browser.desktop ];
+        "inode/directory" = [ "yazi.desktop" ];
+        "model/step" = [ "org.freecad.FreeCAD.desktop" ];
+        "application/x-vtk" = [ "org.paraview.ParaView.desktop" ];
+        "application/x-gmsh-msh" = [ "org.paraview.ParaView.desktop" ];
+        "application/x-paraview-vtu" = [ "org.paraview.ParaView.desktop" ];
+        "application/x-paraview-vtm" = [ "org.paraview.ParaView.desktop" ];
+      };
+    };
   };
 }

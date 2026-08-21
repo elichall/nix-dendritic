@@ -25,13 +25,10 @@
       # pass home-manager as a module to the nixos system configuration
       inputs.home-manager.nixosModules.home-manager
 
-      ({ pkgs, config, ... }: {
-        custom.terminal = "ghostty";
-
+      ({ pkgs, ... }: {
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
-          extraSpecialArgs.terminalName = config.custom.terminal;
           sharedModules = [
             inputs.noctalia.homeModules.default
           ];
@@ -55,6 +52,8 @@
               self.modules.homeManager.rclone
               self.modules.homeManager.fastfetch
             ];
+
+            config.terminal.name = "ghostty";
           };
         };
       })

@@ -28,7 +28,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `nixos.audio` | `system/audio.nix` | rtkit, pipewire (alsa + pulse + 32-bit) |
 | `nixos.security` | `system/security.nix` | kernel sysctl hardening ONLY |
 | `nixos.battery` | `system/battery.nix` | TLP power mgmt (+ ppd disable): charge thresholds 75/80 on BOTH BAT0+BAT1 (T480 dual-battery); `PLATFORM_PROFILE_*` kept for Framework 13 Pro (no-op on T480 — no `platform_profile` sysfs); **UPower** (`services.upower.enable = true`) for battery status D-Bus (consumed by Noctalia battery widget) |
-| `nixos.mime` | `system/mime.nix` | custom-mime package only (default app associations moved to HM `mimeDefaults`) |
+| `nixos.mime` / `homeManager.mimeDefaults` | `system/mime.nix` | custom-mime package (NixOS) + default app associations (HM) — dual-scope |
 | `nixos.display` | `display/display.nix` | WLR/OZONE session vars, XDG portal, ly display manager; `options.custom.terminal` (default `"foot"` — host-level terminal choice) |
 | `nixos.hyprland` | `display/hyprland.nix` | Compositor (programs.hyprland) ONLY; user tooling → `homeManager.hyprland` |
 | `nixos.cmdLine` | `programs/cmdLine.nix` | programs.bash enable, direnv system-wide |
@@ -291,21 +291,24 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 - Everything in `modules/_assets/` must be tracked (root `.gitignore` rule is
   root-anchored `/_assets/`; do not un-anchor).
 
-### C14. `_lib/` eliminated — options module pattern
-- **`_lib/` has been eliminated.** All cross-module shared values use the options
-  module pattern (decision #53): declare in `modules/options/<name>.nix`, set in
-  a feature module, consume via `config.*`.
-- Terminal abstraction (`config.terminal.*`): merged pattern in `options/terminal.nix`
-  (declares + sets in one file, like `theme-paths.nix`). Consumers read
-  `config.terminal.{name,term,package,packages,exec,execClass}`.
-- Browser abstraction (`config.browser.*`): pure declarations in `options/browser.nix`,
-  set in `programs/browser.nix`.
-- Utility options (`config.utils.*`): pure declarations in `options/{notifySend,interactionWatch}.nix`,
-  set in `utils/{notifySend,interactionWatch}.nix`.
-- Utility scripts (interaction-watch, hybrid-notify, init-project) live in
-  `modules/utils/` as standalone flake-parts modules.
-- Legacy `_lib/` convention (for reference): shared non-module values via
-  explicit relative import. `_lib` files define no `flake.modules.*`.
+### C14. `_lib/` eliminated — options module pattern (Option A)
+- **`_lib/` has been eliminated.** All cross-module shared values use the Option A
+  pattern (decision #53): options files declare `options.*` with `mkDefault`
+  values that auto-resolve. Hosts set config overrides. Feature modules create
+  derivations and add to `home.packages` but NEVER set config values.
+- **Suffixed files:** `options/<name>Opt.nix` — suffix enables mini.pick file
+  searching when options share names with feature modules.
+- **Terminal abstraction** (`config.terminal.*`): `options/terminalOpt.nix`
+  declares all 6 options with `mkDefault` values derived from `terminal.name`.
+  Hosts set `terminal.name = "ghostty"`; all derived values cascade.
+- **Theme abstraction** (`config.theme.*`): `options/themeOpt.nix` declares
+  palette + variant options. Night/noon derivations computed lazily via
+  `theme.variant.default = if config.theme.isLight then "noon" else "night"`.
+- **Browser abstraction** (`config.browser.*`): `options/browserOpt.nix`
+  declares `browser.name` (default `"firefox"`) + lazy computed `browser.command`.
+- **Utility options** (`config.utils.*`): combined in `options/utilsOpt.nix`
+  (explains why options are needed: bridge between flake-level derivations and
+  HM config). Set by `utils/{notifySend,interactionWatch}.nix`.
 
 ### C15. interaction-watch interface
 - Definition: `modules/utils/interactionWatch.nix` (flake-parts module)
@@ -330,10 +333,11 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - `nixos.base` = battery, network, hardware, audio, security.
 - `nixos.desktop` = display, hyprland, mime (NixOS side, shared).
 - `nixos.desktopExp` = display, hyprland, mime (same as desktop — NixOS side shared).
-- `homeManager.options` = cross-module option declarations (browser, interactionWatch, notifySend, terminal).
-- `homeManager.desktop` = hyprland, foot, tui, noctalia, otterLauncher, showoff, browser, mimeDefaults, themePaths (stable).
+- `homeManager.options` = cross-module option declarations (`options/*Opt.nix`):
+  browser, terminal, theme, notifySend, interactionWatch.
+- `homeManager.desktop` = hyprland, foot, tui, noctalia, otterLauncher, showoff, mimeDefaults (stable).
 - `homeManager.desktopExp` = hyprland, ghostty, tui, otterLauncher, showoff,
-  awww, waypaper, waybar, theme, browser, mimeDefaults, themePaths (experimental).
+  awww, waypaper, waybar, theme, mimeDefaults (experimental).
 - `homeManager.toolbox` = cmdLine, git, tmux, nvim, yazi, opencode.
 - `homeManager.utils` = initProject, interactionWatch, notifySend.
 - `homeManager.researchGroup` = research, obsidian, zotero.
@@ -387,12 +391,12 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 ### C22. Terminal abstraction (`config.terminal.*`)
 - Terminal abstraction provides a terminal-agnostic interface consumed by
   hyprland, waybar, showoff, otter, and tui modules.
-- **Merged pattern:** `modules/options/terminal.nix` declares options AND sets
-  config values (like `theme-paths.nix`). Input: `terminalName` string (from
-  `custom.terminal` NixOS option, bridged via `home-manager.extraSpecialArgs`).
+- **Declarations:** `modules/options/terminalOpt.nix` declares all 6 options
+  with `mkDefault` values derived from `terminal.name`. No config-setting
+  feature module — values cascade from host identity choice.
 - **Exports:** `config.terminal.{name,term,package,packages,exec,execClass}`.
-- Hosts select their terminal via `custom.terminal = "foot" | "ghostty"` in
-  `hosts/<hostname>.nix`; all consumer modules are terminal-agnostic.
+- Hosts select their terminal via `terminal.name = "foot" | "ghostty"` in
+  `hosts/<hostname>.nix`; all derived values cascade automatically.
 - Consumer modules MUST use `config.terminal.term`/`config.terminal.exec`/
   `config.terminal.execClass` — never hardcode `foot` or `ghostty` strings.
 
@@ -501,8 +505,10 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Ghostty window rules/classes (incl. dead `com.center.focus`) — kept as legacy
   (phase-3 decision, void). Experimental stack only (laptop).
 - `dk`/`obs` config.toml stubs — left as-is.
-- `_lib/` naming — **ELIMINATED** (decision #53). All cross-module shared values
-  use the options module pattern. New modules MUST use `config.*` for sharing.
+- `_lib/` naming — **ELIMINATED** (decision #53, superseded by Option A revision).
+  All cross-module shared values use the options module pattern with auto-wiring
+  defaults. Feature modules NEVER set config values. New modules MUST use
+  `config.*` for sharing.
 - **Noctalia config**: only documented settings are valid; validated with
   `noctalia config validate`. Non-existent keys silently accepted but produce no
   effect.

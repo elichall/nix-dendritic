@@ -615,33 +615,36 @@ palette refresh. Verified by source code analysis of opencode's signal handlers.
 **Where:** `modules/display/desktop/noctalia.nix` (noctalia-theme-sync script),
 `module-contracts.md` C24-C26, `decisions.md` #52.
 
-### 53. Options module pattern replaces `_lib/` (preferred pattern)
-**Decision:** Eliminate `modules/_lib/` by migrating shared values to
-`flake.modules.homeManager.*` options. Each cross-module value gets its own
-`modules/options/<name>.nix` file declaring the option; a feature module sets
-the value; consumers read `config.*` without importing providers. Options are
-bundled in `groups/options.nix` and imported by hosts before feature modules.
-**Why:** `_lib/` required explicit relative imports (`import ../_lib/foo.nix`),
-which violates the spirit of path agnosticism (Rule 2). The options pattern
-uses the module system's own dependency resolution — consumers declare the
-option name, the module system wires the value. No relative imports, no
-coupling between provider and consumer. Each option file is self-documenting
-(its filename describes what it provides). The `groups/options.nix` bundle
-gives hosts a single-line inclusion.
-**Pattern (4 steps):**
-1. `modules/options/<name>.nix` — declares `options.<scope>.<name>` (pure
-   declaration, no config values)
-2. `modules/<category>/<feature>.nix` — sets `config.<scope>.<name>` values
-3. `modules/groups/options.nix` — imports all options files into one bundle
-4. Hosts import `self.modules.homeManager.options` before feature modules
-**Exception:** When a feature module both declares AND sets options (e.g.
-`theme-paths.nix` declares `options.theme.*` and sets `config.theme.*`), the
-separate `options/<name>.nix` file is unnecessary — merge into the feature
-module. Options files exist only for pure declarations consumed by multiple
-unrelated feature modules.
-**Where:** `modules/options/{browser,interactionWatch,notifySend,terminal}.nix`,
-`modules/groups/options.nix`, `modules/display/experimental/theme-paths.nix`,
-`modules/programs/{browser,mimeDefaults}.nix`.
+### 53. Options module pattern — auto-wiring defaults (Option A)
+**Decision:** Eliminate `modules/_lib/` and all feature-module config setting.
+Options files declare `options.*` with defaults that auto-resolve. Hosts set
+config overrides only when divergent from defaults. Feature modules create
+derivations and add to `home.packages` but NEVER set config values.
+**Why:** Three categories of config values have different ownership needs:
+- **Host identity** (`terminal.name`, `browser.name`): host owns
+- **Derived computations** (`terminal.term`, `browser.command`): computed lazily
+  from identity — nobody should set these manually
+- **Custom derivations** (`utils.notifySend`): created by feature modules — hosts
+  shouldn't redefine these
+Option A solves all three cleanly: options files compute derived values lazily
+from identity choices, and reference flake outputs for custom derivations. Hosts
+are clean (2-3 lines of identity choices). No intermediate config-setting modules.
+**Pattern:**
+1. `modules/options/<name>Opt.nix` — declares `options.*` with `mkDefault`
+   values that auto-resolve. Suffix `Opt` enables mini.pick file searching.
+2. Feature modules create derivations, add to `home.packages`, export via
+   flake outputs. Do NOT set config values.
+3. Hosts set config overrides (identity choices). Most config resolved by defaults.
+4. `modules/groups/options.nix` — bundles all `options/*Opt.nix` files.
+5. No merged modules. No intermediate config-setting modules.
+**Key design points:**
+- Derived values use lazy `config.*` references: `term.default = "${pkgs.${config.terminal.name}}/bin/${config.terminal.name}"`
+- Custom derivation defaults reference flake outputs: `default = self.utils.notifySend`
+- Any host can override any value: `config.terminal.name = "ghostty"` cascades to all derived values
+**Supersedes:** #53 (previous options pattern) and #47 (merged terminal pattern).
+**Where:** `modules/options/{browser,terminal,theme,utils}Opt.nix`,
+`modules/groups/options.nix`, `modules/utils/{notifySend,interactionWatch}.nix`,
+`modules/system/mime.nix` (NixOS + HM scopes).
 
 ### 54. `lib.getExe` / `lib.getExe'` replaces `${pkgs.<name>}/bin/<name>`
 **Decision:** Replace all `${pkgs.<name>}/bin/<name>` patterns with
@@ -709,11 +712,12 @@ otter, tui, notifySend, interactionWatch.
 | 44 | Noctalia Shell replaces hand-rolled stack | — | Noctalia migration | — | module-contracts C23 |
 | 45 | Foot replaces ghostty (stable) | — | Noctalia migration | — | module-contracts C22 |
 | 46 | 3-host split | — | Noctalia migration | — | module-contracts host wiring |
-| 47 | Terminal abstraction via `config.terminal.*` (merged pattern) | Rule 2 | _lib elimination | — | module-contracts C22 |
+| 47 | Terminal abstraction via `config.terminal.*` (merged pattern → SUPERSEDED) | Rule 2 | _lib elimination | — | module-contracts C22 |
 | 48 | UPower for battery status | — | Noctalia migration | — | module-contracts C27 |
 | 49 | `--class` → `--app-id` migration (foot) | — | Noctalia migration | — | module-contracts C5 |
 | 50 | Showoff ported to terminal abstraction | — | Noctalia migration | — | module-contracts C18 |
 | 51 | TUI apps inherit terminal colors, no templates needed | — | Noctalia migration | — | noctalia-guide.md §4 |
 | 52 | Terminal/dev theming: Approach A + noctalia-theme-sync | — | Noctalia migration | — | module-contracts C24-C26 |
-| 53 | Options module pattern replaces `_lib/` | Rule 2 | _lib elimination | — | module-contracts C14 |
+| 53 | Options module pattern — auto-wiring defaults (Option A, supersedes original) | Rule 2 | _lib elimination | — | module-contracts C14 |
 | 54 | `lib.getExe` / `lib.getExe'` replaces `${pkgs.<name>}/bin/<name>` | Rule 2 | _lib elimination | — | module-contracts C22 |
+| 55 | `mimeDefaults.nix` merged into `mime.nix` (single file, dual scope) | Rule 1 | Option A cleanup | — | module-contracts C4, C16 |

@@ -1,41 +1,38 @@
 # Terminal abstraction — provides term path, package, exec helpers.
 # Consumed by hyprland, otter, showoff, tui, waybar via config.terminal.*
-# Merged pattern: declares options AND sets config values (like theme-paths.nix).
-{ self, ... }: {
-  flake.modules.homeManager.terminal = { config, pkgs, lib, terminalName, ... }: {
+# Hosts override terminal.name; all derived values cascade automatically.
+{ lib, ... }: {
+  flake.modules.homeManager.terminal = { config, pkgs, ... }: {
     options.terminal = {
       name = lib.mkOption {
         type = lib.types.str;
+        default = "foot";
       };
       term = lib.mkOption {
         type = lib.types.str;
+        default = "${pkgs.${config.terminal.name}}/bin/${config.terminal.name}";
       };
       package = lib.mkOption {
         type = lib.types.package;
+        default = pkgs.${config.terminal.name};
       };
       packages = lib.mkOption {
         type = lib.types.listOf lib.types.package;
+        default = [ pkgs.${config.terminal.name} ];
       };
       exec = lib.mkOption {
         type = lib.types.functionTo lib.types.str;
+        default = cmd: "${config.terminal.term} -e ${cmd}";
       };
       execClass = lib.mkOption {
         type = lib.types.functionTo (lib.types.functionTo lib.types.str);
+        default =
+          class: cmd:
+          if config.terminal.name == "foot" then
+            "${config.terminal.term} --app-id=${class} -e ${cmd}"
+          else
+            "${config.terminal.term} --class=${class} -e ${cmd}";
       };
-    };
-
-    config.terminal = {
-      name = terminalName;
-      term = "${pkgs.${terminalName}}/bin/${terminalName}";
-      package = pkgs.${terminalName};
-      packages = [ pkgs.${terminalName} ];
-      exec = cmd: "${config.terminal.term} -e ${cmd}";
-      execClass =
-        class: cmd:
-        if terminalName == "foot" then
-          "${config.terminal.term} --app-id=${class} -e ${cmd}"
-        else
-          "${config.terminal.term} --class=${class} -e ${cmd}";
     };
   };
 }

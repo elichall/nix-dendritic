@@ -3,9 +3,10 @@
 # ==========================================================================
 # Shared pointer-interaction watcher (DRY source for showoff + otter-launcher).
 # Full interface spec: modules/_assets/documentation/module-contracts.md (C15).
+# Creates derivation + sets config.utils.interactionWatch.
 # Usage: interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 #                          [--bail-pattern REGEX] [--bail-comm COMM] --on-move CMD
-{ self, ... }: {
+{ ... }: {
   flake.modules.homeManager.interactionWatch = { pkgs, ... }: let
     cli = pkgs.writeShellApplication {
       name = "interaction-watch";

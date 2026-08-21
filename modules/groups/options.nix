@@ -1,14 +1,15 @@
 # ==========================================================================
 # CROSS-MODULE OPTIONS DECLARATIONS
 # ==========================================================================
-# Pure option declarations — no config values. Feature modules in later phases set values.
-# Note: terminal is NOT here — it follows the merged pattern (declares + sets in one file).
+# Option declarations (decision #53). Feature modules set config values;
+# hosts override identity choices. Suffix `Opt` in filenames for mini.pick.
 { self, ... }: {
   flake.modules.homeManager.options = {
     imports = [
-      self.modules.homeManager.optionsInteractionWatch
-      self.modules.homeManager.optionsNotifySend
-      self.modules.homeManager.optionsBrowser
+      self.modules.homeManager.terminal
+      self.modules.homeManager.optionsTheme
+      self.modules.homeManager.browser
+      self.modules.homeManager.optionsUtils
     ];
   };
 }

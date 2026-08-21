@@ -3,8 +3,9 @@
 # ==========================================================================
 # Routes notifications to Noctalia (notify-send via D-Bus) or Hyprland
 # (hyprctl notify, compositor-internal) based on programs.noctalia.enable.
-{ self, ... }: {
-  flake.modules.homeManager.notifySend = { config, pkgs, ... }: let
+# Creates derivation + sets config.utils.notifySend.
+{ ... }: {
+  flake.modules.homeManager.notifySend = { config, pkgs, lib, ... }: let
     isNoctalia = config.programs.noctalia.enable or false;
 
     cli = pkgs.writeShellApplication {
