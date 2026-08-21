@@ -1,7 +1,7 @@
 # ==========================================================================
 # CLIPBOARD (wl-clipboard)
 # ==========================================================================
-# Cross-host core integration; future nixos.clipboard may grow here. Registry
+# Cross-host core integration; future homeManager.clipboard may grow here. Registry
 # map: modules/_assets/documentation/module-contracts.md (§1).
 # ==========================================================================
 { inputs, ... }: {
