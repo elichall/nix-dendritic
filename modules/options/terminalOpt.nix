@@ -10,7 +10,7 @@
       };
       term = lib.mkOption {
         type = lib.types.str;
-        default = "${pkgs.${config.terminal.name}}/bin/${config.terminal.name}";
+        default = lib.getExe pkgs.${config.terminal.name};
       };
       package = lib.mkOption {
         type = lib.types.package;
