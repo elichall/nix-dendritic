@@ -5,12 +5,6 @@
 # nix.settings / nix.gc intentionally stay here (user choice).
 { inputs, lib, ... }: {
   flake.modules.nixos.main = { pkgs, lib, ... }: {
-    options.custom.terminal = lib.mkOption {
-      type = lib.types.str;
-      default = "foot";
-      description = "Terminal emulator name (resolved by options/terminal.nix)";
-    };
-
     config = {
       system.stateVersion = "26.05";
 

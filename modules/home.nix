@@ -28,7 +28,7 @@
       dotIcons.enable = false; # disable legacy ~/.icons mirror; XDG ~/.local/share/icons suffices
     };
 
-    # XDG portal + MIME defaults (defaultApplications live in nixos.mime)
+    # XDG portal + MIME defaults (defaultApplications live in homeManager.mimeDefaults)
     xdg.enable = true;
 
     # Packages managed by home-manager not by root

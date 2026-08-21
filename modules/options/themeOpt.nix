@@ -17,7 +17,7 @@
       };
       ghosttyThemeConf = lib.mkOption {
         type = lib.types.str;
-        default = "${config.home.homeDirectory}/.local/share/theme/generated/ghostty/theme.conf";
+        default = "${config.theme.generated}/ghostty/theme.conf";
       };
     };
   };
