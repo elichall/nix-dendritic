@@ -27,8 +27,12 @@ sudo nixos-rebuild switch --flake ~/.nix#workstation
 - Each file exports `flake.modules.nixos.<feature>` (system scope) and/or
   `flake.modules.homeManager.<feature>` (user scope) — the *registry*.
 - `modules/hosts/<hostname>.nix` aggregates registry modules into a
-  `nixosConfiguration` or `homeManagerConfiguration` (if host isn't NixOS); aspect groups (`base`, `desktop`, `toolbox`) are
-  presets that bundle related aspects.
+  `nixosConfiguration` or `homeManagerConfiguration` (if host isn't NixOS);
+  aspect groups (`base`, `desktop`, `toolbox`) are presets that bundle
+  related aspects.
+- `modules/options/*Opt.nix` files declare cross-module option skeletons
+  with auto-wiring defaults. Hosts override identity choices; feature
+  modules never set config values they don't own.
 - `flake.lock` is the only version pin — there are no channels. Inputs
   `home-manager`, `wlctl`, and `otter-launcher` follow the pinned nixpkgs
   (26.05) so the whole tree evaluates against one dependency closure.
@@ -39,10 +43,10 @@ sudo nixos-rebuild switch --flake ~/.nix#workstation
 flake.nix / flake.lock   Entrypoint + version pin (no channels)
 modules/                 The dendritic root (auto-imported by import-tree)
   _assets/               Static resources + docs (icons, wallpapers, decisions…)
-  _lib/                  Shared non-module helpers (browser, theme, interaction-watch)
   hosts/                 Host configurations (workstation + wsl/ubuntu/macos/server stubs)
-  groups/                Aspect-group presets (base, desktop, toolbox)
-  system/ display/ programs/   Feature aspects
+  options/               Cross-module option declarations (*Opt.nix suffix)
+  groups/                Aspect-group presets (base, desktop, toolbox, options, utils)
+  system/ display/ programs/ utils/ research/   Feature aspects
 legacy/                  (gitignored) frozen snapshot of the pre-flake config
 ```
 
@@ -67,6 +71,10 @@ legacy/                  (gitignored) frozen snapshot of the pre-flake config
    user-level.
 4. **Dependency self-containment** — every module declares every package it
    uses; duplicate declarations across modules are allowed (lists merge).
+5. **Option auto-wiring** — cross-module values use options files
+   (`options/*Opt.nix`) that declare with sensible defaults. Hosts set
+   config overrides; feature modules create derivations but never set
+   config values they don't own.
 
 ## Development & validation
 
