@@ -207,13 +207,15 @@ ripdrag's pill. Postmortem: `modules/_assets/documentation/ghostty-transparency.
 
 ### 19. Shared interaction watcher unifies showoff + otter
 **Decision:** One process-agnostic cursor watcher,
-`_lib/interaction-watch.nix`, replaces otter's broken `dismiss-on-pointer.sh`
+`modules/utils/interactionWatch.nix`, replaces otter's broken `dismiss-on-pointer.sh`
 and showoff's inline watcher. Modelled on showoff's WORKING watcher.
 **Why:** Two implementations of the same idea; otter's `pgrep -f` pattern
 never matched (the real comm is bare `otter-launcher`), so dismiss never
 fired. A single tested helper with `--on-move` callbacks removes the class of
 bug.
-**Where:** `modules/_lib/interaction-watch.nix`; consumers showoff + otter.
+**Where:** `modules/utils/interactionWatch.nix` (flake-parts module with
+`flake.utils.interactionWatch` export); consumers showoff + otter via
+`self.utils.interactionWatch pkgs`.
 
 ### 20. Dismiss = `pkill -x otter-launcher` (exact comm)
 **Decision:** Launcher dismissal uses exact-comm `pkill -x otter-launcher`;
@@ -555,7 +557,7 @@ enabled, both are empty. UPower does NOT conflict with TLP: TLP manages power
 policies (CPU governor, charge thresholds, PCIe ASPM); UPower provides
 read-only battery status. Both can coexist — TLP is the policy engine, UPower
 is the status reporter.
-**Where:** `modules/system/battery.nix`, `module-contracts.md` C24.
+**Where:** `modules/system/battery.nix`, `module-contracts.md` C27.
 
 ### 49. `--class` → `--app-id` migration for foot
 **Decision:** Replace all hardcoded `--class` flags with `terminal.execClass`
@@ -595,6 +597,51 @@ Our foot terminal passes the full Catppuccin 16-color palette to all child
 processes. Adding neovim/btop/starship/opencode templates would be redundant.
 **Where:** `modules/_assets/documentation/user/noctalia-guide.md` §4 ("Which
 apps need templates vs. which inherit terminal colors").
+
+### 52. Terminal/dev theming integration: Approach A contract + noctalia-theme-sync
+**Decision:** All terminal and dev tool theming follows "Approach A": Noctalia
+(or theme engine) writes generated color files; program modules source them
+agnostically without knowing who wrote them. A single `noctalia-theme-sync`
+script fans out palette changes to all dev tools on every `colors_changed` hook.
+**Why:** Clean module isolation — noctalia.nix owns the sync logic, program
+modules own their config. Same file, different sources possible (noctalia vs
+experimental theme.nix). The sync script parses the foot theme once and pushes
+colors to: tmux (write `colors.tmux`), foot (OSC escape sequences), nvim
+(remote-expr to clear cache + re-apply colorscheme), and opencode (SIGUSR2 to
+force palette re-detection).
+**Key finding:** SIGWINCH does NOT trigger palette re-detection in opencode —
+it only handles terminal resize. SIGUSR2 is the correct signal for forcing
+palette refresh. Verified by source code analysis of opencode's signal handlers.
+**Where:** `modules/display/desktop/noctalia.nix` (noctalia-theme-sync script),
+`module-contracts.md` C24-C26, `decisions.md` #52.
+
+### 53. Options module pattern replaces `_lib/` (preferred pattern)
+**Decision:** Eliminate `modules/_lib/` by migrating shared values to
+`flake.modules.homeManager.*` options. Each cross-module value gets its own
+`modules/options/<name>.nix` file declaring the option; a feature module sets
+the value; consumers read `config.*` without importing providers. Options are
+bundled in `groups/options.nix` and imported by hosts before feature modules.
+**Why:** `_lib/` required explicit relative imports (`import ../_lib/foo.nix`),
+which violates the spirit of path agnosticism (Rule 2). The options pattern
+uses the module system's own dependency resolution — consumers declare the
+option name, the module system wires the value. No relative imports, no
+coupling between provider and consumer. Each option file is self-documenting
+(its filename describes what it provides). The `groups/options.nix` bundle
+gives hosts a single-line inclusion.
+**Pattern (4 steps):**
+1. `modules/options/<name>.nix` — declares `options.<scope>.<name>` (pure
+   declaration, no config values)
+2. `modules/<category>/<feature>.nix` — sets `config.<scope>.<name>` values
+3. `modules/groups/options.nix` — imports all options files into one bundle
+4. Hosts import `self.modules.homeManager.options` before feature modules
+**Exception:** When a feature module both declares AND sets options (e.g.
+`theme-paths.nix` declares `options.theme.*` and sets `config.theme.*`), the
+separate `options/<name>.nix` file is unnecessary — merge into the feature
+module. Options files exist only for pure declarations consumed by multiple
+unrelated feature modules.
+**Where:** `modules/options/{browser,interactionWatch,notifySend,terminal}.nix`,
+`modules/groups/options.nix`, `modules/display/theme-paths.nix`,
+`modules/programs/{browser,mimeDefaults}.nix`.
 
 ---
 
@@ -649,7 +696,9 @@ apps need templates vs. which inherit terminal colors").
 | 45 | Foot replaces ghostty (stable) | — | Noctalia migration | — | module-contracts C22 |
 | 46 | 3-host split | — | Noctalia migration | — | module-contracts host wiring |
 | 47 | Terminal abstraction via `_lib/terminal.nix` | — | Noctalia migration | — | module-contracts C22 |
-| 48 | UPower for battery status | — | Noctalia migration | — | module-contracts C24 |
+| 48 | UPower for battery status | — | Noctalia migration | — | module-contracts C27 |
 | 49 | `--class` → `--app-id` migration (foot) | — | Noctalia migration | — | module-contracts C5 |
 | 50 | Showoff ported to terminal abstraction | — | Noctalia migration | — | module-contracts C18 |
 | 51 | TUI apps inherit terminal colors, no templates needed | — | Noctalia migration | — | noctalia-guide.md §4 |
+| 52 | Terminal/dev theming: Approach A + noctalia-theme-sync | — | Noctalia migration | — | module-contracts C24-C26 |
+| 53 | Options module pattern replaces `_lib/` | Rule 2 | _lib elimination | — | module-contracts C14 |

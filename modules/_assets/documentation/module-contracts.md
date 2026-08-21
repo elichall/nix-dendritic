@@ -28,7 +28,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `nixos.audio` | `system/audio.nix` | rtkit, pipewire (alsa + pulse + 32-bit) |
 | `nixos.security` | `system/security.nix` | kernel sysctl hardening ONLY |
 | `nixos.battery` | `system/battery.nix` | TLP power mgmt (+ ppd disable): charge thresholds 75/80 on BOTH BAT0+BAT1 (T480 dual-battery); `PLATFORM_PROFILE_*` kept for Framework 13 Pro (no-op on T480 — no `platform_profile` sysfs); **UPower** (`services.upower.enable = true`) for battery status D-Bus (consumed by Noctalia battery widget) |
-| `nixos.mime` | `system/mime.nix` | custom-mime package + `xdg.mime.defaultApplications` |
+| `nixos.mime` | `system/mime.nix` | custom-mime package only (default app associations moved to HM `mimeDefaults`) |
 | `nixos.display` | `display/display.nix` | WLR/OZONE session vars, XDG portal, ly display manager; `options.custom.terminal` (default `"foot"` — host-level terminal choice) |
 | `nixos.hyprland` | `display/hyprland.nix` | Compositor (programs.hyprland) ONLY; user tooling → `homeManager.hyprland` |
 | `nixos.cmdLine` | `programs/cmdLine.nix` | programs.bash enable, direnv system-wide |
@@ -36,8 +36,8 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `nixos.rclone` | `programs/rclone.nix` | `programs.fuse.userAllowOther` only (binary → `homeManager.rclone`) |
 | `nixos.sandbox` | `programs/sandbox.nix` | libvirtd (QEMU/KVM VM management, swtpm); KVM via `hardware-t480.nix` kernelModules |
 | `nixos.base` | `groups/base.nix` | Preset: battery, network, hardware, audio, security |
-| `nixos.desktop` | `groups/desktop.nix` | Preset: display, hyprland, mime (NixOS side, shared by stable + experimental) |
-| `nixos.desktopExp` | `groups/desktopExp.nix` | Preset: display, hyprland, mime (NixOS side, same as desktop — shared compositor infra) |
+| `nixos.desktop` | `groups/desktop.nix` | Preset: display, hyprland, mime (NixOS side — custom-mime package only, defaultApplications moved to HM `mimeDefaults`) |
+| `nixos.desktopExp` | `groups/desktopExp.nix` | Preset: display, hyprland, mime (NixOS side — same as desktop) |
 
 ### homeManager (user scale)
 
@@ -47,7 +47,9 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.cmdLine` | `programs/cmdLine.nix` | bash/starship/zoxide/fzf/direnv/ble.sh config, aliases, dotfiles |
 | `homeManager.git` | `programs/git.nix` | git config |
 | `homeManager.tmux` | `programs/tmux.nix` | tmux config + plugins |
-| `homeManager.initProject` | `programs/utils/initProject.nix` | `init-project` scaffold CLI (writeShellApplication, shellcheck at build): git init `-b main`, `uv init`, minimal flake devShell (nix/python/cpp toolchain, pure-eval `x86_64-linux` template), `use flake` envrc, .gitignore, agent dirs, `direnv allow` + initial commit; bails in existing git repo |
+| `homeManager.initProject` | `utils/initProject.nix` | `init-project` scaffold CLI (writeShellApplication, shellcheck at build): git init `-b main`, `uv init`, minimal flake devShell (nix/python/cpp toolchain, pure-eval `x86_64-linux` template), `use flake` envrc, .gitignore, agent dirs, `direnv allow` + initial commit; bails in existing git repo |
+| `homeManager.interactionWatch` | `utils/interactionWatch.nix` | `interaction-watch` pointer-dismiss watcher (writeShellApplication, shellcheck at build); flake.utils export for cross-module `runtimeInputs` access (showoff, otter) |
+| `homeManager.notifySend` | `utils/notifySend.nix` | `hybrid-notify` notification wrapper (writeShellApplication, shellcheck at build): routes to Noctalia (`notify-send` via D-Bus) or Hyprland (`hyprctl notify`, compositor-internal) based on active daemon; flake.utils export for cross-module access |
 | `homeManager.nvim` | `programs/nvim.nix` | neovim config + 6 LSPs + tree-sitter + ltex-ls; SOLE owner of `xdg.configFile."nvim"` (recursive store symlink of `_assets/dotfiles/nvim`; build-time inflection expansion: `en.utf-8.add` (base, mixed-case) → `en.utf-8.expanded` (base + `'s` + plurals) → `en.utf-8.add.spl`; acronyms in CAPS / proper names in Title-Case; ltex reads `.expanded` fallback `.add`; docs: `dictionary-expansion.md` + `session-resume-spell-inflections.md`) |
 | `homeManager.yazi` | `programs/yazi.nix` | yazi config/keymap, FILEMANAGER/TERM_FILE_CHOOSER vars, ripdrag, theme icon rules via 26.x `prepend_dirs`/`prepend_files` (exact names, no trailing slash) |
 | `homeManager.opencode` | `programs/opencode.nix` | opencode binary + poppler-utils (PDF pipeline dep), SOLE owner of `xdg.configFile."opencode/tui.json"` + global `/pdf` command (`opencode/commands/pdf.md`) |
@@ -60,16 +62,20 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.noctalia` | `display/desktop/noctalia.nix` | Noctalia Shell via `programs.noctalia.enable`; stable stack shell/bar (themes, top bar, wallpaper, clipboard, notifications) |
 | `homeManager.hyprland` | `display/hyprland.nix` | hyprland user config (keybinds, autostart, rules) + deps (hypridle, grimblast, brightnessctl, playerctl, tmux, yazi); autostart block starts noctalia shell; uses `_lib/terminal.nix` abstraction (host selects foot or ghostty via `custom.terminal`) |
 | `homeManager.tui` | `display/tui.nix` | TUI launcher: wlctl (flake input), tuiApps list, desktop entries + icons, yazi-open |
-| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose; uses `_lib/terminal.nix` abstraction for launcher exec (foot: `--app-id`, ghostty: `--class`); `th` preview consumes theme profiles + swatches (C19); `tsm` = tmux session manager (tmux-fzf parity: switch/new/rename/detach/kill + `tsm <action> <session>` one-liner via shell-split of the `{}` argument) |
-| `homeManager.showoff` | `display/experimental/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch; uses `_lib/terminal.nix` abstraction (foot: `--app-id`, ghostty: `--class`) |
+| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose; uses `_lib/terminal.nix` abstraction for launcher exec (foot: `--app-id`, ghostty: `--class`); interaction-watch + hybrid-notify via `self.utils.*`; `th` preview consumes theme profiles + swatches (C19); `tsm` = tmux session manager (tmux-fzf parity: switch/new/rename/detach/kill + `tsm <action> <session>` one-liner via shell-split of the `{}` argument) |
+| `homeManager.showoff` | `display/experimental/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch (via `self.utils.interactionWatch`); uses `_lib/terminal.nix` abstraction (foot: `--app-id`, ghostty: `--class`) |
 | `homeManager.awww` | `display/awww.nix` | awww binary (daemon launched via hyprland autostart, C10) |
 | `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary (restore via hyprland autostart, C10) |
 | `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps; battery `full-at = 80` (TLP-capped batteries → full icon at 80%); workspaces-style rounded pill darken on hover for every module except the nixos logo (`background-color: rgba(0,0,0,0.65)` on `#<module>:hover` — modules are windowed `Gtk::EventBox`es that paint rounded backgrounds; pill stays opaque, boundary not washed out) |
 | `homeManager.theme` | `display/experimental/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19); experimental stack only |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi, opencode (core dev tools — no GUI, no extensions) |
-| `homeManager.utils` | `groups/utils.nix` | Preset: initProject |
-| `homeManager.desktop` | `groups/desktop.nix` | Preset (stable): hyprland, foot, tui, noctalia, otterLauncher, showoff |
-| `homeManager.desktopExp` | `groups/desktopExp.nix` | Preset (experimental): hyprland, ghostty, tui, otterLauncher, showoff, awww, waypaper, waybar, theme |
+| `homeManager.utils` | `groups/utils.nix` | Preset: initProject, interactionWatch, notifySend (options moved to dedicated `options` group) |
+| `homeManager.options` | `groups/options.nix` | Preset: cross-module option declarations (browser, interactionWatch, notifySend, terminal) |
+| `homeManager.browser` | `programs/browser.nix` | Sets `config.browser.{appId,command,desktop}` (Firefox flatpak) |
+| `homeManager.mimeDefaults` | `programs/mimeDefaults.nix` | User-level MIME associations (`xdg.mimeApps.defaultApplications`) |
+| `homeManager.themePaths` | `display/theme-paths.nix` | Sets `config.theme.{dir,active,generated,ghosttyThemeConf}` |
+| `homeManager.desktop` | `groups/desktop.nix` | Preset (stable): hyprland, foot, tui, noctalia, otterLauncher, showoff, browser, mimeDefaults, themePaths |
+| `homeManager.desktopExp` | `groups/desktopExp.nix` | Preset (experimental): hyprland, ghostty, tui, otterLauncher, showoff, awww, waypaper, waybar, theme, browser, mimeDefaults, themePaths |
 | `homeManager.researchGroup` | `groups/research.nix` | Preset: research (pandoc/texlive), obsidian (nvim vault integration), zotero (flatpak desktop entry) |
 | `homeManager.research` | `research/default.nix` | pandoc (HM module, citeproc + xelatex defaults) + texlive (slim: latexmk/biber/bibtex + pandoc template deps only); user-scale |
 | `homeManager.obsidian` | `research/obsidian.nix` | obsidian.nvim + blink-cmp-bibtex + obsidian_ls LSP; generates lean/research feature Lua files → activation-merged into nvim config (adaptive framework, see C21) |
@@ -78,7 +84,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 
 #### `hosts/workstation.nix` (stable — foot + Noctalia)
 - System: `main`, `hardwareConfig`, `base`, `desktop`, `cmdLine`, `nvim`, `rclone`, `sandbox`.
-- User (`home-manager.users.elichall.imports`): `main`, `toolbox`, `desktop`,
+- User (`home-manager.users.elichall.imports`): `main`, `options`, `toolbox`, `desktop`,
   `researchGroup`, `utils`, `clipboard`, `rclone`, `fastfetch`.
 - `custom.terminal = "foot"` → `terminalName` bridged via `extraSpecialArgs`.
 - `noctalia.homeModules.default` shared via `home-manager.sharedModules`.
@@ -86,7 +92,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 
 #### `hosts/laptop.nix` (experimental — ghostty + hand-rolled stack)
 - System: `main`, `hardwareConfig`, `base`, `desktopExp`, `cmdLine`, `nvim`, `rclone`, `sandbox`.
-- User (`home-manager.users.elichall.imports`): `main`, `toolbox`, `desktopExp`,
+- User (`home-manager.users.elichall.imports`): `main`, `options`, `toolbox`, `desktopExp`,
   `researchGroup`, `utils`, `clipboard`, `rclone`, `fastfetch`.
 - `custom.terminal = "ghostty"` → `terminalName` bridged via `extraSpecialArgs`.
 - `noctalia.homeModules.default` shared via `home-manager.sharedModules`.
@@ -122,8 +128,9 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 - `homeManager.ghostty` is the SOLE owner of `xdg.configFile."ghostty/config"`.
 - The theme module must NOT declare it (conflicting definition). It only
   rewrites the runtime `theme.conf` and signals ghostty to reload.
-- Shared path source: `_lib/theme.nix` (`ghosttyThemeConf`); ghostty.nix and
-  theme.nix must agree on all paths in `_lib/theme.nix`.
+- Shared path source: `config.theme.ghosttyThemeConf` (set by
+  `homeManager.themePaths`); ghostty.nix and theme.nix must agree on these
+  paths.
 - Enforced: comment contracts; drvPath eval catches a conflict.
 - **Stable stack (workstation)**: ghostty is replaced by foot (`programs.foot.enable`);
   theme engine replaced by Noctalia. This contract applies only to the experimental
@@ -132,7 +139,8 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 ### C2. Theme path indirection & GTK palette-only
 - No Nix config encodes a theme value. `~/.local/share/theme/active.json` is
   the single source of truth; `generated/ghostty/theme.conf` is the stable
-  config-file target.
+  config-file target. Paths are declared as options in `config.theme.*` (set by
+  `homeManager.themePaths`).
 - `home.activation.initTheme` re-syncs after every HM switch (bootstrap +
   consistency re-link; headless-safe, reloads guarded).
 - GTK CSS is **palette-only** — NEVER add an element rule. User-priority CSS
@@ -149,12 +157,13 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   `~/Pictures/Wallpapers`: 12 theme-profile + 5 waypaper library.
 - The `wallpaperFiles` list and `modules/_assets/aesthetics/wallpapers/` must stay in
   sync; waypaper `--restore` and the waypaper app read the same directory.
+- Theme directory path: `config.theme.dir` (set by `homeManager.themePaths`).
 
-### C4. yazi.desktop ↔ mime (tui ↔ mime)
+### C4. yazi.desktop ↔ mime (tui ↔ mimeDefaults)
 - `homeManager.tui` defines the `yazi.desktop` target with
   `mimeType = [ "inode/directory" ]`.
-- `nixos.mime` maps `"inode/directory" = "yazi.desktop"` — the desktop ID must
-  stay in sync with that entry.
+- `homeManager.mimeDefaults` maps `"inode/directory" = [ "yazi.desktop" ]` —
+  the desktop ID must stay in sync with that entry.
 
 ### C5. Otter dismiss & window-class contract
 - Dismiss callback = `pkill -x otter-launcher` (exact comm: kills only the
@@ -163,9 +172,13 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 - `hyprctl dispatch closewindow` is NOT config-agnostic (Lua `hl.dispatch`
   hook rejects plain syntax) — do not reintroduce it.
 - Window class flag is terminal-dependent: foot uses `--app-id`, ghostty uses
-  `--class`. The `_lib/terminal.nix` abstraction (`execClass`) handles the
-  branching. Otter, showoff, and all other consumers use `terminal.execClass`
-  instead of hardcoded `--class`.
+  `--class`. The terminal abstraction (`execClass`) handles the branching.
+  Otter, showoff, and all other consumers use `terminal.execClass` instead of
+  hardcoded `--class`. (Currently via `_lib/terminal.nix`; will migrate to
+  `config.terminal.execClass` in Phase 4.)
+- Theme paths consumed via `config.theme.{dir,generated}` (set by
+  `homeManager.themePaths`); browser command via `config.browser.command` (set
+  by `homeManager.browser`).
 - Window classes (keep in sync between hyprland rules and config.toml):
 
   | Class | Hyprland rule | config.toml consumers |
@@ -182,6 +195,10 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 - Module-owned CLIs (`theme`, `otter-apps`) cannot be re-declared as
   `home.packages` here → audited by `otter-diagnose` (18 checks, exit 1 on
   missing) + `home.activation.otterDiagnose` warning hook (never fails build).
+- Cross-module dependencies: `config.utils.interactionWatch` (pointer dismiss),
+  `config.utils.notifySend` (notification wrapper), `config.terminal.*`
+  (terminal abstraction), `config.theme.*` (theme paths), `config.browser.*`
+  (browser command).
 - System-scope binaries (hyprctl, sudo, systemctl, loginctl, nixos-rebuild,
   xdg-settings) stay PATH-based.
 
@@ -191,8 +208,10 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   override. Adding a token = edit both `config.toml` and `otter.nix`.
 - Current tokens: `DEFAULT_MODULE`, `DEFAULT_MODULE_MESSAGE`, `OVERLAY_IMAGE`
   (→ repo asset `modules/_assets/aesthetics/nixos-image.png`), `THEME_DIR` (→
-  `_lib/theme.nix` `dir`), `THEME_SWATCHES` (→ `_lib/theme.nix` `generated` +
-  `/previews`).
+  `config.theme.dir`), `THEME_SWATCHES` (→ `config.theme.generated` +
+  `/previews`), `TERMINAL` (→ `config.terminal.term`), `CLASS_FLAG` (→
+  terminal-dependent `--app-id=` or `--class=`), `NOTIFY_CMD` (→
+  `config.utils.notifySend`).
 
 ### C19. Theme swatch ↔ otter `th` preview (theme ↔ otterLauncher)
 - `homeManager.theme` **owns** both `profiles/*.json` (data) and
@@ -204,6 +223,8 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   renders `chafa -s "${FZF_PREVIEW_COLUMNS:-34}x$((FZF_PREVIEW_LINES-3))"`
   (kitty-protocol image sized to the pane), then cats
   `@THEME_SWATCHES@/{1}.swatch` (`--preview-window=right:50%,wrap`).
+- Theme paths: `config.theme.dir` and `config.theme.generated` (set by
+  `homeManager.themePaths`).
 - Rule 4 deps: `jq` declared in `homeManager.otterLauncher` (consumed by the
   preview) — do not rely on the theme module's jq; `chafa` already a declared
   dep. `otter-diagnose` gained a `jq` check.
@@ -270,14 +291,23 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 - Everything in `modules/_assets/` must be tracked (root `.gitignore` rule is
   root-anchored `/_assets/`; do not un-anchor).
 
-### C14. `_lib` access convention
-- Shared non-module values via explicit relative import:
-  `(import ../_lib/browser.nix).desktop`, `import ../_lib/theme.nix { ... }`,
-  `import ../_lib/interaction-watch.nix { inherit pkgs; }`.
-- `_lib` files define no `flake.modules.*`; never import a feature module from
-  `_lib`; only genuinely shared (2+ consumer) values belong there.
+### C14. `_lib/` → options module pattern (preferred) — DEPRECATED
+- **`_lib/` is deprecated.** New cross-module shared values MUST use the options
+  module pattern (decision #53): declare in `modules/options/<name>.nix`, set in
+  a feature module, consume via `config.*`.
+- Remaining `_lib/terminal.nix` consumers (hyprland, otter, showoff, tui, waybar)
+  will be migrated to `config.terminal.*` in the next phase.
+- Legacy `_lib/` convention (for reference): shared non-module values via
+  explicit relative import. `_lib` files define no `flake.modules.*`; never
+  import a feature module from `_lib`.
+- Utility scripts (interaction-watch, hybrid-notify, init-project) live in
+  `modules/utils/` as flake-parts modules with `flake.utils.*` exports for
+  cross-module derivation access.
 
 ### C15. interaction-watch interface
+- Definition: `modules/utils/interactionWatch.nix` (flake-parts module)
+- Cross-module access: `self.utils.interactionWatch pkgs` (returns derivation)
+- Group membership: `homeManager.utils` (adds to `home.packages`)
 ```
 interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
                   [--bail-pattern REGEX] [--bail-comm COMM] --on-move CMD
@@ -297,10 +327,12 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - `nixos.base` = battery, network, hardware, audio, security.
 - `nixos.desktop` = display, hyprland, mime (NixOS side, shared).
 - `nixos.desktopExp` = display, hyprland, mime (same as desktop — NixOS side shared).
-- `homeManager.desktop` = hyprland, foot, tui, noctalia, otterLauncher, showoff (stable).
+- `homeManager.options` = cross-module option declarations (browser, interactionWatch, notifySend, terminal).
+- `homeManager.desktop` = hyprland, foot, tui, noctalia, otterLauncher, showoff, browser, mimeDefaults, themePaths (stable).
 - `homeManager.desktopExp` = hyprland, ghostty, tui, otterLauncher, showoff,
-  awww, waypaper, waybar, theme (experimental).
+  awww, waypaper, waybar, theme, browser, mimeDefaults, themePaths (experimental).
 - `homeManager.toolbox` = cmdLine, git, tmux, nvim, yazi, opencode.
+- `homeManager.utils` = initProject, interactionWatch, notifySend.
 - `homeManager.researchGroup` = research, obsidian, zotero.
 - Individual keys remain importable alongside groups.
 
@@ -314,7 +346,7 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Dashboard deps: tty-clock, gping, cava, cmatrix, cbonsai,
   asciiquarium-transparent, sl, lolcat, cowsay (term-rotator/layout panes),
   weathr (waybar weather on-click), terminal (via `_lib/terminal.nix` abstraction;
-  foot or ghostty depending on host), fastfetch + btop (tmux panes),
+  will migrate to `config.terminal.*` in Phase 4), fastfetch + btop (tmux panes),
   interaction-watch (pointer dismiss).
 
 ### C20. Research vault path
@@ -349,9 +381,13 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Currently active features: `research` (obsidian.nvim, blink-cmp-bibtex,
   obsidian_ls).
 
-### C22. Terminal abstraction (`_lib/terminal.nix`)
-- `_lib/terminal.nix` provides a terminal-agnostic interface consumed by
+### C22. Terminal abstraction (`config.terminal.*` — in progress)
+- Terminal abstraction provides a terminal-agnostic interface consumed by
   hyprland, waybar, showoff, otter, and tui modules.
+- **Options declared in:** `modules/options/terminal.nix` (pure declaration).
+- **Values set in:** `modules/programs/terminal.nix` (Phase 4 — pending).
+- **Current state:** `_lib/terminal.nix` still used by 5 consumers; will be
+  migrated to `config.terminal.*` in Phase 4 of the `_lib/` elimination.
 - Input: `terminalName` string (from `custom.terminal` NixOS option, bridged
   via `home-manager.extraSpecialArgs`).
 - Exports: `term` (store path), `package`, `packages` (for `home.packages`),
@@ -359,8 +395,8 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   with window class — foot: `--app-id`, ghostty: `--class`).
 - Hosts select their terminal via `custom.terminal = "foot" | "ghostty"` in
   `hosts/<hostname>.nix`; all consumer modules are terminal-agnostic.
-- Consumer modules MUST use `terminal.term`/`terminal.exec`/`terminal.execClass`
-  — never hardcode `foot` or `ghostty` strings.
+- Consumer modules MUST use `config.terminal.term`/`config.terminal.exec`/
+  `config.terminal.execClass` — never hardcode `foot` or `ghostty` strings.
 
 ### C23. Noctalia Shell config contract
 - `homeManager.noctalia` uses `programs.noctalia.enable = true` (HM native
@@ -390,12 +426,53 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   `~/.config/hypr/noctalia.lua` with color vars + `apply_theme()`.
 - Autostart: noctalia launches via `hl.on("hyprland.start", ...)` using full
   store path (`inputs.noctalia.packages.x86_64-linux.default`).
-- Battery widget requires UPower D-Bus service (see C24).
+- Battery widget requires UPower D-Bus service (see C27).
+- Palette sync: `noctalia-theme-sync` script (see C24) fans out colors to
+  tmux, foot, nvim, and opencode on every `colors_changed` hook event. Theme
+  paths consumed via `config.theme.*` (set by `homeManager.themePaths`).
 - User guide: `modules/_assets/documentation/user/noctalia-guide.md` — full
   reference for bar customization, plugins, theming, keybindings, and Home
   Manager Nix syntax.
 
-### C24. UPower battery status contract
+### C24. Noctalia-theme-sync: central palette sync hub
+- `noctalia-theme-sync` (defined in `noctalia.nix` as `writeShellApplication`)
+  is the single script that fans out palette changes to all dev tools.
+- Triggered by noctalia's `colors_changed` hook (startup + live GUI theme changes).
+- Parses `~/.config/foot/themes/noctalia` once, then syncs:
+  - **tmux**: writes `~/.config/tmux/colors.tmux` (no conditional, always writes)
+  - **foot**: pushes OSC 4/10/11 escape sequences to all running foot instances
+  - **nvim**: clears palette cache + re-applies colorscheme via `--remote-expr`
+  - **opencode**: sends SIGUSR2 to force palette re-detection (NOT SIGWINCH)
+- Dependencies: `gnused`, `gnugrep`, `procps`, `neovim` (runtimeInputs)
+- Theme paths: `config.theme.generated` (set by `homeManager.themePaths`).
+- The hook string in `noctalia.nix` also patches alpha/blur into the foot theme
+  and calls `hyprctl reload` + `tmux source-file` after the sync script.
+
+### C25. Tmux integration (Approach A contract)
+- `homeManager.tmux` has **zero noctalia awareness** — no `config` arg, no
+  `noctaliaColorsScript`, no conditional logic.
+- Tmux unconditionally sources `~/.config/tmux/colors.tmux` via `if-shell`
+  (file may not exist on first boot — graceful fallback to defaults).
+- `noctalia-theme-sync` writes `colors.tmux` on every `colors_changed` event.
+- Same file, different sources possible: noctalia (production) or experimental
+  theme.nix (if both are active).
+- This is the canonical "Approach A" contract: Noctalia writes the file,
+  tmux consumes it agnostically. Theme paths: `config.theme.generated` (set by
+  `homeManager.themePaths`).
+
+### C26. Opencode palette refresh via SIGUSR2
+- Opencode's "system" theme reads terminal palette (ANSI colors 0-15) via OSC
+  queries and generates its UI theme from them.
+- Opencode does NOT auto-detect palette changes — SIGWINCH only triggers resize,
+  NOT palette re-detection.
+- `noctalia-theme-sync` sends `pkill -SIGUSR2 opencode` after pushing OSC
+  sequences to foot. SIGUSR2 explicitly clears the palette cache and re-applies
+  the theme.
+- Verified: SIGUSR2 handler in opencode source calls `clearPaletteCache()` +
+  theme re-apply. SIGWINCH handler only calls `handleResize()`.
+- Theme paths: `config.theme.*` (set by `homeManager.themePaths`).
+
+### C27. UPower battery status contract
 - `services.upower.enable = true` in `system/battery.nix` provides battery
   status via D-Bus (`org.freedesktop.UPower`).
 - Consumed by: Noctalia battery widget (Control Center + bar widget).
@@ -413,7 +490,7 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 | `otter-open` / `otter-power` / `otter-apps` | otterLauncher | PATH-based | — (module-owned, stays) |
 | `showoff` (+ layout/term-rotator) | showoff | PATH-based via HM profile | — |
 | `otter-launch` | otterLauncher | `terminal.execClass` abstraction (foot: `--app-id`, ghostty: `--class`) | — |
-| hyprland keybinds/autostart | hyprland | `terminal.exec`/`terminal.term` abstraction for user-scope; absolute paths for system-scope | — |
+| hyprland keybinds/autostart | hyprland | `config.terminal.exec`/`config.terminal.term` abstraction for user-scope; absolute paths for system-scope; `config.browser.command` for browser launch | — |
 | noctalia autostart | hyprland | `inputs.noctalia.packages.*.default` (store path) | — |
 
 ---
@@ -426,7 +503,9 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Ghostty window rules/classes (incl. dead `com.center.focus`) — kept as legacy
   (phase-3 decision, void). Experimental stack only (laptop).
 - `dk`/`obs` config.toml stubs — left as-is.
-- `_lib/` naming (no `modules/utils/` move) — kept (phase-3 decision).
+- `_lib/` naming — **DEPRECATED** (decision #53). `_lib/terminal.nix` is the
+  last remaining file; will be migrated to `config.terminal.*` in Phase 4.
+  New cross-module shared values MUST use the options module pattern.
 - **Noctalia config**: only documented settings are valid; validated with
   `noctalia config validate`. Non-existent keys silently accepted but produce no
   effect.

@@ -39,8 +39,7 @@ programs.noctalia = {
   settings = {
     theme = {
       mode = "dark";
-      source = "builtin";
-      builtin = "Catppuccin";    # Catppuccin Mocha theme
+      source = "wallpaper";    # derive palette from active wallpaper
     };
     bar.default = {
       position = "top";
@@ -73,6 +72,15 @@ programs.noctalia = {
       screen-off.enabled = false; # hypridle handles screen-off
     };
     notification.enable_daemon = true;
+    theme.templates = {
+      enable_builtin_templates = true;
+      builtin_ids = [
+        "foot"
+        "hyprland"
+      ];
+      enable_community_templates = true;
+      community_ids = [ "yazi" ];
+    };
   };
 };
 ```
@@ -354,8 +362,8 @@ Template file syntax supports:
 | Neovim | Terminal palette via `:highlight` | **No** (uses Catppuccin already) |
 | btop | Terminal palette | **No** |
 | starship | Terminal palette | **No** |
-| opencode | Terminal palette | **No** |
-| tmux | Terminal palette | **No** |
+| opencode | Terminal palette (SIGUSR2 refresh) | **No** |
+| tmux | Terminal palette (writes `colors.tmux`) | **No** |
 
 **GUI apps need templates** — they read config files, not terminal colors:
 
@@ -370,20 +378,58 @@ Template file syntax supports:
 | VS Code | Workbench colors | **Yes** (community) |
 | Steam | Skin colors | **Yes** (community) |
 
-**Our current stack**: foot (built-in template handles theme), nvim
-(Catppuccin via Nix, no template needed), btop/starship/opencode (inherit
-terminal colors). The GTK/Qt built-in templates should be enabled if we
-want GUI apps (file managers, settings panels, etc.) to match the shell
-theme.
+**Our current stack**: foot (built-in template handles theme), hyprland
+(built-in template handles color vars), yazi (community template handles
+colors), nvim (Catppuccin via Nix + custom palette_sync.lua parser),
+tmux (noctalia-theme-sync writes `colors.tmux`), opencode (terminal
+palette + SIGUSR2 refresh). The GTK/Qt built-in templates should be
+enabled if we want GUI apps (file managers, settings panels, etc.) to
+match the shell theme.
+
+#### Terminal palette sync: the noctalia-theme-sync hub
+
+Noctalia's `colors_changed` hook triggers a central sync script that
+fans out palette changes to all dev tools:
+
+```
+noctalia-theme-sync
+    │
+    ├── Parse ~/.config/foot/themes/noctalia (once)
+    │
+    ├── Write ~/.config/tmux/colors.tmux
+    │   └── tmux sources this file unconditionally (Approach A)
+    │
+    ├── Push OSC 4/10/11 to foot instances
+    │   └── Writes to /proc/<shell_pid>/fd/1 (PTY slave stdout)
+    │
+    ├── Reload nvim palette
+    │   └── Clears lean.core.palette_sync cache + re-applies colorscheme
+    │
+    └── Reload opencode palette
+        └── pkill -SIGUSR2 opencode (forces palette re-detection)
+```
+
+**Why SIGUSR2, not SIGWINCH?** Opencode's SIGWINCH handler only
+handles terminal resize — it does NOT re-query the terminal palette.
+SIGUSR2 explicitly clears the palette cache and re-applies the theme.
+Verified by source code analysis of opencode's signal handlers.
+
+**Why write to `/proc/<shell_pid>/fd/1`?** OSC escape sequences must
+be written to the shell's stdout (PTY slave), not foot's stdin. The
+data flows: shell stdout → PTY slave → PTY master → foot interprets.
+Writing to foot's stdin (`/proc/<foot_pid>/fd/0`) sends data to the
+shell, not to foot's rendering engine.
 
 #### Enabling templates in our config
 
-Add to `noctalia.nix`:
+Our current setup enables:
 
 ```nix
 settings.theme.templates = {
   enable_builtin_templates = true;
-  builtin_ids = [ "foot" ];  # opt-in per template
+  builtin_ids = [ "foot" "hyprland" ];
+  enable_community_templates = true;
+  community_ids = [ "yazi" ];
 };
 ```
 
@@ -410,7 +456,7 @@ separate opt-in:
 ```nix
 settings.theme.templates = {
   enable_community_templates = true;
-  community_ids = [ "neovim" "opencode" "discord" ];
+  community_ids = [ "yazi" "neovim" "opencode" "discord" ];
 };
 ```
 
@@ -446,6 +492,10 @@ dark). Foot's `include` directive loads this file, which provides the
 `[colors-dark]` section. The hardcoded `colors-dark` block is omitted — no
 conflict.
 
+**Live palette updates:** When the theme changes (via GUI or wallpaper),
+Noctalia's `colors_changed` hook fires and pushes OSC escape sequences to
+all running foot instances. The palette updates instantly without restart.
+
 #### Hooks: injecting settings Noctalia doesn't export
 
 Noctalia's foot template only generates color palette entries. Settings
@@ -454,20 +504,81 @@ the template output. Since foot's `include` replaces the entire
 `[colors-dark]` section, we can't put these in our foot config alongside
 the include.
 
-The solution: use a `colors_changed` hook to patch the theme file after
-Noctalia regenerates it. This fires on startup AND on live theme changes
-via the GUI.
+The solution: use a `colors_changed` hook that does three things:
+1. Patches `alpha` and `blur` into the foot theme file after Noctalia
+   regenerates it (idempotent via `grep -q '^alpha='` guard)
+2. Calls `noctalia-theme-sync` to fan out colors to all dev tools
+3. Calls `hyprctl reload` and `tmux source-file` to apply changes
+
+The hook fires on startup AND on live theme changes via the GUI.
 
 Add to `noctalia.nix`:
 
 ```nix
-settings.hooks.colors_changed =
-  "T=\"$HOME/.config/foot/themes/noctalia\"; "
-  + "[ -f \"$T\" ] && ! grep -q '^alpha=' \"$T\" && "
-  + "sed -i '/^\\[colors-dark\\]/a alpha = 0.7\\nblur = true' \"$T\"";
+settings.hooks.colors_changed = let
+  themeSyncScript = pkgs.writeShellApplication {
+    name = "noctalia-theme-sync";
+    runtimeInputs = with pkgs; [ gnused gnugrep procps neovim ];
+    text = ''
+      set -euo pipefail
+
+      FOOT_THEME="$HOME/.config/foot/themes/noctalia"
+      [ -f "$FOOT_THEME" ] || exit 0
+
+      # Parse palette from foot theme
+      while IFS='=' read -r key val; do
+        case "$key" in
+          background)  BG="$val" ;;
+          foreground)  FG="$val" ;;
+          regular0)    C0="$val" ;;
+          # ... (all 16 colors)
+        esac
+      done < <(grep -E '^(background|foreground|regular[0-7]|bright[0-7])=' "$FOOT_THEME")
+      [ -z "$BG" ] && exit 1
+
+      # Write tmux colors
+      rm -f "$HOME/.config/tmux/colors.tmux"
+      cat > "$HOME/.config/tmux/colors.tmux" <<TMUX
+      set -g status-style "bg=#$BG,fg=#$FG"
+      # ... (tmux color config)
+      TMUX
+
+      # Push palette to all running foot instances via OSC escape sequences
+      ESC=$'\033'
+      for foot_pid in $(pgrep -x foot 2>/dev/null); do
+        shell_pid=$(pgrep -P "$foot_pid" 2>/dev/null | head -1)
+        [ -z "$shell_pid" ] && continue
+        {
+          printf "''${ESC}]11;#%s''${ESC}\\" "$BG"
+          printf "''${ESC}]10;#%s''${ESC}\\" "$FG"
+          printf "''${ESC}]4;0;#%s''${ESC}\\" "$C0"
+          # ... (all 16 colors)
+        } > "/proc/$shell_pid/fd/1" 2>/dev/null &
+      done
+
+      # Reload palette in all running neovim instances
+      if [ -d "''${XDG_RUNTIME_DIR:-/tmp}" ]; then
+        find "''${XDG_RUNTIME_DIR:-/tmp}" -type s 2>/dev/null | grep "nvim" | while read -r server; do
+          nvim --server "$server" --remote-expr "execute('lua package.loaded[\"lean.core.palette_sync\"] = nil; vim.cmd(\"colorscheme lean_sync\")')" >/dev/null 2>&1 &
+        done || true
+      fi
+
+      # Reload opencode's system theme palette
+      pkill -SIGUSR2 opencode 2>/dev/null || true
+    '';
+  };
+in
+  "T=\"$HOME/.config/foot/themes/noctalia\"; [ -f \"$T\" ] && ! grep -q '^alpha=' \"$T\" && sed -i '/^\\[colors-dark\\]/a alpha = 0.7\\nblur = true' \"$T\"; hyprctl reload; ${themeSyncScript}/bin/noctalia-theme-sync; tmux source-file \"$HOME/.config/tmux/colors.tmux\" 2>/dev/null";
 ```
 
 The hook is idempotent — `grep -q '^alpha='` prevents double-injection.
+The `noctalia-theme-sync` script is a `writeShellApplication` with
+`runtimeInputs` for shellcheck compliance.
+
+**Key insight:** SIGWINCH does NOT trigger palette re-detection in opencode.
+SIGUSR2 is the correct signal — it explicitly clears the palette cache and
+re-applies the theme. Verified by source code analysis.
+
 Available hook events:
 
 | Event | When it fires |
@@ -508,6 +619,10 @@ builtin_ids = [ "foot" "hyprland" ];
 The generated `noctalia.lua` exports a `colors` table and `apply_theme()`
 function that configures Hyprland border colors, shadow, and groupbar
 colors.
+
+**Live palette updates:** When the theme changes, Noctalia's
+`colors_changed` hook calls `hyprctl reload` which re-sources the
+Lua config and applies the new colors.
 
 For GTK template support, also add:
 
