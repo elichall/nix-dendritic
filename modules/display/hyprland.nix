@@ -22,36 +22,35 @@ in
     {
       config,
       pkgs,
-      terminalName,
+      lib,
       ...
     }:
     let
-      terminal = import ../_lib/terminal.nix { inherit pkgs terminalName; };
-      noctaliaCmd = "${noctaliaPackage}/bin/noctalia";
-      tmuxCmd = "${pkgs.tmux}/bin/tmux new-session -A -s 'main'";
+      noctaliaCmd = lib.getExe noctaliaPackage;
+      tmuxCmd = "${lib.getExe pkgs.tmux} new-session -A -s 'main'";
       menu = "otter-open";
       browser = config.browser.command;
 
-      brightnessU = "${pkgs.brightnessctl}/bin/brightnessctl set 5%+";
-      brightnessD = "${pkgs.brightnessctl}/bin/brightnessctl set 5%-";
+      brightnessU = "${lib.getExe pkgs.brightnessctl} set 5%+";
+      brightnessD = "${lib.getExe pkgs.brightnessctl} set 5%-";
       volumeU = "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+";
       volumeD = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
       muteAudio = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
       muteMic = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
 
-      screenSnip = "${pkgs.grimblast}/bin/grimblast copysave area";
-      screenShot = "${pkgs.grimblast}/bin/grimblast copysave screen";
-      fileManager = terminal.exec "bash -ci '${pkgs.yazi}/bin/yazi; exit'";
+      screenSnip = "${lib.getExe pkgs.grimblast} copysave area";
+      screenShot = "${lib.getExe pkgs.grimblast} copysave screen";
+      fileManager = config.terminal.exec "bash -ci '${lib.getExe pkgs.yazi}; exit'";
       systemManager = "otter-power";
 
-      hypridleCmd = "${pkgs.hypridle}/bin/hypridle";
+      hypridleCmd = lib.getExe pkgs.hypridle;
       showoff = "showoff";
       otterCmd = "otter-apps --refresh-cache";
-      playerctlCmd = "${pkgs.playerctl}/bin/playerctl";
+      playerctlCmd = lib.getExe pkgs.playerctl;
     in
     {
       home.packages =
-        terminal.packages
+        config.terminal.packages
         ++ (with pkgs; [
           hypridle
           grimblast
@@ -100,8 +99,8 @@ in
           ---------------------
           -- -- MY PROGRAMS -- --
           ---------------------
-          local terminal = "${terminal.term}"
-          local tmux = "${terminal.exec tmuxCmd}"
+          local terminal = "${config.terminal.term}"
+          local tmux = "${config.terminal.exec tmuxCmd}"
           local menu = "${menu}"
           local browser = "${browser}"
           local brightnessU = "${brightnessU}"
@@ -120,7 +119,7 @@ in
           -- -- AUTOSTART -- --
           -------------------
           hl.on("hyprland.start", function()
-            hl.exec_cmd("bash -c '${pkgs.tmux}/bin/tmux new-session -d -s main 2>/dev/null'")
+            hl.exec_cmd("bash -c '${lib.getExe pkgs.tmux} new-session -d -s main 2>/dev/null'")
             hl.exec_cmd("${hypridleCmd}")
             hl.exec_cmd("${otterCmd}")
             hl.exec_cmd("${noctaliaCmd} &")

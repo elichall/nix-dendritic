@@ -5,13 +5,10 @@
 # documentation/module-contracts.md (C5/C6) + documentation/decisions.md.
 # ==========================================================================
 { inputs, ... }: {
-  flake.modules.homeManager.otterLauncher = { config, pkgs, lib, terminalName, ... }: let
+  flake.modules.homeManager.otterLauncher = { config, pkgs, lib, ... }: let
       # Flake-provisioned launcher binary (upstream v0.7.6 exposes
       # packages.<system>.otter-launcher via flake-parts).
       otter-launcher = inputs.otter-launcher.packages.${pkgs.stdenv.hostPlatform.system}.otter-launcher;
-
-      # Terminal abstraction — provides exec/execClass helpers + package.
-      terminal = import ../../_lib/terminal.nix { inherit pkgs terminalName; };
 
       # Shared pointer-dismiss helper (showoff + otter; see modules/utils/interactionWatch.nix).
       interactionWatch = config.utils.interactionWatch;
@@ -46,8 +43,8 @@
         OVERLAY_IMAGE = overlayImage;
         THEME_DIR = config.theme.dir;
         THEME_SWATCHES = "${config.theme.generated}/previews";
-        TERMINAL = terminal.term;
-        CLASS_FLAG = if terminalName == "foot" then "--app-id=" else "--class=";
+        TERMINAL = config.terminal.term;
+        CLASS_FLAG = if config.terminal.name == "foot" then "--app-id=" else "--class=";
         NOTIFY_CMD = "${notifySend}/bin/hybrid-notify";
       };
 
@@ -57,8 +54,8 @@
         OVERLAY_IMAGE = overlayImage;
         THEME_DIR = config.theme.dir;
         THEME_SWATCHES = "${config.theme.generated}/previews";
-        TERMINAL = terminal.term;
-        CLASS_FLAG = if terminalName == "foot" then "--app-id=" else "--class=";
+        TERMINAL = config.terminal.term;
+        CLASS_FLAG = if config.terminal.name == "foot" then "--app-id=" else "--class=";
         NOTIFY_CMD = "${notifySend}/bin/hybrid-notify";
       };
 
@@ -82,11 +79,11 @@
         runtimeInputs = [
           pkgs.procps
           pkgs.coreutils
-          terminal.package
+          config.terminal.package
           interactionWatch
         ];
         text = let
-          otterCmd = terminal.execClass "com.otter.launcher" "${otter-launch-inner}/bin/otter-launch-inner \"$CONFIG\"";
+          otterCmd = config.terminal.execClass "com.otter.launcher" "${otter-launch-inner}/bin/otter-launch-inner \"$CONFIG\"";
         in ''
           CONFIG="''${1:-}"
           if pgrep -x otter-launcher >/dev/null 2>&1; then
@@ -148,7 +145,7 @@
           }
           check otter-launcher "otter module (self)"
           check otter-apps     "otter module (self)"
-          check "${terminal.term}" "${terminal.terminalName} (terminal backend)"
+          check "${config.terminal.term}" "${config.terminal.name} (terminal backend)"
           check nvim           "nvim (config.toml external_editor)"
           check fzf            "fzf (app-launcher / menu pickers)"
           check chafa          "chafa (app-launcher preview / overlay / th preview)"
@@ -175,7 +172,7 @@
       };
     in {
       home.packages =
-        terminal.packages
+        config.terminal.packages
         ++ (with pkgs; [
           # Launcher + wrappers
           otter-launcher
@@ -218,7 +215,7 @@
         export PATH="$PATH:${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
         if ! REPORT=$(${otter-diagnose}/bin/otter-diagnose); then
           echo "otter-launcher: warning — some menu dependencies are missing (see MISSING lines below):" >&2
-          printf '%s\n' "$REPORT" | ${pkgs.gnugrep}/bin/grep 'MISSING' >&2
+          printf '%s\n' "$REPORT" | ${lib.getExe' pkgs.gnugrep "grep"} 'MISSING' >&2
         fi
       '';
     };

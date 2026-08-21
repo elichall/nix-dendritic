@@ -7,10 +7,9 @@
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.tui =
-    { config, pkgs, terminalName, ... }:
+    { config, pkgs, ... }:
     let
       wlctl = inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      terminal = import ../_lib/terminal.nix { inherit pkgs terminalName; };
       isNoctalia = config.programs.noctalia.enable;
 
       # Core TUI apps (always included)
@@ -63,7 +62,7 @@
 
       tuiApps = coreTuiApps ++ (if isNoctalia then [ ] else noctaliaReplacedApps);
 
-      mkTuiOpen = app: pkgs.writeShellScriptBin "${app.name}-open" (terminal.exec "bash -ci ${app.name}");
+      mkTuiOpen = app: pkgs.writeShellScriptBin "${app.name}-open" (config.terminal.exec "bash -ci ${app.name}");
 
       tuiOpenWrappers = map mkTuiOpen tuiApps;
 
@@ -136,7 +135,7 @@
         // noctaliaDesktopEntries;
 
       home.packages =
-        terminal.packages
+        config.terminal.packages
         ++ (with pkgs; [
           # TUI app binaries (previously in nixos.main systemPackages / main)
           btop
@@ -146,7 +145,7 @@
           yazi
 
           # commandline alias for terminal file manager
-          (writeShellScriptBin "yazi-open" ''${terminal.term} -e bash -ci "yazi ''${1:-.}"'')
+          (writeShellScriptBin "yazi-open" ''${config.terminal.term} -e bash -ci "yazi ''${1:-.}"'')
         ])
         ++ (if isNoctalia then [ ] else (with pkgs; [
           bluetui

@@ -9,7 +9,7 @@
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.ghostty =
-    { config, pkgs, ... }:
+    { config, pkgs, lib, ... }:
     {
       home.packages = [ pkgs.ghostty ];
 
@@ -27,7 +27,7 @@
           font-feature = -calt
           font-feature = -liga
           font-feature = -dlig
-          command = ${pkgs.bash}/bin/bash
+          command = ${lib.getExe pkgs.bash}
           config-file = ${config.theme.ghosttyThemeConf}
         '';
       };

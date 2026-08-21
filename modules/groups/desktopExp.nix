@@ -27,6 +27,7 @@
       self.modules.homeManager.browser
       self.modules.homeManager.mimeDefaults
       self.modules.homeManager.themePaths
+      self.modules.homeManager.terminal
     ];
   };
 }

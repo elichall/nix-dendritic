@@ -4,7 +4,7 @@
     programs.bash.enable = true;
   };
 
-  flake.modules.homeManager.cmdLine = { pkgs, ... }: {
+  flake.modules.homeManager.cmdLine = { pkgs, lib, ... }: {
     # ==========================================================================
     # SHELL INTEGRATION SWITCHES
     # ==========================================================================
@@ -57,9 +57,9 @@
           source ${pkgs.blesh}/share/blesh/ble.sh --noattach
         fi
         # Initialize zoxide
-        eval "$(${pkgs.zoxide}/bin/zoxide init bash)"
+        eval "$(${lib.getExe pkgs.zoxide} init bash)"
         # Initialize direnv (defines the _direnv_hook function)
-        eval "$(${pkgs.direnv}/bin/direnv hook bash)"
+        eval "$(${lib.getExe pkgs.direnv} hook bash)"
         # ble.sh runs PRECMD hooks before PROMPT_COMMAND on every prompt, so we
         # register direnv via blehook PRECMD to ensure it updates the environment
         # before starship draws its prompt. Strip the redundant PROMPT_COMMAND
@@ -71,7 +71,7 @@
         fi
         # Initialize starship (auto-detects ble.sh and hooks into blehook PRECMD)
         if [[ $- == *i* ]]; then
-          eval "$(${pkgs.starship}/bin/starship init bash --print-full-init)"
+          eval "$(${lib.getExe pkgs.starship} init bash --print-full-init)"
         fi
         # Attach blesh
         [[ ''${BLE_VERSION-} ]] && ble-attach

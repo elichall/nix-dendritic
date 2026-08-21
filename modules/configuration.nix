@@ -8,7 +8,7 @@
     options.custom.terminal = lib.mkOption {
       type = lib.types.str;
       default = "foot";
-      description = "Terminal emulator name (resolved to package by _lib/terminal.nix)";
+      description = "Terminal emulator name (resolved by options/terminal.nix)";
     };
 
     config = {

@@ -4,15 +4,14 @@
 # Consumers/deps surface: modules/_assets/documentation/module-contracts.md (C18).
 # ==========================================================================
 { inputs, ... }: {
-  flake.modules.homeManager.showoff = { config, pkgs, terminalName, ... }:
+  flake.modules.homeManager.showoff = { config, pkgs, ... }:
     let
-      terminal = import ../../_lib/terminal.nix { inherit pkgs terminalName; };
       interactionWatch = config.utils.interactionWatch;
-      classFlag = if terminalName == "foot" then "--app-id" else "--class";
+      classFlag = if config.terminal.name == "foot" then "--app-id" else "--class";
     in
     {
       home.packages =
-        terminal.packages
+        config.terminal.packages
         ++ (with pkgs; [
           tty-clock
           gping
@@ -34,7 +33,7 @@
             name = "showoff";
             runtimeInputs = [ jq tmux hyprland procps interactionWatch ];
             text = ''
-              TERMINAL="${terminal.term}"
+              TERMINAL="${config.terminal.term}"
               CLASS_FLAG="${classFlag}"
               WORKSPACE_PRI="special:showoff"
               WORKSPACE_SEC="special:showoff_sec"

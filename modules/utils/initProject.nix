@@ -8,7 +8,7 @@
 # content is indented level with the closing '' so Nix strips it to flush.
 { self, ... }: {
   flake.modules.homeManager.initProject =
-    { pkgs, ... }:
+    { pkgs, lib, ... }:
     let
       flakeNix = pkgs.writeText "flake.nix" ''
         {
@@ -79,19 +79,19 @@
             exit 1
           fi
 
-          ${pkgs.git}/bin/git init -b main
+          ${lib.getExe pkgs.git} init -b main
 
           mkdir -p src .agents
           touch AGENTS.md
 
           echo "use flake" > .envrc
-          ${pkgs.coreutils}/bin/cp "${flakeNix}" flake.nix
-          ${pkgs.coreutils}/bin/cp "${gitignore}" .gitignore
+          ${lib.getExe' pkgs.coreutils "cp"} "${flakeNix}" flake.nix
+          ${lib.getExe' pkgs.coreutils "cp"} "${gitignore}" .gitignore
 
-          ${pkgs.direnv}/bin/direnv allow
+          ${lib.getExe pkgs.direnv} allow
 
-          ${pkgs.git}/bin/git add -A
-          ${pkgs.git}/bin/git commit -m "Initialized project"
+          ${lib.getExe pkgs.git} add -A
+          ${lib.getExe pkgs.git} commit -m "Initialized project"
         '';
       };
     in

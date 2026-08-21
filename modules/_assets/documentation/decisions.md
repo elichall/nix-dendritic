@@ -640,8 +640,22 @@ separate `options/<name>.nix` file is unnecessary — merge into the feature
 module. Options files exist only for pure declarations consumed by multiple
 unrelated feature modules.
 **Where:** `modules/options/{browser,interactionWatch,notifySend,terminal}.nix`,
-`modules/groups/options.nix`, `modules/display/theme-paths.nix`,
+`modules/groups/options.nix`, `modules/display/experimental/theme-paths.nix`,
 `modules/programs/{browser,mimeDefaults}.nix`.
+
+### 54. `lib.getExe` / `lib.getExe'` replaces `${pkgs.<name>}/bin/<name>`
+**Decision:** Replace all `${pkgs.<name>}/bin/<name>` patterns with
+`lib.getExe pkgs.<name>` (uses `meta.mainProgram`) or `lib.getExe' pkgs.<name> "binary"`
+(for packages where mainProgram differs from pname, e.g. `coreutils`, `gnused`,
+`jolt-tui`). Wrapped packages (`writeShellApplication`) use `lib.getExeFromWrappers`.
+**Why:** `lib.getExe` ensures the correct output is chosen (packages can split
+`bin` into a separate output). It reduces boilerplate — the path is derived from
+the package's `meta.mainProgram` rather than hardcoded. For packages without
+`meta.mainProgram` (e.g. `coreutils`), `lib.getExe'` with an explicit binary
+name is required. This is a mechanical refactor with no behavioral change.
+**Where:** All `.nix` files under `modules/` — 38 instances replaced across
+hyprland, theme, ghostty, waybar, showoff, cmdLine, rclone, initProject,
+otter, tui, notifySend, interactionWatch.
 
 ---
 
@@ -695,10 +709,11 @@ unrelated feature modules.
 | 44 | Noctalia Shell replaces hand-rolled stack | — | Noctalia migration | — | module-contracts C23 |
 | 45 | Foot replaces ghostty (stable) | — | Noctalia migration | — | module-contracts C22 |
 | 46 | 3-host split | — | Noctalia migration | — | module-contracts host wiring |
-| 47 | Terminal abstraction via `_lib/terminal.nix` | — | Noctalia migration | — | module-contracts C22 |
+| 47 | Terminal abstraction via `config.terminal.*` (merged pattern) | Rule 2 | _lib elimination | — | module-contracts C22 |
 | 48 | UPower for battery status | — | Noctalia migration | — | module-contracts C27 |
 | 49 | `--class` → `--app-id` migration (foot) | — | Noctalia migration | — | module-contracts C5 |
 | 50 | Showoff ported to terminal abstraction | — | Noctalia migration | — | module-contracts C18 |
 | 51 | TUI apps inherit terminal colors, no templates needed | — | Noctalia migration | — | noctalia-guide.md §4 |
 | 52 | Terminal/dev theming: Approach A + noctalia-theme-sync | — | Noctalia migration | — | module-contracts C24-C26 |
 | 53 | Options module pattern replaces `_lib/` | Rule 2 | _lib elimination | — | module-contracts C14 |
+| 54 | `lib.getExe` / `lib.getExe'` replaces `${pkgs.<name>}/bin/<name>` | Rule 2 | _lib elimination | — | module-contracts C22 |

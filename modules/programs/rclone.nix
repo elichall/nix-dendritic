@@ -10,7 +10,7 @@
     programs.fuse.userAllowOther = true;
   };
 
-  flake.modules.homeManager.rclone = { config, pkgs, ... }: {
+  flake.modules.homeManager.rclone = { config, pkgs, lib, ... }: {
     home.packages = [ pkgs.rclone ];
 
     systemd.user.services.rclone-box = {
@@ -20,9 +20,9 @@
       };
       Service = {
         Type = "notify";
-        ExecStartPre = "-${pkgs.coreutils}/bin/mkdir -p ${config.home.homeDirectory}/Box";
+        ExecStartPre = "-${lib.getExe' pkgs.coreutils "mkdir"} -p ${config.home.homeDirectory}/Box";
 
-        ExecStart = "${pkgs.rclone}/bin/rclone mount boxdrive: ${config.home.homeDirectory}/Box --config=${config.home.homeDirectory}/.config/rclone/rclone.conf --vfs-cache-mode full --vfs-cache-max-age 1h --vfs-cache-max-size 10G --dir-cache-time 1m --poll-interval 1m --allow-other --umask 0022 --buffer-size 32M";
+        ExecStart = "${lib.getExe pkgs.rclone} mount boxdrive: ${config.home.homeDirectory}/Box --config=${config.home.homeDirectory}/.config/rclone/rclone.conf --vfs-cache-mode full --vfs-cache-max-age 1h --vfs-cache-max-size 10G --dir-cache-time 1m --poll-interval 1m --allow-other --umask 0022 --buffer-size 32M";
 
         ExecStop = "/run/wrappers/bin/fusermount3 -u ${config.home.homeDirectory}/Box";
 

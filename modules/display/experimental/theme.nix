@@ -104,8 +104,8 @@
         THEME_DIR="${THEME_DIR}"
         GENERATED="$THEME_DIR/generated"
         GHOSTTY_CONF="${config.theme.ghosttyThemeConf}"
-        GHOSTTY=${pkgs.ghostty}/bin/ghostty
-        JQ=${pkgs.jq}/bin/jq
+        GHOSTTY=${lib.getExe pkgs.ghostty}
+        JQ=${lib.getExe pkgs.jq}
 
         mkdir -p "$GENERATED/hypr" "$GENERATED/waybar" "$GENERATED/tmux" \
                  "$GENERATED/nvim" "$GENERATED/cava" "$GENERATED/gtk" \
@@ -303,7 +303,7 @@
 
         THEME_DIR="${THEME_DIR}"
         SYNC_SCRIPT="${syncScript}"
-        JQ=${pkgs.jq}/bin/jq
+        JQ=${lib.getExe pkgs.jq}
 
         PROFILE_NAME="''${1:-}"
 
@@ -353,8 +353,8 @@
 
         THEME_DIR="${THEME_DIR}"
         PREVIEWS="$THEME_DIR/generated/previews"
-        GHOSTTY=${pkgs.ghostty}/bin/ghostty
-        JQ=${pkgs.jq}/bin/jq
+        GHOSTTY=${lib.getExe pkgs.ghostty}
+        JQ=${lib.getExe pkgs.jq}
 
         mkdir -p "$PREVIEWS"
 
@@ -403,13 +403,13 @@
               echo "Available themes:"
               ls -1 "$THEME_DIR/profiles/" 2>/dev/null | sed 's/\.json//' || echo "  (none)"
               echo ""
-              ACTIVE=$(cat "$THEME_DIR/active.json" 2>/dev/null | ${pkgs.jq}/bin/jq -r '.theme_name' 2>/dev/null || echo "unknown")
+              ACTIVE=$(cat "$THEME_DIR/active.json" 2>/dev/null | ${lib.getExe pkgs.jq} -r '.theme_name' 2>/dev/null || echo "unknown")
               echo "Active: $ACTIVE"
             fi
             ;;
           current)
             if [ -f "$THEME_DIR/active.json" ]; then
-              ${pkgs.jq}/bin/jq -r '"\(.theme_name) [\(.ghostty_theme)]"' "$THEME_DIR/active.json"
+              ${lib.getExe pkgs.jq} -r '"\(.theme_name) [\(.ghostty_theme)]"' "$THEME_DIR/active.json"
             else
               echo "No active theme"
               exit 1
@@ -446,17 +446,17 @@
       ];
 
       home.activation.initTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        ${pkgs.coreutils}/bin/mkdir -p ${THEME_DIR}/profiles
+        ${lib.getExe' pkgs.coreutils "mkdir"} -p ${THEME_DIR}/profiles
 
         write_profile() {
           local name="$1" json="$2"
-          ${pkgs.coreutils}/bin/printf '%s\n' "$json" > "${THEME_DIR}/profiles/$name.json"
+          ${lib.getExe' pkgs.coreutils "printf"} '%s\n' "$json" > "${THEME_DIR}/profiles/$name.json"
         }
 
         ${writeProfilesScript}
 
         if [ ! -f "${THEME_DIR}/active.json" ]; then
-          ${pkgs.coreutils}/bin/printf '%s\n' '${
+          ${lib.getExe' pkgs.coreutils "printf"} '%s\n' '${
             builtins.toJSON {
               theme_name = DEFAULT_THEME;
               ghostty_theme = THEME_PROFILES.${DEFAULT_THEME}.ghostty_theme;

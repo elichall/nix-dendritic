@@ -6,21 +6,20 @@
 # ==========================================================================
 { inputs, ... }: {
   flake.modules.homeManager.waybar =
-    { pkgs, terminalName, ... }:
+    { config, pkgs, lib, ... }:
     let
-      terminal = import ../../_lib/terminal.nix { inherit pkgs terminalName; };
-      tui = app: terminal.execClass "com.waybar.tui" app;
-      fastfetchBin = "${pkgs.fastfetch}/bin/fastfetch";
-      weathrBin = "${pkgs.weathr}/bin/weathr";
+      tui = app: config.terminal.execClass "com.waybar.tui" app;
+      fastfetchBin = lib.getExe pkgs.fastfetch;
+      weathrBin = lib.getExe pkgs.weathr;
       wlctlPkg = inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      wlctlBin = "${wlctlPkg}/bin/wlctl";
-      bluetuiBin = "${pkgs.bluetui}/bin/bluetui";
-      joltBin = "${pkgs.jolt-tui}/bin/jolt";
-      btopBin = "${pkgs.btop}/bin/btop";
+      wlctlBin = lib.getExe wlctlPkg;
+      bluetuiBin = lib.getExe pkgs.bluetui;
+      joltBin = lib.getExe' pkgs.jolt-tui "jolt";
+      btopBin = lib.getExe pkgs.btop;
     in
     {
       home.packages =
-        terminal.packages
+        config.terminal.packages
         ++ (with pkgs; [
           fastfetch
           weathr
@@ -64,7 +63,7 @@
             "custom/nixos" = {
               format = "";
               tooltip = false;
-              on-click-right = terminal.execClass "com.waybar.tui" "bash -c '${fastfetchBin}; read -n 1 -p \"Press any key to exit...\"'";
+              on-click-right = config.terminal.execClass "com.waybar.tui" "bash -c '${fastfetchBin}; read -n 1 -p \"Press any key to exit...\"'";
               on-click = "otter-open";
             };
 
@@ -90,7 +89,7 @@
               # add a formate for when it is not working/wifi is off so the module stays visually present
               tooltip = true;
               interval = 1800;
-              exec = "${pkgs.curl}/bin/curl -s 'wttr.in/?format=%t' | ${pkgs.gnused}/bin/sed 's/+//g'";
+              exec = "${lib.getExe pkgs.curl} -s 'wttr.in/?format=%t' | ${lib.getExe' pkgs.gnused "sed"} 's/+//g'";
               on-click = "${tui weathrBin}";
             };
 

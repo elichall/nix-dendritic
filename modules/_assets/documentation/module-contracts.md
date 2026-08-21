@@ -60,17 +60,17 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.ghostty` | `display/experimental/ghostty.nix` | ghostty binary + SOLE owner of `xdg.configFile."ghostty/config"` (experimental stack only) |
 | `homeManager.foot` | `display/desktop/foot.nix` | foot terminal via `programs.foot.enable` (HM native module); stable stack terminal |
 | `homeManager.noctalia` | `display/desktop/noctalia.nix` | Noctalia Shell via `programs.noctalia.enable`; stable stack shell/bar (themes, top bar, wallpaper, clipboard, notifications) |
-| `homeManager.hyprland` | `display/hyprland.nix` | hyprland user config (keybinds, autostart, rules) + deps (hypridle, grimblast, brightnessctl, playerctl, tmux, yazi); autostart block starts noctalia shell; uses `_lib/terminal.nix` abstraction (host selects foot or ghostty via `custom.terminal`) |
-| `homeManager.tui` | `display/tui.nix` | TUI launcher: wlctl (flake input), tuiApps list, desktop entries + icons, yazi-open |
-| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose; uses `_lib/terminal.nix` abstraction for launcher exec (foot: `--app-id`, ghostty: `--class`); interaction-watch + hybrid-notify via `self.utils.*`; `th` preview consumes theme profiles + swatches (C19); `tsm` = tmux session manager (tmux-fzf parity: switch/new/rename/detach/kill + `tsm <action> <session>` one-liner via shell-split of the `{}` argument) |
-| `homeManager.showoff` | `display/experimental/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch (via `self.utils.interactionWatch`); uses `_lib/terminal.nix` abstraction (foot: `--app-id`, ghostty: `--class`) |
+| `homeManager.hyprland` | `display/hyprland.nix` | hyprland user config (keybinds, autostart, rules) + deps (hypridle, grimblast, brightnessctl, playerctl, tmux, yazi); autostart block starts noctalia shell; uses `config.terminal.*` abstraction (host selects foot or ghostty via `custom.terminal`) |
+| `homeManager.tui` | `display/tui.nix` | TUI launcher: wlctl (flake input), tuiApps list, desktop entries + icons, yazi-open; uses `config.terminal.*` abstraction |
+| `homeManager.otterLauncher` | `display/otter-launcher/otter.nix` | otter-launcher (flake input) + wrappers + config.toml + otter-diagnose; uses `config.terminal.*` abstraction for launcher exec (foot: `--app-id`, ghostty: `--class`); interaction-watch + hybrid-notify via `config.utils.*`; `th` preview consumes theme profiles + swatches (C19); `tsm` = tmux session manager (tmux-fzf parity: switch/new/rename/detach/kill + `tsm <action> <session>` one-liner via shell-split of the `{}` argument) |
+| `homeManager.showoff` | `display/experimental/showoff.nix` | showoff scripts/configs + dashboard deps + interaction-watch (via `config.utils.interactionWatch`); uses `config.terminal.*` abstraction (foot: `--app-id`, ghostty: `--class`) |
 | `homeManager.awww` | `display/awww.nix` | awww binary (daemon launched via hyprland autostart, C10) |
 | `homeManager.waypaper` | `display/waypaper.nix` | waypaper binary (restore via hyprland autostart, C10) |
-| `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps; battery `full-at = 80` (TLP-capped batteries → full icon at 80%); workspaces-style rounded pill darken on hover for every module except the nixos logo (`background-color: rgba(0,0,0,0.65)` on `#<module>:hover` — modules are windowed `Gtk::EventBox`es that paint rounded backgrounds; pill stays opaque, boundary not washed out) |
+| `homeManager.waybar` | `display/waybar.nix` | waybar config/style + user-scope deps; uses `config.terminal.*` abstraction; battery `full-at = 80` (TLP-capped batteries → full icon at 80%); workspaces-style rounded pill darken on hover for every module except the nixos logo (`background-color: rgba(0,0,0,0.65)` on `#<module>:hover` — modules are windowed `Gtk::EventBox`es that paint rounded backgrounds; pill stays opaque, boundary not washed out) |
 | `homeManager.theme` | `display/experimental/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19); experimental stack only |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi, opencode (core dev tools — no GUI, no extensions) |
 | `homeManager.utils` | `groups/utils.nix` | Preset: initProject, interactionWatch, notifySend (options moved to dedicated `options` group) |
-| `homeManager.options` | `groups/options.nix` | Preset: cross-module option declarations (browser, interactionWatch, notifySend, terminal) |
+| `homeManager.options` | `groups/options.nix` | Preset: cross-module option declarations (browser, interactionWatch, notifySend) — terminal follows merged pattern (declares + sets in one file) |
 | `homeManager.browser` | `programs/browser.nix` | Sets `config.browser.{appId,command,desktop}` (Firefox flatpak) |
 | `homeManager.mimeDefaults` | `programs/mimeDefaults.nix` | User-level MIME associations (`xdg.mimeApps.defaultApplications`) |
 | `homeManager.themePaths` | `display/theme-paths.nix` | Sets `config.theme.{dir,active,generated,ghosttyThemeConf}` |
@@ -291,18 +291,21 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 - Everything in `modules/_assets/` must be tracked (root `.gitignore` rule is
   root-anchored `/_assets/`; do not un-anchor).
 
-### C14. `_lib/` → options module pattern (preferred) — DEPRECATED
-- **`_lib/` is deprecated.** New cross-module shared values MUST use the options
+### C14. `_lib/` eliminated — options module pattern
+- **`_lib/` has been eliminated.** All cross-module shared values use the options
   module pattern (decision #53): declare in `modules/options/<name>.nix`, set in
   a feature module, consume via `config.*`.
-- Remaining `_lib/terminal.nix` consumers (hyprland, otter, showoff, tui, waybar)
-  will be migrated to `config.terminal.*` in the next phase.
-- Legacy `_lib/` convention (for reference): shared non-module values via
-  explicit relative import. `_lib` files define no `flake.modules.*`; never
-  import a feature module from `_lib`.
+- Terminal abstraction (`config.terminal.*`): merged pattern in `options/terminal.nix`
+  (declares + sets in one file, like `theme-paths.nix`). Consumers read
+  `config.terminal.{name,term,package,packages,exec,execClass}`.
+- Browser abstraction (`config.browser.*`): pure declarations in `options/browser.nix`,
+  set in `programs/browser.nix`.
+- Utility options (`config.utils.*`): pure declarations in `options/{notifySend,interactionWatch}.nix`,
+  set in `utils/{notifySend,interactionWatch}.nix`.
 - Utility scripts (interaction-watch, hybrid-notify, init-project) live in
-  `modules/utils/` as flake-parts modules with `flake.utils.*` exports for
-  cross-module derivation access.
+  `modules/utils/` as standalone flake-parts modules.
+- Legacy `_lib/` convention (for reference): shared non-module values via
+  explicit relative import. `_lib` files define no `flake.modules.*`.
 
 ### C15. interaction-watch interface
 - Definition: `modules/utils/interactionWatch.nix` (flake-parts module)
@@ -381,18 +384,13 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Currently active features: `research` (obsidian.nvim, blink-cmp-bibtex,
   obsidian_ls).
 
-### C22. Terminal abstraction (`config.terminal.*` — in progress)
+### C22. Terminal abstraction (`config.terminal.*`)
 - Terminal abstraction provides a terminal-agnostic interface consumed by
   hyprland, waybar, showoff, otter, and tui modules.
-- **Options declared in:** `modules/options/terminal.nix` (pure declaration).
-- **Values set in:** `modules/programs/terminal.nix` (Phase 4 — pending).
-- **Current state:** `_lib/terminal.nix` still used by 5 consumers; will be
-  migrated to `config.terminal.*` in Phase 4 of the `_lib/` elimination.
-- Input: `terminalName` string (from `custom.terminal` NixOS option, bridged
-  via `home-manager.extraSpecialArgs`).
-- Exports: `term` (store path), `package`, `packages` (for `home.packages`),
-  `exec cmd` (launch command in new window), `execClass class cmd` (launch
-  with window class — foot: `--app-id`, ghostty: `--class`).
+- **Merged pattern:** `modules/options/terminal.nix` declares options AND sets
+  config values (like `theme-paths.nix`). Input: `terminalName` string (from
+  `custom.terminal` NixOS option, bridged via `home-manager.extraSpecialArgs`).
+- **Exports:** `config.terminal.{name,term,package,packages,exec,execClass}`.
 - Hosts select their terminal via `custom.terminal = "foot" | "ghostty"` in
   `hosts/<hostname>.nix`; all consumer modules are terminal-agnostic.
 - Consumer modules MUST use `config.terminal.term`/`config.terminal.exec`/
@@ -503,9 +501,8 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Ghostty window rules/classes (incl. dead `com.center.focus`) — kept as legacy
   (phase-3 decision, void). Experimental stack only (laptop).
 - `dk`/`obs` config.toml stubs — left as-is.
-- `_lib/` naming — **DEPRECATED** (decision #53). `_lib/terminal.nix` is the
-  last remaining file; will be migrated to `config.terminal.*` in Phase 4.
-  New cross-module shared values MUST use the options module pattern.
+- `_lib/` naming — **ELIMINATED** (decision #53). All cross-module shared values
+  use the options module pattern. New modules MUST use `config.*` for sharing.
 - **Noctalia config**: only documented settings are valid; validated with
   `noctalia config validate`. Non-existent keys silently accepted but produce no
   effect.
