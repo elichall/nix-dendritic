@@ -46,7 +46,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | Key | File | Owns |
 |---|---|---|
 | `homeManager.main` | `home.nix` | stateVersion, user, XCOMPOSECACHE, pointerCursor, xdg.enable, portal-gtk (MUST stay user-scale) |
-| `homeManager.cmdLine` | `programs/cmdLine.nix` | bash/starship/zoxide/fzf/direnv/ble.sh config, aliases, dotfiles |
+| `homeManager.cmdLine` | `programs/cmdLine.nix` | bash/starship/zoxide/fzf/direnv/ble.sh config, aliases, dotfiles; WSL-only `nvim` drain-buffer alias when `host.isWsl` (win32yank autopaste workaround) |
 | `homeManager.git` | `programs/git.nix` | git config; commit identity from `config.host.identity.gitUsername/gitEmail` (C28) — requires `options` group imported first |
 | `homeManager.tmux` | `programs/tmux.nix` | tmux config + plugins |
 | `homeManager.initProject` | `utils/initProject.nix` | `init-project` scaffold CLI (writeShellApplication, shellcheck at build): git init `-b main`, `uv init`, minimal flake devShell (nix/python/cpp toolchain, pure-eval `x86_64-linux` template), `use flake` envrc, .gitignore, agent dirs, `direnv allow` + initial commit; bails in existing git repo |
@@ -58,7 +58,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.fastfetch` | `programs/fastfetch.nix` | fastfetch binary + chafa block-image logo config (`symbols = "block"`), auto height, explicit `modules` list = default structure (2.63.1 prints NOTHING but the logo without it) (HOME-ONLY, user directive) |
 | `homeManager.rclone` | `programs/rclone.nix` | rclone binary + rclone-box user unit |
 | `homeManager.zotero` | `research/zotero.nix` | zotero flatpak desktop entry |
-| `homeManager.clipboard` | `system/clipboard.nix` | wl-clipboard (cross-host core; future `nixos.clipboard` may grow here) |
+| `homeManager.clipboard` | `system/clipboard.nix` | Platform-aware clipboard tooling branching on `host.*` (C28): `displayProtocol` selects wl-clipboard/xclip; `isWsl` adds vendored win32yank (fetchzip of upstream release, dual-name `win32yank{,.exe}`) + `wslview` shim (wslu removed from nixpkgs — project archived) + xclip (WSLg exposes x11 too). Requires `options` group imported first |
 | `homeManager.ghostty` | `display/experimental/ghostty.nix` | ghostty binary + SOLE owner of `xdg.configFile."ghostty/config"` (experimental stack only) |
 | `homeManager.foot` | `display/desktop/foot.nix` | foot terminal via `programs.foot.enable` (HM native module); stable stack terminal |
 | `homeManager.noctalia` | `display/desktop/noctalia.nix` | Noctalia Shell via `programs.noctalia.enable`; stable stack shell/bar (themes, top bar, wallpaper, clipboard, notifications) |
@@ -100,9 +100,30 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   (cascades to all derived `config.terminal.*` values).
 - Noctalia shared via `home-manager.sharedModules`; `useGlobalPkgs/useUserPackages = true`.
 
-#### `hosts/server.nix` / `hosts/{wsl,ubuntu,macos}.nix` (stubs — headless/deferred)
-- Empty placeholders; wsl/ubuntu/macos export empty `homeConfigurations`
-  pending the cross-platform plan (`_assets/plans/wsl-linux-hosts.md`).
+#### `hosts/server.nix` (stub — headless)
+- Empty placeholder.
+
+#### `hosts/linux.nix` (standalone HM — foreign-distro, headless template)
+- `homeConfigurations.linux` via `homeManagerConfiguration` (toolbox style).
+- Imports: `options`, `toolbox`, `utils`, `clipboard` + inline base block
+  (identity from `config.host.identity.username`, stateVersion 26.05,
+  `host.isNixos = false`, `targets.genericLinux.enable`, fontconfig +
+  JetBrainsMono/Noto in `home.packages`, `programs.home-manager`).
+- No theming, no display stack (by design — full-feature parity first).
+- Deploy: `nix build .#homeConfigurations.linux.activationPackage && ./result/activate`.
+
+#### `hosts/wsl.nix` (standalone HM — toolbox style, WSL template)
+- `homeConfigurations.wsl`; same shape as linux plus
+  `host.isWsl = true` → clipboard ships win32yank/wslview/xclip; cmdLine adds
+  the nvim drain-buffer alias. `isNixos = false`.
+- A NixOS-in-WSL flavor (`nixosConfigurations` + nixos-wsl input) remains a
+  future addition; `isWsl × isNixos` distinguish flavors.
+- Deploy: build + activate inside the WSL distro; interop changes need
+  `wsl --shutdown` from Windows.
+
+#### `hosts/{ubuntu,macos}.nix`
+- ubuntu stub REMOVED (renamed → `linux.nix`, plan D7). macos remains an empty
+  placeholder (no hardware; deferred).
 
 ### Legacy provenance
 
@@ -508,10 +529,11 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   < `mkForce`. Override at whichever scope owns the concern. Host files carry
   NO cross-scope bridges (deliberate: cascade machinery deferred until a real
   nixos-side override need appears).
-- **Consumers**: `homeManager.git` reads `identity.gitUsername/gitEmail`.
-  Planned branching (not yet implemented): clipboard/cmdLine on `isWsl` +
-  `displayProtocol`; cmdLine on `shell`; `targets.genericLinux.enable` on
-  `!isNixos`.
+- **Consumers**: `homeManager.git` reads `identity.gitUsername/gitEmail`;
+  `homeManager.clipboard` branches on `displayProtocol` + `isWsl`; the inline
+  base blocks of standalone hosts derive `home.username` from
+  `identity.username`. Planned: cmdLine on `shell`;
+  `targets.genericLinux.enable` already set manually on standalone hosts.
 - **Import order**: hosts import `<class>.options` BEFORE feature aspects —
   git aspect hard-depends on the declarations.
 - **Gotchas**: new files must be `git add`ed before flake evals see them

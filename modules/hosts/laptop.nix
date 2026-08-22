@@ -12,6 +12,8 @@
       self.modules.nixos.main
       self.modules.nixos.hardwareConfig
 
+      self.modules.nixos.options
+
       # aspect groups (base services + display/wallpaper preset)
       self.modules.nixos.base
       self.modules.nixos.desktopExp

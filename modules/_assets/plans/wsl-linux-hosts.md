@@ -127,38 +127,18 @@ via both classes' `options` groups in `modules/groups/options.nix`; first
 consumer (`homeManager.git`) wired; workstation + laptop validated with
 drvPaths byte-identical to pre-change baseline.
 
-### `modules/hosts/wsl.nix`
+### `modules/hosts/wsl.nix` — DELIVERED (standalone HM; nixos-wsl flavor deferred)
+`homeConfigurations.wsl` via `homeManagerConfiguration`: imports
+options/toolbox/utils/clipboard + inline base block (`host.isWsl = true`,
+`host.isNixos = false`, identity via `config.host.identity.username`,
+genericLinux, fonts in home.packages). The original nixos-wsl sketch is kept
+below for the future full-NixOS flavor:
+
 ```nix
-{ inputs, self, ... }: {
-  flake.nixosConfigurations.wsl = inputs.nixpkgs.lib.nixosSystem {
-    pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
-    specialArgs = { inherit inputs; };
-    modules = [
-      inputs.nixos-wsl.nixosModules.default
-
-      # WSL identity — inline, NOT nixos.main (D9)
-      ({ ... }: {
-        wsl.enable = true;
-        wsl.defaultUser = "elichall";
-        networking.hostName = "wsl";
-        system.stateVersion = "26.05";
-
-        config.host.isWsl = true;
-
-        home-manager.useGlobalPkgs = true;
-        home-manager.useUserPackages = true;
-        home-manager.users.elichall.imports = [
-          self.modules.homeManager.options     # incl. optionsHost
-          self.modules.homeManager.toolbox
-          self.modules.homeManager.utils
-        ];
-        home-manager.users.elichall.config.host.isWsl = true;
-        home-manager.users.elichall.home.stateVersion = "26.05";
-      })
+# FUTURE: nixosConfigurations.wsl with inputs.nixos-wsl.nixosModules.default,
+# wsl.enable = true, wsl.defaultUser, inline identity — see decision #56/#57
+# context and D1 rationale below.
 ```
-Note: `host.isWsl` must be set in BOTH evaluations (nixos and the nested HM
-one) because they are separate module-system instances — no bridge exists
-(C28), each scope states its own value explicitly.
 
 Excluded by omission: `base` group (networkmanager/pipewire/bluetooth/tlp/
 fwupd/microcode all conflict-with or idle-under WSL — nixos-wsl manages
@@ -191,25 +171,18 @@ hardware-configuration.nix exists for WSL; nixos-wsl supplies the filesystem).
 }
 ```
 
-### Aspect edits (flag consumers)
-- `modules/system/clipboard.nix`: branch on `config.host.isWsl` —
-  - WSL: `[ pkgs.win32yank pkgs.wl-clipboard pkgs.xclip ]` (xclip per T1)
-  - else: `[ pkgs.wl-clipboard ]` (current behavior)
-- `modules/programs/cmdLine.nix` (HM): under `host.isWsl`, add the
-  drain-buffer alias `nvim = "win32yank -i </dev/null && command nvim"` (T3)
-  and ensure `pkgs.wslu` reaches PATH — placed here OR in clipboard aspect;
-  final placement = whichever owns "WSL desktop-integration binaries"
-  (leaning: clipboard aspect owns win32yank+wslu as packages; cmdLine owns
-  only the alias).
-- No other aspect changes. Display stack untouched (not imported).
-
-### Flake input
-```nix
-nixos-wsl = {
-  url = "github:nix-community/NixOS-WSL/main";
-  inputs.nixpkgs.follows = "nixpkgs";
-};
-```
+### Aspect edits (flag consumers) — DONE
+- `modules/system/clipboard.nix`: `displayProtocol` selects wl-clipboard/xclip;
+  `isWsl` adds vendored win32yank (absent from pin → fetchzip v0.0.4,
+  `stripRoot = false`, dual-name install) + native wslview shim (wslu REMOVED
+  from nixpkgs — archived upstream) + xclip (WSLg exposes x11 too). Decision #57.
+- `modules/programs/cmdLine.nix`: nvim drain-buffer alias under
+  `lib.optionalAttrs config.host.isWsl` (T3; removal-candidate review after
+  first real WSL session).
+- Prerequisite fix: `flake-parts.nix` imports
+  `inputs.home-manager.flakeModules.home-manager` (undeclared-output collision).
+- No theming aspects imported on either host (user direction: full-feature
+  parity first, theming later).
 
 ### D9 — Why hosts inline identity instead of importing `main` aspects
 `nixos.main` carries bootloader(systemd-boot)/zram/flatpak/fonts/tmpfiles —
@@ -230,10 +203,10 @@ revisit extraction into a `headless` preset group.
 |------|------|------|
 | 0 | Verify `pkgs.win32yank` exists in nixpkgs 26.05 pin (`nix eval`) | eval |
 | 1 | ~~Rewrite `modules/options/hostOpt.nix`; register in `modules/groups/options.nix`; wire workstation~~ **DONE** (dual-scope scaffold + git consumer; see C28/#56) | ✅ drvPaths identical |
-| 2 | Add `nixos-wsl` input; `nix flake lock` | lock clean, no new warnings |
-| 3 | Rewrite `hosts/wsl.nix` per §3; delete `homeConfigurations.wsl` stub | `nix build .#nixosConfigurations.wsl.config.system.build.toplevel` evaluates (buildable ON workstation — same arch) |
-| 4 | Branch `clipboard.nix` + `cmdLine.nix` on `host.isWsl` | workstation toplevel drvPath UNCHANGED (default-false proves isolation); wsl toplevel picks up win32yank/xclip/wslu |
-| 5 | Rename `ubuntu.nix`→`linux.nix`, implement §3 shape | `nix eval .#homeConfigurations.linux.activationPackage.drvPath` resolves; eval warning-free |
+| 2 | ~~Add `nixos-wsl` input~~ **DEFERRED** — user direction (2026-08-21): both hosts ship toolbox-style standalone HM first; nixos-wsl flavor is a later addition. Prereq discovered instead: import `home-manager.flakeModules.home-manager` in flake-parts wiring | ✅ both hosts build |
+| 3 | ~~Rewrite `hosts/wsl.nix` per §3~~ **DELIVERED AS STANDALONE HM** (user direction supersedes D1 for now): `homeConfigurations.wsl` with `host.isWsl = true`; nixos-wsl flavor deferred. Builds clean | ✅ |
+| 4 | Branch `clipboard.nix` + `cmdLine.nix` on host flags **DONE**: clipboard branches on `displayProtocol`+`isWsl` (win32yank vendored — absent from pin; wslu REMOVED from pin → native wslview shim, decision #57); cmdLine adds nvim drain alias under `isWsl`. Workstation drvPaths byte-identical to baseline | ✅ |
+| 5 | ~~Rename ubuntu→linux, implement §3 shape~~ **DONE** as standalone HM (`homeConfigurations.linux`, identity via scaffold). Builds clean | ✅ |
 | 6 | Full validation sweep (§7) + smoke expectations doc | all green |
 | 7 | Docs pass (§8): decisions, contracts, maintenance guide, README, AGENTS.md alignment, TODO.md | — |
 | 8 | Bootstrap script `setup-host.sh` (§6) | `shellcheck` + dry-mode run on workstation |

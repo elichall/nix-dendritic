@@ -23,6 +23,12 @@ let
     isWsl = false;
     displayProtocol = "wayland";
     shell = "bash";
+    supportedShells = [
+      "bash"
+      "zsh"
+      "fish"
+      "nushell"
+    ];
     identity.username = "elichall";
     identity.email = "1elijah.hall@gmail.com";
   };
@@ -64,11 +70,7 @@ in
       };
 
       shell = lib.mkOption {
-        type = lib.types.enum [
-          "bash"
-          "zsh"
-          "fish"
-        ];
+        type = lib.types.enum stdPractice.supportedShells;
         default = stdPractice.shell;
         description = "Interactive login shell.";
       };
@@ -122,11 +124,7 @@ in
         description = "Consumer: clipboard package selection.";
       };
       shell = lib.mkOption {
-        type = lib.types.enum [
-          "bash"
-          "zsh"
-          "fish"
-        ];
+        type = lib.types.enum stdPractice.supportedShells;
         default = stdPractice.shell;
         description = "Consumer: cmdLine shell selection.";
       };

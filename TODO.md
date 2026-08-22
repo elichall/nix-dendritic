@@ -228,10 +228,29 @@ Stable stack replaces hand-rolled display components on the workstation host:
 - [x] Docs: contract C28, decisions #55 (mimeDefaults merge backfill) + #56,
   host-wiring rows de-staled (`custom.terminal`/extraSpecialArgs removal),
   options-architecture skill multi-scope section
-- [ ] Add nixos-wsl input; implement `nixosConfigurations.wsl` (plan §3/D1)
-- [ ] Implement standalone `homeConfigurations.linux` replacing ubuntu stub (plan D2/D7)
-- [ ] Branch clipboard/cmdLine on `host.isWsl`/`displayProtocol` (plan §3; deferred until hosts exist)
+- [x] `flake-parts.nix`: import `home-manager.flakeModules.home-manager` —
+  REQUIRED for standalone-HM outputs; without it multiple files defining
+  `flake.homeConfigurations.<key>` collide ("expected to be unique"). Latent
+  stub bug, exposed by first real eval of the output
+- [x] `modules/hosts/linux.nix` (renamed from ubuntu.nix stub): standalone
+  `homeConfigurations.linux` — options/toolbox/utils/clipboard + inline base
+  (identity from scaffold, isNixos=false, genericLinux, fonts in
+  home.packages). Builds: `43iqbkqf...-home-manager-generation`
+- [x] `modules/hosts/wsl.nix`: same shape + `host.isWsl = true`; builds:
+  `wdgy724g...-home-manager-generation`. NixOS-in-WSL flavor
+  (nixosConfigurations + nixos-wsl input) still future
+- [x] clipboard.nix platform branching (C28 consumer): displayProtocol →
+  wl-clipboard/xclip; isWsl → vendored win32yank (fetchzip stripRoot=false,
+  dual-name) + wslview shim (wslu REMOVED from nixpkgs — archived upstream)
+  + xclip. Decision #57
+- [x] cmdLine.nix: WSL-only nvim drain-buffer alias via
+  `lib.optionalAttrs config.host.isWsl`
+- [x] Isolation proven: workstation toplevel+activation drvPaths byte-identical
+  to baseline; laptop evaluates; nvim alias present ONLY on wsl host
 - [ ] Bootstrap script `setup-host.sh` (plan §6)
+- [ ] Real deploys on target machines (user-run; plan §4 + maintenance guide)
+- [ ] Docs follow-up: maintenance.md WSL/linux sections, README host table,
+  AGENTS.md §4 example alignment (`host.*` not `custom.flags`)
 
 ## Stretch goals
 

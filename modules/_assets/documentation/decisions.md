@@ -710,6 +710,30 @@ eval until `git add`; `--raw` cannot print boolean eval results.
 
 ---
 
+### 57. WSL interop shims — vendored win32yank, native wslview
+**Decision:** Two nixpkgs gaps in the pinned 26.05 tree are closed locally:
+1. **win32yank** is absent → `system/clipboard.nix` vendors the upstream
+   release (v0.0.4 x64 zip via `fetchzip { stripRoot = false; }` — flat zip)
+   into a `runCommand` derivation installing the PE binary as both
+   `win32yank.exe` and a `win32yank` symlink (nvim's provider probes `.exe`
+   first, falls back to bare name; WSL interop executes PE binaries directly).
+2. **wslu** was REMOVED from nixpkgs (upstream archived/discontinued; attr
+   survives only as an alias that throws) → a one-line `writeShellScriptBin`
+   shims `wslview` via `/mnt/c/Windows/System32/cmd.exe /c start ""`.
+**Why:** Toolbox's unmanaged installs (`sudo tee /usr/local/bin`) violated Nix
+ownership; upstream removals must not resurrect dead dependencies. Shims are
+scoped to the clipboard aspect (sole consumer) and gated on `host.isWsl`
+(C28), so workstation/laptop closures are untouched.
+**Gotchas hit:** fetchzip rejects flat zips without `stripRoot = false`;
+HM has no `fonts.packages` option (user fonts go in `home.packages`);
+standalone-HM outputs require `inputs.home-manager.flakeModules.home-manager`
+imported in flake-parts wiring or multiple files defining
+`flake.homeConfigurations.<key>` collide ("expected to be unique").
+**Where:** `modules/system/clipboard.nix`, `modules/hosts/{linux,wsl}.nix`,
+`modules/flake-parts.nix`, contract C28.
+
+---
+
 ## Appendix — decision source index
 
 | # | Decision | AGENTS.md | TODO.md | Skill | Doc |
@@ -770,3 +794,4 @@ eval until `git add`; `--raw` cannot print boolean eval results.
 | 54 | `lib.getExe` / `lib.getExe'` replaces `${pkgs.<name>}/bin/<name>` | Rule 2 | _lib elimination | — | module-contracts C22 |
 | 55 | `mimeDefaults.nix` merged into `mime.nix` (single file, dual scope) | Rule 1 | Option A cleanup | — | module-contracts C4, C16 |
 | 56 | Host option scaffold — dual-scope `host.*`, shared let-in defaults | §4 | wsl-linux-hosts plan | options-architecture | module-contracts C28 |
+| 57 | WSL interop shims (vendored win32yank, native wslview) | Rule 4 | wsl-linux-hosts plan | package-provisioning | module-contracts C28 |

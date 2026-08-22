@@ -49,6 +49,11 @@ nix eval .#nixosConfigurations.<hostname>.config.system.build.toplevel.drvPath
 Works since `nixos.hardwareConfig` (t480 fileSystems/boot) was wired into
 `workstation.nix`; previously failed on the `fileSystems` assertion.
 
+If host is a standalone home manager configuration then:
+~~~bash
+nix eval .#homeConfigurations.<hostname>.activationPackage.drvPath
+~~~
+
 ### 4. Fast Dry Evaluation of Home Manager Configurations
 Instantiate Home Manager attributes for a specific user:
 ~~~bash
