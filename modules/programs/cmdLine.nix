@@ -126,11 +126,11 @@
             os = {
               disabled = false;
               format = "[$symbol]($style) ";
-              symbols.NixOS = "[[]](bold #74c7ec)";
-              symbols.Ubuntu = "[[󰕈]](bold #e95420)";
-              symbols.Arch = "[[󰣇]](bold #1793d1)";
-              symbols.Macos = "[[]](bold #ffffff)";
-              symbols.Fedora = "[[]](bold #3c6eb4)";
+              symbols.NixOS = "[](bold #74c7ec)";
+              symbols.Ubuntu = "[󰕈](bold #e95420)";
+              symbols.Arch = "[󰣇](bold #1793d1)";
+              symbols.Macos = "[](bold #ffffff)";
+              symbols.Fedora = "[](bold #3c6eb4)";
             };
 
             nix_shell = {
