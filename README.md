@@ -3,7 +3,9 @@
 A **dendritic Nix configuration** — a single, universal, monolithic repository
 capable of configuring any target machine, built on
 [`flake-parts`](https://flake.parts/) and
-[`import-tree`](https://github.com/denful/import-tree).
+[`import-tree`](https://github.com/denful/import-tree). 
+
+Nix will be a long term home for my development stack, so I wanted to a have multiyear active development repository for all my platforms across school, work, and personal use. Because of the long term scope, documentation in the form of decision logs, user guides, plans, architectural contracts/rules, and agent files are of top priority.
 
 Configuration is grouped by **feature aspect**, not by target system. A single
 module file holds all scales of one feature — system-level (NixOS),
@@ -11,7 +13,7 @@ user-level (Home Manager), and (future) macOS (`nix-darwin`) — and hosts
 simply aggregate the aspects they need.
 
 > Status: the **workstation** (Lenovo T480) is fully migrated and deployed via
-> this flake (2026-08-11). WSL / Ubuntu / macOS / server host stubs exist.
+> this flake (2026-08-11). WSL / linux (non-NixOS) are in active development. macOS / server host stubs exist.
 
 ## Quick start
 
@@ -99,7 +101,7 @@ documentation (decision logs, module contracts, maintenance guides),
 executing architectural refactors (dendritic flake migration, `_lib`
 elimination, options pattern, `lib.getExe` bulk refactor), researching
 NixOS module system semantics and flake-parts conventions, and translating
-human intent into working Nix/HM syntax for hyprland, foot, waybar, theme
+human intent into working Nix/HM syntax for waybar, theme
 engines, and Noctalia integration.
 
 The human drives architectural decisions and design philosophy; the AI

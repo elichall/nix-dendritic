@@ -1,6 +1,6 @@
 { config, lib, ... }: {
   flake.modules = {
-    nixos.cmdLine = { pkgs, ... }: {
+    nixos.cmdLine = { pkgs, config, ... }: {
       # enables hosts prefered shell at root level
       programs.${config.host.shell}.enable = true;
     };
@@ -28,10 +28,6 @@
           in
           "${firstLetter}${leftOver}";
 
-        # depreciated implementation, not flexible enough
-        # shellIntegrations = lib.genAttrs (map (
-        #   shell: "enable${capitalizeFunc shell}Integration"
-        # ) allShells) (optName: optName == "enable${capitalizeFunc hostShell}Integration");
         mkIntegrations =
           supportedShells:
           lib.genAttrs (map (shell: "enable${capitalizeFunc shell}Integration") supportedShells) (
@@ -40,12 +36,18 @@
       in
       {
         # ==========================================================================
-        # SHELL INTEGRATION SWITCHES
+        # SHELL INTEGRATION MATRIX
         # ==========================================================================
-        # Home Manager 26.05 defaults every shell integration to "on". Bash is the
-        # only interactive shell here, so explicitly disable the rest. Without this,
-        # programs like fzf enable their nushell integration and trip assertions
-        # (fzf requires >= 0.73.0 for it).
+        # HM 26.05 defaults every shell integration to "on", which trips programs
+        # whose integrations we don't want (e.g. fzf's readline binds under
+        # ble.sh). mkIntegrations flips every switch OFF except the one matching
+        # host.shell. Each consumer receives only the shells it actually supports
+        # in this pin (fzf lacks nushell/ion; direnv/zoxide lack ion) — passing an
+        # unsupported name would reference a nonexistent option.
+        #
+        # SCAFFOLD-ONLY: zsh/fish/nushell are enum-valid (host.shell) but only
+        # bash ships a configured body below today; selecting another shell
+        # yields no interactive-shell config at all.
         home.shell = mkIntegrations allShells;
 
         # ==========================================================================
@@ -152,9 +154,9 @@
             };
           };
         }
+        # enableBashIntegration stays hard-OFF for every host: bash wiring is
+        # injected manually in programs.bash.initExtra above (ble.sh conflicts).
         // (mkIntegrations allShells // { enableBashIntegration = false; });
-        # old fragile implementation
-        # // (shellIntegrations // { enableBashIntegration = false; });
 
         programs.zoxide = {
           enable = true;

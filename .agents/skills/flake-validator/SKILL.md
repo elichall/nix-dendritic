@@ -84,6 +84,22 @@ nix eval --raw .#nixosConfigurations.workstation.config.home-manager.users.elich
 ```
 A hash change here means the change was NOT comments-only.
 
+**CRITICAL — capture stderr and assert non-empty output**: a drvPath eval that
+fails writes its error to stderr; redirecting `2>/dev/null` into a file/variable
+leaves it EMPTY and any downstream diff/comparison silently "succeeds" (this
+masked a broken `nixos.cmdLine` dynamic attrpath once). Always:
+~~~bash
+d=$(nix eval --raw .#…drvPath 2>/dev/null); [ -n "$d" ] || { echo EVAL_FAIL; exit 1; }
+```
+
+**Dynamic attrpath trap**: a module body like
+`programs.${config.host.shell}.enable = true;` forces the interpolation when the
+module system routes ANY definition. If the module function head does not
+declare `config`, the reference binds to the OUTER (flake-parts) scope →
+`error: attribute 'host' missing` on every host importing it, even hosts that
+never query shell options. Inner function heads must declare
+`{ pkgs, config, ... }:` explicitly.
+
 ### 7. Post-Switch Verification
 After a deployed switch, run `./post-switch-smoke-test.sh` (read-only) and
 confirm 0 failures. See `modules/_assets/documentation/user/maintenance.md` for the rebuild/update

@@ -179,6 +179,15 @@ hardware-configuration.nix exists for WSL; nixos-wsl supplies the filesystem).
 - `modules/programs/cmdLine.nix`: nvim drain-buffer alias under
   `lib.optionalAttrs config.host.isWsl` (T3; removal-candidate review after
   first real WSL session).
+- `modules/programs/cmdLine.nix` shell-integration matrix (user-authored):
+  per-consumer `mkIntegrations` lists match HM-pin reality — fzf supports
+  bash/zsh/fish only; zoxide+direnv lack ion; starship/home.shell full set.
+  Scaffold-only: zsh/fish/nushell enum-valid, only bash ships a shell body
+  (comment-only guard per user choice). Review fix: `nixos.cmdLine` inner
+  function must declare `config` — dynamic path
+  `programs.${config.host.shell}` otherwise binds to FLAKE scope and kills
+  every NixOS eval ('attribute host missing'). Laptop wired with
+  `self.modules.nixos.options` (first host to need it beyond workstation).
 - Prerequisite fix: `flake-parts.nix` imports
   `inputs.home-manager.flakeModules.home-manager` (undeclared-output collision).
 - No theming aspects imported on either host (user direction: full-feature

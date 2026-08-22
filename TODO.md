@@ -19,7 +19,9 @@
 - [x] `nix-instantiate --parse` — all modules clean
 - [x] `nix eval .#modules` — registry: nixos = main, cmdLine, mime, tlp, nvim, opencode, hyprland, display, awww, waypaper, rclone; homeManager = main, cmdLine, nvim
 - [x] Spot-check evals — all Phase 1 nixos + homeManager options resolve correctly; post-groundwork eval confirms moved pkgs present, no dedup
-- [ ] Skeleton hosts (`wsl`/`ubuntu`/`macos`) — BLOCKED: use `specialArgs`; HM 26.05 requires `extraSpecialArgs` (see stretch below)
+- [x] Skeleton hosts — SUPERSEDED: `wsl`/`linux` implemented as standalone-HM
+  hosts (toolbox parity + opencode); see cross-platform section below. macos
+  deferred (no hardware)
 
 ## Phase 2 — User-level conversions (homeManager.*)
 
@@ -161,7 +163,9 @@ Package-scope study (per-module consumer tracing) + moves, all user tooling with
 - [x] Post-package-placement evals — user profile: portal-gtk + all 10 showoff deps + libqalculate/chafa/fastfetch + ripdrag + tree-sitter + ripgrep/tree present; system: only unzip/wl-clipboard/xdg-utils/brightnessctl/grimblast/hypridle (+ feature modules); all 9 moved-out packages absent from systemPackages
 - [x] Full `toplevel.drvPath` — VALIDATES after `nixos.hardwareConfig` + system/ split wiring (`34p57aphpnv6v1zzw76fc6kjga0g7lwi-nixos-system-t480-nixos-...drv`, changed by docker removal); activation drvPath `/nix/store/0xgpzn2jfzwjjlcxvadjw4zwj251znfy-home-manager-generation.drv`
 - [x] Configuration-lean spot checks — pipewire/bluetooth/firewall/tlp/rtkit/fstrim/fwupd/earlyoom/kptr/hostName/sandbox all resolve; `dockerInPkgs = false`; tailscale port 41641 ref resolves
-- [ ] Skeleton hosts (`wsl`/`ubuntu`/`macos`) — BLOCKED: use `specialArgs`; HM 26.05 requires `extraSpecialArgs` (see stretch below)
+- [x] Skeleton hosts — SUPERSEDED: `wsl`/`linux` implemented as standalone-HM
+  hosts (toolbox parity + opencode); see cross-platform section below. macos
+  deferred (no hardware)
 
 ## Neovim nixification analysis (COMPLETE, doc-only: `_assets/plans/nvim-nixification-evaluation.md`)
 
@@ -245,6 +249,18 @@ Stable stack replaces hand-rolled display components on the workstation host:
   + xclip. Decision #57
 - [x] cmdLine.nix: WSL-only nvim drain-buffer alias via
   `lib.optionalAttrs config.host.isWsl`
+- [x] cmdLine.nix shell-integration matrix (user-authored): per-consumer
+  `mkIntegrations` support lists matching HM 26.05 pin (fzf lacks nushell;
+  zoxide/direnv lack ion); scaffold-only note for non-bash shells (comment-only
+  guard per user choice). FIX required during review: `nixos.cmdLine` inner
+  function must declare `config` arg or dynamic path `programs.${host.shell}`
+  binds to flake scope → 'attribute host missing' on ALL NixOS hosts
+- [x] laptop.nix wired with `self.modules.nixos.options` (was missing; broke on
+  first real cmdLine scaffold read)
+- [x] Validation: all 4 hosts eval+build warning-free (dirty-tree notice only);
+  alias present on wsl / absent on linux; workstation+laptop host.shell=bash.
+  LESSON: drvPath evals with `2>/dev/null` can mask failures via lazy stdout —
+  assert non-empty output
 - [x] Isolation proven: workstation toplevel+activation drvPaths byte-identical
   to baseline; laptop evaluates; nvim alias present ONLY on wsl host
 - [ ] Bootstrap script `setup-host.sh` (plan §6)
