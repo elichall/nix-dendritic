@@ -1,5 +1,6 @@
 # development
 nixos/
 results/
+result
 .envrc
 .direnv/
