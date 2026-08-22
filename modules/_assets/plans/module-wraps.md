@@ -3,6 +3,11 @@
 Origin: Vimjoyer, ["Homeless Dotfiles With Nix Wrappers"](https://www.youtube.com/watch?v=aNgujRXDTdE);
 library: [Lassulus/wrappers](https://github.com/Lassulus/wrappers) (MIT, 334★, active).
 
+**Strategy (2026-08-22, user direction):** wrappers power ONE simple
+"one size fits all" plug-and-play host (§7) plus selective smart per-item
+adoptions (nvim first). NOT a bulk refactor of existing aspects — the island
+constraint makes that an overhaul, deliberately late-game.
+
 ## 1. Motivation (why NOW)
 
 **Concrete trigger (2026-08-22):** standalone-HM activation on a foreign host died
@@ -120,21 +125,71 @@ nothing, git nothing) need those redirected too: `XDG_CACHE_HOME`/
 two-path split (config=store, state=writable scratch). This keeps the HOST
 clean even in guest mode (state confined to one scratch subtree, deletable).
 
-## 6. Use cases (ranked)
+## 6. Host taxonomy: upstage vs plug-and-play
 
-1. **Guest toolkit** (coworker machine): `nix run github:<us>#nvim-guest` —
-   full custom editor, zero $HOME mutation. Killer app.
-2. **Foreign-host cleanliness**: non-NixOS boxes get tools purely from store;
-   activation conflicts like the nvim permission incident become structurally
-   impossible for wrapped tools.
-3. **Iteration speed**: edit wrapper settings → `nix run .#x` immediately;
-   no switch. Complements (not replaces) HM flow on owned hosts.
-4. **Cross-platform reuse**: one wrapper module serves future
-   darwin/server/WSL-flavor hosts (Rule 1 dividend).
+Two fundamentally different deployment contracts for Nix-managed tooling on a
+machine:
 
-## 7. Implementation phases
+| | **Upstage hosts** | **Plug-and-play host** |
+|---|---|---|
+| Output | `homeConfigurations.*` (activation) | `apps.*` / `packages.*` (nix run/shell) |
+| `$HOME` contract | activation WRITES into `$HOME` — takes over user config | zero `$HOME` writes, ever |
+| Deployment ritual | activate (+ backup dance, conflicts possible) | `git clone && nix run .#…` — literally it |
+| Hosts today | workstation, laptop, wsl, linux (standalone HM) | **toolbox.nix** (proposed) |
+| Failure mode | overwrite conflicts (2026-08-22 nvim incident) | none — structurally cannot conflict |
 
-### P0 — Proof of concept: `nvim-guest` (smallest viable)
+Upstage hosts remain right for machines we OWN long-term. The plug-and-play
+class covers everything else: borrowed machines, quick containers/VMs,
+pre-configured foreign boxes, "just let me edit this file properly" moments.
+
+## 7. The toolbox homeless host ("smart" host)
+
+One host whose entire deliverable is a **wrapped, adaptive, homeless
+toolchain**: clone → build → run, on any Linux box, leaving the host exactly
+as found (state confined to one deletable scratch subtree).
+
+### 7.1 Adaptivity without `config.host.*`
+
+Wrapper modules are evalModules islands — they cannot read our scaffold. The
+toolbox host therefore gets adaptivity from OUTSIDE the wrapper evals, in
+three layers:
+
+1. **Build-time detection shim** (small shell script, mirrors legacy
+   toolbox's `setup.sh` + `TOOLBOX_USER --impure` precedent): detects
+   WSL (`/proc/version`), session protocol (`$WAYLAND_DISPLAY`/`$DISPLAY`),
+   then passes results as explicit args into `.apply { … }` call sites.
+   Detection lives in ONE place; wrappers stay pure.
+2. **Runtime sniffing in the enter-script**: last-mile decisions (clipboard
+   backend selection, win32yank availability) made when the process starts,
+   not when the derivation builds.
+3. **Wrapper-level cross-env defaults**: each tool wrapped so its baseline
+   works everywhere (e.g. nvim clipboard providers ordered wayland→x11→
+   win32yank).
+
+### 7.2 Scope discipline ("sparingly and smartly")
+
+Because every adaptation point is explicit plumbing across the island
+boundary, blanket coverage would be a full-repo overhaul (late-game).
+Instead: the toolbox host ships the CORE toolbox group first
+(nvim/git/starship/tmux/yazi/zellij/bat/btop/fastfetch + shell entry),
+each item added only when its isolation mechanics are verified (§5 table).
+nvim is the exemplar of the "smart sparingly" rule — highest value, native
+`NVIM_APPNAME`, custom wrapper justified. Items whose HM aspect can't map to
+wrapper mechanics stay upstage-only.
+
+### 7.3 Relationship to existing hosts
+
+- Shares SOURCES (`_assets/dotfiles/nvim`, theme paths) — never duplicates
+  trees.
+- Does NOT share HM `programs.*` bodies (those write rcfiles by design);
+  wrapper configs are parallel definitions fed from the same assets.
+- Long-term question (open): could toolbox-homeless eventually REPLACE the
+  wsl/linux standalone-HM hosts for throwaway machines? Probably yes for
+  quick sessions; upstage wins wherever persistence matters.
+
+## 8. Implementation phases
+
+### P0 — Proof of concept: `nvim-guest` (smallest viable, the exemplar)
 - Add input `wrappers` (+follows).
 - `perSystem.packages.nvim-guest`: `wrapPackage` around our existing wrapped
   nvim closure with `env.NVIM_APPNAME = "nixdots"` + config files exposed at
@@ -144,19 +199,29 @@ clean even in guest mode (state confined to one scratch subtree, deletable).
   stock `~/.config/nvim` present → our config loads, theirs untouched,
   `:checkhealth` clean, state written under redirected dirs.
 
-### P1 — Guest shell entry + toolkit expansion
-- One `devshell-guest` script: exports NVIM_APPNAME/GIT_CONFIG_GLOBAL/
-  STARSHIP_CONFIG/YAZI_CONFIG_HOME + evals zoxide/direnv/starship inits, so
-  `exec` into it = full environment without rcfile edits.
-- Wrap remaining toolbox tools (prefer upstream wrapperModules where present:
-  git/starship/tmux/yazi/zellij/bat/btop/fastfetch; custom only for gaps).
-- Expose as `flake.apps` for `nix run .#<name>` ergonomics.
+### P1 — Toolbox homeless host MVP (`.#apps.toolbox-enter`)
+- ONE enter-app: PATH composed of wrapped core tools + exported env vars
+  (NVIM_APPNAME / GIT_CONFIG_GLOBAL / STARSHIP_CONFIG / YAZI_CONFIG_HOME /
+  TMUX_TMPDIR) + eval'd shell inits (zoxide/direnv/starship).
+- Detection shim feeds build-time args (WSL? protocol?); enter-script does
+  runtime last-mile selection.
+- Scratch-state standard: all redirected writable dirs under one root,
+  e.g. `${XDG_CACHE_HOME:-$HOME/.cache}/toolbox-homeless/`.
+- Acceptance: on a pristine foreign machine — clone, `nix run .#toolbox-enter`,
+  full working environment; `find $HOME -newer <marker>` shows ONLY the scratch
+  subtree; exit + delete = host pristine.
 
-### P2 — Host-side adoption (owned machines, optional per tool)
-- Where a wrapper module's typed options beat raw HM options (validation,
-  reuse across scales), swap the HM aspect body to consume
-  `self.packages.<sys>.<tool>-wrapped` instead of `programs.<tool>` config.
-- Gate each swap on byte-comparable behavior (drvPath diff discipline).
+### P2 — Opportunistic coverage growth
+- Promote tools one-by-one into the toolbox host where §5 mechanics verified;
+  prefer upstream prebuilts (git/starship/tmux/yazi/zellij/bat/btop/fastfetch);
+  custom wrappers only for gaps (nvim done in P0, opencode later if wanted).
+- Optional per-tool `.#apps.<tool>` singles for no-shell quick use.
+- Selective upstage-side adoption stays ALLOWED but is per-item judgment
+  ("sparingly and smartly"): a wrapped tool replaces its HM aspect body only
+  when the typed wrapper options earn their keep — gated on byte-comparable
+  behavior (drvPath diff discipline). NOT a bulk refactor; the island
+  constraint (§8) makes wholesale migration an overhaul, deliberately out of
+  scope.
 
 ### P3 — Services & server hosts
 - `wlib.modules.systemd` unit generation for server-side daemons later;
@@ -164,39 +229,42 @@ clean even in guest mode (state confined to one scratch subtree, deletable).
 
 ## 8. Risks / limitations
 
-- **Double-module-system**: wrapper modules are their own evalModules island —
-  they cannot read `config.host.*` scaffold directly; values pass through
-  `.apply { ... }` call sites (keep call sites in dendritic modules, pass
-  scaffold-derived values explicitly).
+- **Double-module-system / island constraint**: wrapper modules cannot read
+  `config.host.*`; every adaptation point is explicit plumbing at `.apply`
+  call sites. This is WHY the toolbox host starts small and grows
+  opportunistically (§7.2) — blanket coverage would be a full-repo overhaul,
+  explicitly late-game, not a refactor.
 - Upstream churn: young library (288 commits); pin input, follow nixpkgs,
   re-vet on bump.
 - Not every tool honors config-env vars; fallback = flags/symlink farms —
   audit per tool before promising isolation (table in §5).
 - Desktop file patching defaults touch `share/applications` — fine in store.
-- Guest mode ≠ security boundary: no filesystem confinement beyond what env
+- Homeless ≠ security boundary: no filesystem confinement beyond what env
   vars achieve (tier ≤2). Real sandboxing remains bubblewrap/VM territory.
 
 ## 9. Open questions
 
-- Naming: `*-guest` suffix vs `wrapped-*` prefix vs bare names under
-  `.#apps`?
-- Should P1 shell-entry live in `_lib/` (shared script builder) or a
-  `modules/programs/guest-shell.nix` aspect?
-- nvim long-term: stay on current HM-managed nvim + separate guest wrapper, or
-  converge on ONE wrapped nvim consumed by BOTH HM hosts and guest mode
-  (single source of truth, bigger refactor)?
+- Enter-app home: `_lib/` script builder vs `modules/programs/toolbox-enter.nix`
+  aspect? (lean `_lib` — it builds derivations, not HM config.)
+- nvim long-term: current plan = TWO consumers of one source tree
+  (`_assets/dotfiles/nvim` feeds both HM hosts and P0 guest wrapper). True
+  convergence into ONE wrapped binary for both is cleaner but bigger — defer.
 - Does `noctalia` upstream wrapper module change our display-stack calculus
   when quickshell work resumes?
+- Could toolbox-homeless eventually REPLACE wsl/linux standalone-HM hosts for
+  throwaway machines? (persistence needs decide; revisit after P1 field use)
 
 ## 10. Validation checklist (per phase)
 
 - [ ] Eval: warning-free, all four hosts unaffected (drvPaths identical until
-      P2 adoption begins).
+      selective adoption begins).
 - [ ] Guest run on clean `$HOME` machine: tool launches with OUR config.
 - [ ] Guest run alongside EXISTING configs (coworker scenario): zero bytes
       changed under their `$HOME/.config` (diff/snapshot before-after).
 - [ ] State redirection verified: caches/state land in scratch subtree.
 - [ ] Uninstall = exit process + delete scratch; nothing else lingers.
+- [ ] Toolbox host detection matrix: WSLg / native wayland / x11 / headless
+      each yield correct clipboard + session behavior from ONE build.
 
 ## Related docs
 

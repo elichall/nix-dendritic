@@ -13,13 +13,23 @@ user-level (Home Manager), and (future) macOS (`nix-darwin`) — and hosts
 simply aggregate the aspects they need.
 
 > Status: the **workstation** (Lenovo T480) is fully migrated and deployed via
-> this flake (2026-08-11). WSL / linux (non-NixOS) are in active development. macOS / server host stubs exist.
+> this flake (2026-08-11). WSL / linux (non-NixOS) are deployed and in testing. macOS / server host stubs exist.
 
 ## Quick start
 
+Deployment on NixOS hosts (workstation, laptop, server, and wsl w/ NixOS).
 ```bash
 # Rebuild + switch the workstation (ALWAYS pass --flake + host)
 sudo nixos-rebuild switch --flake ~/.nix#workstation
+```
+
+Deployment on home-manager only linux hosts (non-NixOS wsl and linux). 
+```bash
+# Build and activate on home-manager-only hosts
+cd ~/<path_to_cloned_repo>
+nix build .#homeConfigurations.<hostname>.activationPackage
+
+./result/activate
 ```
 
 ## How it works

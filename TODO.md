@@ -273,14 +273,25 @@ Stable stack replaces hand-rolled display components on the workstation host:
 
 ## Wrapper modules / homeless dotfiles (plan: `_assets/plans/module-wraps.md`)
 
+Strategy (user, 2026-08-22): ONE plug-and-play "toolbox" homeless host —
+literally git clone + build + run on any machine — plus selective smart
+per-item adoptions (nvim). NOT a bulk refactor: wrapper modules can't read
+`config.host.*` (evalModules islands), so blanket coverage = late-game overhaul.
+
+Host taxonomy: workstation/laptop/wsl/linux = "upstage" hosts (activation owns
+$HOME); toolbox.nix = plug-and-play (apps/packages outputs only, zero $HOME
+writes, adaptive via detection shim → `.apply` args + runtime sniffing).
+
 - [/] P0 proof of concept: input `wrappers` (+follows nixpkgs) + `nvim-guest`
   via `wrapPackage` (`NVIM_APPNAME` redirection, config from
   `_assets/dotfiles/nvim`); acceptance = guest run leaves existing
   `$HOME/.config/nvim` untouched. Motivated by the activation-conflict above +
   coworker-machine use case
-- [ ] P1 guest shell entry + toolkit expansion (upstream prebuilts cover
-  git/starship/tmux/yazi/zellij/bat/btop/fastfetch; nvim/opencode custom)
-- [ ] P2 optional host-side adoption where typed wrapper options beat raw HM
+- [ ] P1 toolbox-homeless MVP: `.#apps.toolbox-enter` (wrapped core tools PATH
+  + env exports + shell inits; detection shim for WSL/protocol; scratch-state
+  under one root)
+- [ ] P2 opportunistic coverage growth (upstream prebuilts first; per-item
+  upstage adoption allowed but judgment-gated, never bulk)
 - [S] P3 systemd unit generation via `wlib.modules.systemd` (server hosts)
 
 ## Stretch goals
