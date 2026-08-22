@@ -38,6 +38,8 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `nixos.base` | `groups/base.nix` | Preset: battery, network, hardware, audio, security |
 | `nixos.desktop` | `groups/desktop.nix` | Preset: display, hyprland, mime (NixOS side — custom-mime package only, defaultApplications moved to HM `mimeDefaults`) |
 | `nixos.desktopExp` | `groups/desktopExp.nix` | Preset: display, hyprland, mime (NixOS side — same as desktop) |
+| `nixos.options` | `groups/options.nix` | Preset: cross-module option declarations NixOS-side (currently optionsHost only) |
+| `nixos.optionsHost` | `options/hostOpt.nix` | Host scaffold `host.*`: isNixos, isWsl, displayProtocol, shell, identity — dual-scope declarations with shared let-in defaults (see C28) |
 
 ### homeManager (user scale)
 
@@ -45,7 +47,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 |---|---|---|
 | `homeManager.main` | `home.nix` | stateVersion, user, XCOMPOSECACHE, pointerCursor, xdg.enable, portal-gtk (MUST stay user-scale) |
 | `homeManager.cmdLine` | `programs/cmdLine.nix` | bash/starship/zoxide/fzf/direnv/ble.sh config, aliases, dotfiles |
-| `homeManager.git` | `programs/git.nix` | git config |
+| `homeManager.git` | `programs/git.nix` | git config; commit identity from `config.host.identity.gitUsername/gitEmail` (C28) — requires `options` group imported first |
 | `homeManager.tmux` | `programs/tmux.nix` | tmux config + plugins |
 | `homeManager.initProject` | `utils/initProject.nix` | `init-project` scaffold CLI (writeShellApplication, shellcheck at build): git init `-b main`, `uv init`, minimal flake devShell (nix/python/cpp toolchain, pure-eval `x86_64-linux` template), `use flake` envrc, .gitignore, agent dirs, `direnv allow` + initial commit; bails in existing git repo |
 | `homeManager.interactionWatch` | `utils/interactionWatch.nix` | `interaction-watch` pointer-dismiss watcher (writeShellApplication, shellcheck at build); flake.utils export for cross-module `runtimeInputs` access (showoff, otter) |
@@ -70,7 +72,8 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.theme` | `display/experimental/theme.nix` | theme engine (profiles, sync, switch CLI) + wallpaper provisioning; owns `generated/previews/*.swatch` (C19); experimental stack only |
 | `homeManager.toolbox` | `groups/toolbox.nix` | Preset: cmdLine, git, tmux, nvim, yazi, opencode (core dev tools — no GUI, no extensions) |
 | `homeManager.utils` | `groups/utils.nix` | Preset: initProject, interactionWatch, notifySend (options moved to dedicated `options` group) |
-| `homeManager.options` | `groups/options.nix` | Preset: cross-module option declarations (browser, interactionWatch, notifySend) — terminal follows merged pattern (declares + sets in one file) |
+| `homeManager.options` | `groups/options.nix` | Preset: cross-module option declarations (browser, optionsTheme, optionsUtils, optionsHost) — terminal follows merged pattern (declares + sets in one file) |
+| `homeManager.optionsHost` | `options/hostOpt.nix` | Host scaffold `host.*` HM-side copy: isNixos, isWsl, displayProtocol, shell, identity — same tree as nixos scope, shared literal defaults via file-level let (C28) |
 | `homeManager.browser` | `programs/browser.nix` | Sets `config.browser.{appId,command,desktop}` (Firefox flatpak) |
 | `homeManager.mimeDefaults` | `programs/mimeDefaults.nix` | User-level MIME associations (`xdg.mimeApps.defaultApplications`) |
 | `homeManager.themePaths` | `display/theme-paths.nix` | Sets `config.theme.{dir,active,generated,ghosttyThemeConf}` |
@@ -83,23 +86,23 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 ### Host wiring
 
 #### `hosts/workstation.nix` (stable — foot + Noctalia)
-- System: `main`, `hardwareConfig`, `base`, `desktop`, `cmdLine`, `nvim`, `rclone`, `sandbox`.
+- System: `main`, `hardwareConfig`, `base`, `desktop`, `cmdLine`, `nvim`, `rclone`, `sandbox`, `options`.
 - User (`home-manager.users.elichall.imports`): `main`, `options`, `toolbox`, `desktop`,
   `researchGroup`, `utils`, `clipboard`, `rclone`, `fastfetch`.
-- `custom.terminal = "foot"` → `terminalName` bridged via `extraSpecialArgs`.
-- `noctalia.homeModules.default` shared via `home-manager.sharedModules`.
-- `home-manager.useGlobalPkgs/useUserPackages = true`.
+- Terminal: relies on `terminal.name` default `"foot"` (no host override needed).
+- Noctalia shared via `home-manager.sharedModules`; `useGlobalPkgs/useUserPackages = true`.
 
 #### `hosts/laptop.nix` (experimental — ghostty + hand-rolled stack)
 - System: `main`, `hardwareConfig`, `base`, `desktopExp`, `cmdLine`, `nvim`, `rclone`, `sandbox`.
 - User (`home-manager.users.elichall.imports`): `main`, `options`, `toolbox`, `desktopExp`,
   `researchGroup`, `utils`, `clipboard`, `rclone`, `fastfetch`.
-- `custom.terminal = "ghostty"` → `terminalName` bridged via `extraSpecialArgs`.
-- `noctalia.homeModules.default` shared via `home-manager.sharedModules`.
-- `home-manager.useGlobalPkgs/useUserPackages = true`.
+- Terminal: `config.terminal.name = "ghostty"` set inside the HM user block
+  (cascades to all derived `config.terminal.*` values).
+- Noctalia shared via `home-manager.sharedModules`; `useGlobalPkgs/useUserPackages = true`.
 
-#### `hosts/server.nix` (stub — headless)
-- Empty placeholder.
+#### `hosts/server.nix` / `hosts/{wsl,ubuntu,macos}.nix` (stubs — headless/deferred)
+- Empty placeholders; wsl/ubuntu/macos export empty `homeConfigurations`
+  pending the cross-platform plan (`_assets/plans/wsl-linux-hosts.md`).
 
 ### Legacy provenance
 
@@ -482,6 +485,38 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   charge thresholds, PCIe ASPM); UPower provides read-only battery status.
 - Without UPower enabled: Noctalia battery widget and Control Center battery
   settings are empty.
+
+### C28. Host option scaffold (`config.host.*`)
+- **Owner**: `modules/options/hostOpt.nix` — ONE file, dual export
+  (`flake.modules.nixos.optionsHost` + `flake.modules.homeManager.optionsHost`
+  as sibling attrs; nesting one inside the other breaks HM evals with
+  "option does not exist"). Registered via both classes' `options` groups in
+  `groups/options.nix`.
+- **Tree**: `host.{isNixos, isWsl, displayProtocol (x11|wayland), shell
+  (bash|zsh|fish), identity.{username, email, gitUsername, gitEmail}}`.
+- **Purpose**: scaffolds the *possibility space* of a host so future hosts are
+  thin templates (clone repo → set a few overrides → build). Defaults encode
+  the user's standard practice; options may exist ahead of consumers (each
+  description names its consumer).
+- **Cross-scope default sharing**: the scopes are separate module-system
+  evaluations — an HM default can never read nixos-scope config, and
+  standalone-HM hosts have no nixos eval at all. Shared literal defaults live
+  in a file-level `stdPractice` let consumed by BOTH declarations. Semantic
+  inheritance (`gitUsername ← username`) uses same-scope
+  `config.host.identity.*` references.
+- **Precedence ladder**: option `default` < `mkDefault` < explicit assignment
+  < `mkForce`. Override at whichever scope owns the concern. Host files carry
+  NO cross-scope bridges (deliberate: cascade machinery deferred until a real
+  nixos-side override need appears).
+- **Consumers**: `homeManager.git` reads `identity.gitUsername/gitEmail`.
+  Planned branching (not yet implemented): clipboard/cmdLine on `isWsl` +
+  `displayProtocol`; cmdLine on `shell`; `targets.genericLinux.enable` on
+  `!isNixos`.
+- **Import order**: hosts import `<class>.options` BEFORE feature aspects —
+  git aspect hard-depends on the declarations.
+- **Gotchas**: new files must be `git add`ed before flake evals see them
+  (import-tree reads tracked files only); `--raw` eval output cannot print
+  booleans (use `--json`).
 
 ---
 

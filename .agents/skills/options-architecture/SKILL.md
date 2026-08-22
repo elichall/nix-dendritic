@@ -34,6 +34,7 @@ Options files use the `Opt.nix` suffix in their filename. This:
 | `options/browserOpt.nix` | `homeManager.browser` | `browser.{appId,command,desktop}` | Hosts may override `browser.desktop` |
 | `options/themeOpt.nix` | `homeManager.optionsTheme` | `theme.{dir,active,generated,ghosttyThemeConf}` | Path defaults, rarely overridden |
 | `options/utilsOpt.nix` | `homeManager.optionsUtils` | `utils.{notifySend,interactionWatch}` | Set by utils modules (bridge pattern) |
+| `options/hostOpt.nix` | `nixos.optionsHost` + `homeManager.optionsHost` | `host.{isNixos,isWsl,displayProtocol,shell,identity.*}` | Hosts override identity choices; defaults = standard practice (see Multi-Scope section) |
 
 ## Key Design Points
 
@@ -54,6 +55,32 @@ ghosttyThemeConf.default = "${config.theme.generated}/ghostty/theme.conf";
 ```
 The path is computed even when ghostty isn't installed — it's just a string.
 This is acceptable because the cost is zero (no derivation, no build).
+
+### Multi-scope option files (`hostOpt.nix` pattern)
+One file can declare the SAME option tree in both classes as SIBLING exports:
+```nix
+{ lib, ... }:
+let
+  stdPractice = { identity.username = "elichall"; /* shared literals */ };
+in
+{
+  flake.modules.nixos.optionsHost = { config, ... }: { options.host = { ... }; };
+  flake.modules.homeManager.optionsHost = { config, ... }: { options.host = { ... }; };
+}
+```
+Rules for this pattern:
+- **SIBLING exports only.** Nesting `flake.modules.homeManager.*` inside the
+  nixos module body makes that attrset HM *config* → "option does not exist"
+  eval failure on every host importing it.
+- **Cross-eval isolation**: an HM default can never read nixos-scope config,
+  and standalone-HM hosts have no nixos eval at all. Share default LITERALS
+  via a file-level `let`; share SEMANTIC inheritance (`gitUsername ←
+  username`) via same-scope `config.host.identity.*` references only.
+- **No cross-scope bridges in host files** (no mkDefault mirroring of nixos
+  values into nested HM). Cascade machinery is deferred until a real
+  nixos-side override need appears.
+- **Precedence ladder**: option `default` < `mkDefault` < explicit assignment
+  < `mkForce`. Override at whichever scope owns the concern.
 
 ### Utility options are a bridge
 `utils.notifySend` and `utils.interactionWatch` exist because the

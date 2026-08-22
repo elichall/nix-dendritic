@@ -22,6 +22,9 @@
       self.modules.nixos.rclone
       self.modules.nixos.sandbox
 
+      # cross-module option declarations (host scaffold + shared options)
+      self.modules.nixos.options
+
       # pass home-manager as a module to the nixos system configuration
       inputs.home-manager.nixosModules.home-manager
 

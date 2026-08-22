@@ -660,6 +660,54 @@ name is required. This is a mechanical refactor with no behavioral change.
 hyprland, theme, ghostty, waybar, showoff, cmdLine, rclone, initProject,
 otter, tui, notifySend, interactionWatch.
 
+### 55. mimeDefaults merged into mime.nix — single file, dual scope
+**Decision:** Folded `programs/mimeDefaults.nix` into `system/mime.nix`,
+exporting both scopes from one aspect (`flake.modules.nixos.mime` = custom-mime
+package; `flake.modules.homeManager.mimeDefaults` =
+`xdg.mimeApps.defaultApplications`). Deleted `programs/browser.nix`
+(declarations moved into `options/browserOpt.nix`).
+**Why:** The NixOS-side custom-mime package and the HM-side associations are
+two halves of one concern; keeping them in separate files forced cross-scope
+coordination for no isolation benefit. Dual-scope export follows the
+aspect-oriented rule (#1).
+**Where:** `modules/system/mime.nix`, `modules/options/browserOpt.nix`,
+contract C4.
+
+### 56. Host option scaffold — possibility-space options with shared let-in defaults
+**Decision:** `modules/options/hostOpt.nix` declares a `host.*` option tree in
+BOTH scopes (sibling exports `nixos.optionsHost` + `homeManager.optionsHost`)
+covering what any host *can be*: `isNixos`, `isWsl`, `displayProtocol`,
+`shell`, `identity.{username,email,gitUsername,gitEmail}`. Defaults encode the
+user's standard practice so template hosts (clone repo onto a new device →
+make a host file → build) need zero overrides. Options may exist ahead of
+consumers — this is deliberate scaffolding, each description names its
+consumer.
+**Why:** The near-term goal is skeleton/template hosts for wsl/linux/etc.
+Encapsulating "what a host can even be" as typed options with standard-practice
+defaults makes new-host creation an override exercise instead of a config
+authoring exercise.
+**Key sub-decisions:**
+- **Cross-scope default sharing via file-level let**: nixos and HM are separate
+  module-system evals; an HM default can never read nixos-scope config
+  (standalone-HM hosts have no nixos eval at all). Shared literal defaults
+  (`stdPractice`) live in one `let` consumed by both declarations. Semantic
+  inheritance (`gitUsername ← username`) uses same-scope `config.host.identity.*`.
+- **No per-host bridges**: rejected mirroring nixos values into nested HM via
+  `mkDefault` blocks in host files — cascade machinery is deferred until a real
+  nixos-side override need appears; hosts stay thin.
+- **isNixos is tautological in nixos scope** (a `nixosSystem` IS NixOS) but
+  meaningful in HM scope: standalone-HM hosts set false to enable foreign-distro
+  behavior (`targets.genericLinux`). Kept symmetric for scaffold clarity.
+- **First consumer wired practically before expansion**: `homeManager.git` now
+  reads `config.host.identity.gitUsername/gitEmail`; further branching
+  (clipboard/cmdLine on `isWsl`/`displayProtocol`/`shell`) deferred until the
+  other hosts are defined.
+**Gotchas hit:** sibling-export requirement (nested `flake.modules.*` inside a
+module body breaks the inner class's eval); untracked file invisible to flake
+eval until `git add`; `--raw` cannot print boolean eval results.
+**Where:** `modules/options/hostOpt.nix`, `modules/groups/options.nix`
+(both classes), `modules/programs/git.nix`, contract C28.
+
 ---
 
 ## Appendix — decision source index
@@ -721,3 +769,4 @@ otter, tui, notifySend, interactionWatch.
 | 53 | Options module pattern — auto-wiring defaults (Option A, supersedes original) | Rule 2 | _lib elimination | — | module-contracts C14 |
 | 54 | `lib.getExe` / `lib.getExe'` replaces `${pkgs.<name>}/bin/<name>` | Rule 2 | _lib elimination | — | module-contracts C22 |
 | 55 | `mimeDefaults.nix` merged into `mime.nix` (single file, dual scope) | Rule 1 | Option A cleanup | — | module-contracts C4, C16 |
+| 56 | Host option scaffold — dual-scope `host.*`, shared let-in defaults | §4 | wsl-linux-hosts plan | options-architecture | module-contracts C28 |

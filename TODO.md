@@ -214,6 +214,25 @@ Stable stack replaces hand-rolled display components on the workstation host:
 - [x] Update `modules/_assets/documentation/module-contracts.md`: C20 (hierarchical bib via function, templates)
 - [x] Update `modules/_assets/plans/research_workflow_stack.md`: hierarchical bib implemented
 
+## Cross-platform hosts — option scaffold (plan: `_assets/plans/wsl-linux-hosts.md`)
+
+- [x] `modules/options/hostOpt.nix` — dual-scope `host.*` scaffold (isNixos,
+  isWsl, displayProtocol, shell, identity.{username,email,gitUsername,gitEmail});
+  shared literal defaults via file-level `stdPractice` let; semantic inheritance
+  via same-scope `config.host.identity.*` refs. Fixed draft bugs: nested
+  HM export inside nixos module body (broke HM evals), `displayProtcol` typo,
+  `config.identity.*` → `config.host.identity.*` cross-refs
+- [x] `groups/options.nix`: new `nixos.options` preset + optionsHost in both classes' groups
+- [x] First consumer wired: `homeManager.git` reads `config.host.identity.git*`
+  (workstation + laptop verified; drvPaths byte-identical to pre-change baseline)
+- [x] Docs: contract C28, decisions #55 (mimeDefaults merge backfill) + #56,
+  host-wiring rows de-staled (`custom.terminal`/extraSpecialArgs removal),
+  options-architecture skill multi-scope section
+- [ ] Add nixos-wsl input; implement `nixosConfigurations.wsl` (plan §3/D1)
+- [ ] Implement standalone `homeConfigurations.linux` replacing ubuntu stub (plan D2/D7)
+- [ ] Branch clipboard/cmdLine on `host.isWsl`/`displayProtocol` (plan §3; deferred until hosts exist)
+- [ ] Bootstrap script `setup-host.sh` (plan §6)
+
 ## Stretch goals
 
 - [S] Quickshell-wip specialisation (`desktop-development.nix` port)
