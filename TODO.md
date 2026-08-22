@@ -267,6 +267,21 @@ Stable stack replaces hand-rolled display components on the workstation host:
 - [ ] Real deploys on target machines (user-run; plan §4 + maintenance guide)
 - [ ] Docs follow-up: maintenance.md WSL/linux sections, README host table,
   AGENTS.md §4 example alignment (`host.*` not `custom.flags`)
+- [ ] HM activation conflict note: foreign hosts with pre-existing dotfiles
+  need backup flow (`HOME_BACKUP_EXTENSION=… ./result/activate`) or manual
+  cleanup — first hit 2026-08-22 (nvim permission-denied on overwrite)
+
+## Wrapper modules / homeless dotfiles (plan: `_assets/plans/module-wraps.md`)
+
+- [/] P0 proof of concept: input `wrappers` (+follows nixpkgs) + `nvim-guest`
+  via `wrapPackage` (`NVIM_APPNAME` redirection, config from
+  `_assets/dotfiles/nvim`); acceptance = guest run leaves existing
+  `$HOME/.config/nvim` untouched. Motivated by the activation-conflict above +
+  coworker-machine use case
+- [ ] P1 guest shell entry + toolkit expansion (upstream prebuilts cover
+  git/starship/tmux/yazi/zellij/bat/btop/fastfetch; nvim/opencode custom)
+- [ ] P2 optional host-side adoption where typed wrapper options beat raw HM
+- [S] P3 systemd unit generation via `wlib.modules.systemd` (server hosts)
 
 ## Stretch goals
 

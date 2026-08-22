@@ -19,7 +19,12 @@
   };
 
   flake.modules.homeManager.nvim =
-    { config, pkgs, lib, ... }:
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
     let
       spellDir = ../_assets/dotfiles/nvim/spell;
       baseWordlist = builtins.readFile (spellDir + "/en.utf-8.add");
@@ -32,31 +37,57 @@
       # ----------------------------------------------------------------------
 
       # Base words that are already plural / irregular: never derive a plural.
-      pluralSkip = [ "moduli" "minima" ];
+      pluralSkip = [
+        "moduli"
+        "minima"
+      ];
 
       # Bare base words from the wordlist (comments/blank/flag lines dropped).
-      baseWords = let
-        lines = lib.splitString "\n" baseWordlist;
-        words = lib.filter (w: w != null) (map (line:
-          let m = builtins.match "^([-a-zA-Z0-9']+).*" line; in
-          if m == null then null else builtins.head m) lines);
-      in lib.filter (w: !lib.hasPrefix "_" w) words;
+      baseWords =
+        let
+          lines = lib.splitString "\n" baseWordlist;
+          words = lib.filter (w: w != null) (
+            map (
+              line:
+              let
+                m = builtins.match "^([-a-zA-Z0-9']+).*" line;
+              in
+              if m == null then null else builtins.head m
+            ) lines
+          );
+        in
+        lib.filter (w: !lib.hasPrefix "_" w) words;
 
       # Regular pluralization, tuned for this wordlist.
-      pluralOf = w:
-        if lib.elem w pluralSkip then null
-        else if lib.hasSuffix "s" w then null # already plural / plural-only
-        else if lib.hasSuffix "ly" w then null # adverbs never pluralize
-        else if builtins.match ".*[0-9]" w != null then null # AA7050 → no AA70500
+      pluralOf =
+        w:
+        if lib.elem w pluralSkip then
+          null
+        else if lib.hasSuffix "s" w then
+          null # already plural / plural-only
+        else if lib.hasSuffix "ly" w then
+          null # adverbs never pluralize
+        else if builtins.match ".*[0-9]" w != null then
+          null # AA7050 → no AA70500
         else if lib.hasSuffix "y" w then # consonant+y -> -ies
           lib.substring 0 (builtins.stringLength w - 1) w + "ies"
-        else if lib.hasSuffix "x" w || lib.hasSuffix "z" w then w + "es"
-        else w + "s";
+        else if lib.hasSuffix "x" w || lib.hasSuffix "z" w then
+          w + "es"
+        else
+          w + "s";
 
-      expand = w: let p = pluralOf w; in [ w (w + "'s") ] ++ lib.optional (p != null) p;
+      expand =
+        w:
+        let
+          p = pluralOf w;
+        in
+        [
+          w
+          (w + "'s")
+        ]
+        ++ lib.optional (p != null) p;
 
-      expandedWords = lib.unique (lib.sort (a: b: a < b)
-        (lib.concatMap expand baseWords));
+      expandedWords = lib.unique (lib.sort (a: b: a < b) (lib.concatMap expand baseWords));
       expandedWordlist = lib.concatStringsSep "\n" expandedWords + "\n";
 
       expandedSpell = pkgs.writeText "en.utf-8.expanded" expandedWordlist;
@@ -93,6 +124,7 @@
       };
 
       home.packages = with pkgs; [
+        neovim # for non-os level builds
         nil # nix
         marksman # markdown
         lua-language-server # lua
