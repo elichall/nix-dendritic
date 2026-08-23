@@ -2,103 +2,134 @@
 # TMUX
 # ==========================================================================
 { inputs, ... }: {
-  flake.modules.homeManager.tmux = { pkgs, ... }: {
-    programs.tmux = {
-      enable = true;
-      shortcut = "Space";
-      baseIndex = 1;
-      keyMode = "vi";
-      escapeTime = 0;
-      mouse = true;
+  flake.modules.homeManager.tmux =
+    { pkgs, ... }:
+    let
+      palette_backup = {
+        bg = "#121214";
+        fg = "#af9a91";
+        black = "#572100";
+        red = "#ba3934";
+        green = "#91773f";
+        yellow = "#b55600";
+        blue = "#5f63b4";
+        magenta = "#a17c7b";
+        cyan = "#8faea9";
+        white = "#af9a91";
+        gray = "#4e4b61";
+      };
+    in
+    {
+      programs.tmux = {
+        enable = true;
+        shortcut = "Space";
+        baseIndex = 1;
+        keyMode = "vi";
+        escapeTime = 0;
+        mouse = true;
 
-      plugins = with pkgs.tmuxPlugins; [
-        sensible
-        vim-tmux-navigator
-        {
-          plugin = extrakto;
-          extraConfig = ''
-            set -g @extrakto_key "f"
-            set -g @extrakto_filter_order "line word all"
-          '';
-        }
-        {
-          plugin = resurrect;
-          extraConfig = ''
-            set -g @resurrect-strategy-nvim 'session'
-            set -g @resurrect-processes "opencode"
-            set -g @resurrect-dir '~/.local/share/tmux/resurrect'
-          '';
-        }
-        {
-          plugin = continuum;
-          extraConfig = ''
-            set -g @continuum-restore 'on'
-            set -g @continuum-save-interval 5
-          '';
-        }
-        {
-          plugin = tmux-fzf;
-          extraConfig = ''
-            TMUX_FZF_LAUNCH_KEY="tab"
-          '';
-        }
-        {
-          plugin = yank;
-        }
-      ];
+        plugins = with pkgs.tmuxPlugins; [
+          sensible
+          vim-tmux-navigator
+          {
+            plugin = extrakto;
+            extraConfig = ''
+              set -g @extrakto_key "f"
+              set -g @extrakto_filter_order "line word all"
+            '';
+          }
+          {
+            plugin = resurrect;
+            extraConfig = ''
+              set -g @resurrect-strategy-nvim 'session'
+              set -g @resurrect-processes "opencode"
+              set -g @resurrect-dir '~/.local/share/tmux/resurrect'
+            '';
+          }
+          {
+            plugin = continuum;
+            extraConfig = ''
+              set -g @continuum-restore 'on'
+              set -g @continuum-save-interval 5
+            '';
+          }
+          {
+            plugin = tmux-fzf;
+            extraConfig = ''
+              TMUX_FZF_LAUNCH_KEY="tab"
+            '';
+          }
+          {
+            plugin = yank;
+          }
+        ];
 
-      extraConfig = ''
-        set -g default-terminal "tmux-256color"
-        set -ag terminal-overrides ",xterm-256color:RGB"
-        set-option -g detach-on-destroy off
+        extraConfig = ''
+          set -g default-terminal "tmux-256color"
+          set -ag terminal-overrides ",xterm-256color:RGB"
+          set-option -g detach-on-destroy off
 
-        set -g pane-base-index 1
-        set-window-option -g pane-base-index 1
-        set-option -g renumber-windows on
+          set -g pane-base-index 1
+          set-window-option -g pane-base-index 1
+          set-option -g renumber-windows on
 
-        if-shell '[ -f ~/.config/tmux/colors.tmux ]' 'source-file ~/.config/tmux/colors.tmux'
+          if-shell '[ -f ~/.config/tmux/colors.tmux ]' \
+            'source-file ~/.config/tmux/colors.tmux' \
+            'source-file ~/.config/tmux/colors.fallback.tmux'
 
-        unbind [
-        bind v copy-mode
-        set-window-option -g mode-keys vi
-        bind-key -T copy-mode-vi v send-key -X begin-selection
-        bind-key -T copy-mode-vi C-v send-key -X rectangle-toggle
-        bind-key -T copy-mode-vi y send-key -X copy-selection-and-cancel
-        bind-key -T copy-mode-vi Escape send-key -X cancel
+          unbind [
+          bind v copy-mode
+          set-window-option -g mode-keys vi
+          bind-key -T copy-mode-vi v send-key -X begin-selection
+          bind-key -T copy-mode-vi C-v send-key -X rectangle-toggle
+          bind-key -T copy-mode-vi y send-key -X copy-selection-and-cancel
+          bind-key -T copy-mode-vi Escape send-key -X cancel
 
-        bind p run "wl-paste -n | tmux load-buffer - ; tmux paste-buffer"
+          bind p run "wl-paste -n | tmux load-buffer - ; tmux paste-buffer"
 
-        # Pane management
-        unbind '"'
-        unbind %
-        bind | split-window -h -c "#{pane_current_path}"
-        bind _ split-window -v -c "#{pane_current_path}"
-        bind b break-pane -d
+          # Pane management
+          unbind '"'
+          unbind %
+          bind | split-window -h -c "#{pane_current_path}"
+          bind _ split-window -v -c "#{pane_current_path}"
+          bind b break-pane -d
 
-        bind -r Left resize-pane -L 10
-        bind -r Down resize-pane -D 10
-        bind -r Up resize-pane -U 10
-        bind -r Right resize-pane -R 10
+          bind -r Left resize-pane -L 10
+          bind -r Down resize-pane -D 10
+          bind -r Up resize-pane -U 10
+          bind -r Right resize-pane -R 10
 
-        bind C-x confirm-before -p "Kill all other panes in window? (y/n)" "kill-pane -a"
+          bind C-x confirm-before -p "Kill all other panes in window? (y/n)" "kill-pane -a"
 
-        # Window management
-        bind n new-window -c "#{pane_current_path}"
-        bind -n M-h previous-window
-        bind -n M-l next-window
-        bind X confirm-before -p "Kill current window? (y/n)" kill-window
+          # Window management
+          bind n new-window -c "#{pane_current_path}"
+          bind -n M-h previous-window
+          bind -n M-l next-window
+          bind X confirm-before -p "Kill current window? (y/n)" kill-window
 
-        # Session management
-        bind N run-shell -b "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/session.sh new"
-        bind S run-shell "${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/scripts/save.sh"
-        bind s run-shell "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/session.sh"
+          # Session management
+          bind N run-shell -b "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/session.sh new"
+          bind S run-shell "${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/scripts/save.sh"
+          bind s run-shell "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/session.sh"
 
-        bind -n M-C-h switch-client -p
-        bind -n M-C-l switch-client -n
+          bind -n M-C-h switch-client -p
+          bind -n M-C-l switch-client -n
 
-        bind C-X confirm-before -p "Kill current session? (y/n)" "run-shell 'tmux has-session -t main 2>/dev/null || tmux new-session -d -s main; tmux switch-client -t main && tmux kill-session -t \"#{session_name}\"'"
-        bind M-C-X confirm-before -p "Clear all sessions except main? (y/n)" "run-shell 'tmux has-session -t main 2>/dev/null || tmux new-session -d -s main; tmux list-sessions -F \"##S\" | grep -v \"^main$\" | xargs -I {} tmux kill-session -t {}'"
+          bind C-X confirm-before -p "Kill current session? (y/n)" "run-shell 'tmux has-session -t main 2>/dev/null || tmux new-session -d -s main; tmux switch-client -t main && tmux kill-session -t \"#{session_name}\"'"
+          bind M-C-X confirm-before -p "Clear all sessions except main? (y/n)" "run-shell 'tmux has-session -t main 2>/dev/null || tmux new-session -d -s main; tmux list-sessions -F \"##S\" | grep -v \"^main$\" | xargs -I {} tmux kill-session -t {}'"
+        '';
+      };
+      xdg.configFile."tmux/colors.fallback.tmux".text = ''
+        set -g status-style "bg=${palette_backup.bg},fg=${palette_backup.fg}"
+        set -g status-left "#[fg=${palette_backup.bg},bg=${palette_backup.blue},bold]    #S #[bg=default,fg=default] "
+
+        set -g window-status-format "#[fg=${palette_backup.gray},bg=default] #I:#W "
+        set -g window-status-current-format "#[fg=${palette_backup.blue},bg=${palette_backup.gray},bold] #I:#W "
+        set -g window-status-separator ""
+
+        set -g pane-border-style "fg=${palette_backup.gray}"
+        set -g pane-active-border-style "fg=${palette_backup.blue}"
+        set -g message-style "bg=${palette_backup.gray},fg=${palette_backup.blue},bold"
       '';
     };
-  };
 }

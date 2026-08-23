@@ -79,7 +79,6 @@
           capsule_fill = "surface_variant";
           capsule_thickness = 0.80;
           capsule_opacity = 1.0;
-          # capsule_border = "outline";
 
           # outside of widget areas
           dead_zone.actions = {
