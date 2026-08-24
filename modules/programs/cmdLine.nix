@@ -134,7 +134,7 @@
             };
 
             nix_shell = {
-              symbol = "󰜗 ";
+              symbol = "󰜗";
               format = "via [$symbol$state](bold blue) ";
               pure_msg = "pure";
               impure_msg = "";
@@ -143,12 +143,12 @@
               disabled = false;
             };
             container = {
-              symbol = " ";
+              symbol = "";
               format = "[$symbol$name]($style) ";
               style = "bold red";
             };
             python = {
-              symbol = " ";
+              symbol = "";
               format = "via [$symbol$virtualenv]($style) ";
               style = "bold yellow";
             };
