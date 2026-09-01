@@ -7,7 +7,7 @@
 # modules/_assets/plans/wsl-linux-hosts.md (D2/D7/D9).
 { inputs, self, ... }: {
   flake.homeConfigurations.work = inputs.home-manager.lib.homeManagerConfiguration {
-    pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+    pkgs = self.pkgs.x86_64-linux;
 
     modules = [
       # cross-module option declarations (host scaffold + shared options)

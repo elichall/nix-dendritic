@@ -30,7 +30,7 @@
           opencode
           poppler-utils
         ]
-        ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x84_64-linux") [ claude-code ];
+        ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [ claude-code ];
 
       xdg.configFile."opencode/commands/pdf.md" = {
         force = true;
