@@ -8,14 +8,19 @@
 # - xdg.configFile."opencode/commands/pdf.md": Nix-managed GLOBAL command
 #   (available in every directory/session — opencode scans the global config
 #   dir for {command,commands}/**/*.md; project .opencode dirs are per-tree).
-# - tui.json is Nix-owned (force = true); a pre-Nix `"enabled": "true"`
-#   string made the whole file silently skipped by the exact-schema TUI.
+# - claude-code: Claude's own CLI for Claude-specific work (opencode stays on
+#   the free `opencode` provider). claude-code is unfree — allowed via the
+#   scoped predicate in flake.nix's central `flake.pkgs`, so it is added only
+#   on NixOS hosts (config.host.isNixos) whose pkgs instance carries that
+#   predicate. Non-NixOS hosts get claude-code from their native package
+#   manager instead. Auth is a one-time `claude login` (writes
+#   ~/.claude/.credentials.json).
 { inputs, ... }: {
-  flake.modules.homeManager.opencode = { pkgs, ... }: {
-    home.packages = [
-      pkgs.opencode
-      pkgs.poppler-utils
-    ];
+  flake.modules.homeManager.opencode = { pkgs, config, lib, ... }: {
+    home.packages = with pkgs; [
+      opencode
+      poppler-utils
+    ] ++ lib.optionals config.host.isNixos [ claude-code ];
 
     xdg.configFile."opencode/commands/pdf.md" = {
       force = true;
@@ -37,17 +42,6 @@
         4. Clean up temp files when done; quote any path containing spaces.
 
         Answer from the extracted content — never the filename alone.
-      '';
-    };
-
-    xdg.configFile."opencode/tui.json" = {
-      force = true;
-      text = ''
-        {
-          "$schema": "https://opencode.ai/tui.json",
-          "theme": "system",
-          "scroll_acceleration": { "enabled": true }
-        }
       '';
     };
   };

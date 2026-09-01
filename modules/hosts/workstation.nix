@@ -4,7 +4,8 @@
 # Host wiring map + aspect groups: modules/_assets/documentation/module-contracts.md (§1).
 { inputs, self, ... }: {
   flake.nixosConfigurations.workstation = inputs.nixpkgs.lib.nixosSystem {
-    pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+    # Central flake pkg definition (unfree predicate for claude-code) — see flake.nix.
+    pkgs = self.pkgs.x86_64-linux;
     specialArgs = { inherit inputs; };
 
     modules = [
