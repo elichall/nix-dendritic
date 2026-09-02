@@ -7,6 +7,10 @@
     networking.hostName = "t480-nixos";
     networking.networkmanager.enable = true;
 
+    # ssh friendly settings for a laptop
+    networking.networkmanager.wifi.powersave = false;
+    services.logind.lidSwitchExternalPower = "ignore";
+
     services.openssh = {
       enable = true;
       settings = {
