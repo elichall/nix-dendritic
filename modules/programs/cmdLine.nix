@@ -118,7 +118,7 @@
           enable = true;
 
           settings = {
-            format = "$os$directory$nix_shell$container$python$git_branch$git_status$character";
+            format = "$os$directory$container$nix_shell$python$git_branch$git_status$character";
             add_newline = false;
             line_break.disabled = true;
             cmd_duration.disabled = true;
@@ -132,25 +132,25 @@
               symbols.Macos = "[](bold #ffffff)";
               symbols.Fedora = "[](bold #3c6eb4)";
             };
-
-            nix_shell = {
-              symbol = "󰜗";
-              format = "via [$symbol$state](bold blue) ";
-              pure_msg = "pure";
-              impure_msg = "";
-              unknown_msg = "";
-              heuristic = false;
-              disabled = false;
-            };
             container = {
               symbol = "";
               format = "[$symbol$name]($style) ";
               style = "bold red";
             };
+            nix_shell = {
+              symbol = "❄️";
+              format = "[$symbol$state]($style) ";
+              pure_msg = "pure";
+              impure_msg = "";
+              unknown_msg = "";
+              heuristic = false;
+            };
             python = {
               symbol = "";
-              format = "via [$symbol$virtualenv]($style) ";
+              format = "[$symbol$virtualenv]($style) ";
               style = "bold yellow";
+              detect_files = [ ];
+              detect_extensions = [ ];
             };
           };
         }

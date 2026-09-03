@@ -9,7 +9,7 @@
 
     # ssh friendly settings for a laptop
     networking.networkmanager.wifi.powersave = false;
-    services.logind.lidSwitchExternalPower = "ignore";
+    services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
 
     services.openssh = {
       enable = true;
