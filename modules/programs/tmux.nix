@@ -121,10 +121,10 @@
       };
       xdg.configFile."tmux/colors.fallback.tmux".text = ''
         set -g status-style "bg=${palette_backup.bg},fg=${palette_backup.fg}"
-        set -g status-left "#[fg=${palette_backup.bg},bg=${palette_backup.green},bold]    #S #[bg=default,fg=default] "
+        set -g status-left "#[fg=${palette_backup.bg},bg=${palette_backup.green},bold] 󰨖 #S #[bg=default,fg=default] "
 
         set -g window-status-format "#[fg=${palette_backup.gray},bg=default] #I:#W "
-        set -g window-status-current-format "#[fg=${palette_backup.green},bg=${palette_backup.gray},bold] #I:#W "
+        set -g window-status-current-format "#[fg=#000000,bg=${palette_backup.gray},bold] #I:#W "
         set -g window-status-separator ""
 
         set -g pane-border-style "fg=${palette_backup.gray}"

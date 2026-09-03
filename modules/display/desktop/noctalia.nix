@@ -224,7 +224,7 @@
                 set -g status-style "bg=#$BG,fg=#$FG"
                 set -g status-left "#[fg=#$BG,bg=#$C2,bold] 󰨖 #S #[bg=default,fg=default] "
                 set -g window-status-format "#[fg=#$C8,bg=default] #I:#W "
-                set -g window-status-current-format "#[fg=#$C2,bg=#$C8,bold] #I:#W "
+                set -g window-status-current-format "#[fg=#000000,bg=#$C8,bold] #I:#W "
                 set -g window-status-separator ""
                 set -g pane-border-style "fg=#$C8"
                 set -g pane-active-border-style "fg=#$C2"
