@@ -8,8 +8,6 @@
     pkgs = self.pkgs.x86_64-linux;
     specialArgs = { inherit inputs; };
 
-    services.logind.lidSwitchExternalPower = "ignore";
-
     modules = [
       # base identity + machine-specific hardware
       self.modules.nixos.main
