@@ -212,7 +212,7 @@ if [ -n "$host" ]; then
     
     session_name=$(echo "$host" | tr '.' '_')
     
-    setsid -f @TERMINAL@ -e bash -c "tmux new-session -A -s '$session_name' 'ssh $target; exec bash'"
+    setsid -f @TERMINAL@ -e bash -c "@TERMINAL@ -e bash -c 'ssh $target; exec bash'"
 fi
 """
 
