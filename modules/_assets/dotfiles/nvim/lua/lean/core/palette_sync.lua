@@ -35,15 +35,15 @@ local palette = read_foot_noctalia()
 if palette then return palette end
 
 return {
-  bg      = "#121214",
-  fg      = "#af9a91",
-  black   = "#572100",
-  red     = "#ba3934",
-  green   = "#91773f",
-  yellow  = "#b55600",
-  blue    = "#5f63b4",
-  magenta = "#a17c7b",
-  cyan    = "#8faea9",
-  white   = "#af9a91",
-  gray    = "#4e4b61",
+  bg      = "#000000",
+  fg      = "#ebdbb2",
+  black   = "#282828",
+  red     = "#cc241d",
+  green   = "#98971a",
+  yellow  = "#d79921",
+  blue    = "#458588",
+  magenta = "#b16286",
+  cyan    = "#689d6a",
+  white   = "#a89984",
+  gray    = "#928374",
 }

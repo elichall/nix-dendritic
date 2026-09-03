@@ -43,7 +43,6 @@ Target systems instantiate their environment by creating a specific host entry (
     - `plans/*.md` — Active plans (top-level files).
     - `plans/completed/` — Finished plans (reference only).
     - `plans/deferred/` — Paused or deferred plans.
-- `./modules/_lib/`: Shared non-module Nix helpers (`browser`, theme paths, `interaction-watch`). Not auto-imported; consumed via explicit relative `import`.
 - `./legacy/` (gitignored): Frozen snapshot of the pre-flake `/etc/nixos` config — reference only. NOTE: `legacy/` carries pre-fix bugs (e.g. the gtk.css transparency bug); port from the LIVE `/etc/nixos` tree when in doubt.
 - `./nixos -> /etc/nixos` (gitignored symlink): inert pre-switch config. A bare `nixos-rebuild switch` (no `--flake`) would fall back to it — ALWAYS pass `--flake`.
 - `./post-switch-smoke-test.sh`: read-only post-rebuild verification script (run after every switch).
@@ -86,7 +85,7 @@ Instead, group configurations by **feature aspect**. A single file must contain 
 - Every `.nix` file in `./modules/` is imported automatically by `import-tree`.
 - Never use explicit relative imports (`import ../foo/bar.nix`) between feature modules inside `./modules/`.
 - Moving a file to a different folder inside `./modules/` must **never** break the build.
-- Files or directories prefixed with an underscore (e.g., `_draft.nix` or `_lib/`) are ignored by `import-tree`.
+- Files or directories prefixed with an underscore (e.g., `_draft.nix`) are ignored by `import-tree`.
 
 ### Rule 3: Strict Scope Separation
 - **NixOS / System Scope (`flake.modules.nixos.<feature>`)**: Restrict to system-wide concerns—kernel parameters, bootloaders, hardware graphics, system-level systemd services, binary caches, user account definitions, and system packages.
