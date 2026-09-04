@@ -10,28 +10,39 @@
     programs.fuse.userAllowOther = true;
   };
 
-  flake.modules.homeManager.rclone = { config, pkgs, lib, ... }: {
-    home.packages = [ pkgs.rclone ];
+  flake.modules.homeManager.rclone =
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
+    let
+      fusermount =
+        if config.host.isNixos then "/run/wrappers/bin/fusermount3" else "/usr/bin/fusermount3";
+    in
+    {
+      home.packages = [ pkgs.rclone ];
 
-    systemd.user.services.rclone-box = {
-      Unit = {
-        Description = "Rclone Box Drive Mount Service";
-        AssertPathExists = "${config.home.homeDirectory}/.config/rclone/rclone.conf";
-      };
-      Service = {
-        Type = "notify";
-        ExecStartPre = "-${lib.getExe' pkgs.coreutils "mkdir"} -p ${config.home.homeDirectory}/Box";
+      systemd.user.services.rclone-box = {
+        Unit = {
+          Description = "Rclone Box Drive Mount Service";
+          AssertPathExists = "${config.home.homeDirectory}/.config/rclone/rclone.conf";
+        };
+        Service = {
+          Type = "notify";
+          ExecStartPre = "-${lib.getExe' pkgs.coreutils "mkdir"} -p ${config.home.homeDirectory}/Box";
 
-        ExecStart = "${lib.getExe pkgs.rclone} mount boxdrive: ${config.home.homeDirectory}/Box --config=${config.home.homeDirectory}/.config/rclone/rclone.conf --vfs-cache-mode full --vfs-cache-max-age 1h --vfs-cache-max-size 10G --dir-cache-time 1m --poll-interval 1m --allow-other --umask 0022 --buffer-size 32M";
+          ExecStart = "${lib.getExe pkgs.rclone} mount boxdrive: ${config.home.homeDirectory}/Box --config=${config.home.homeDirectory}/.config/rclone/rclone.conf --vfs-cache-mode full --vfs-cache-max-age 1h --vfs-cache-max-size 10G --dir-cache-time 1m --poll-interval 1m --allow-other --umask 0022 --buffer-size 32M";
 
-        ExecStop = "/run/wrappers/bin/fusermount3 -u ${config.home.homeDirectory}/Box";
+          ExecStop = "${fusermount} -u ${config.home.homeDirectory}/Box";
 
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-      Install = {
-        WantedBy = [ "default.target" ];
+          Restart = "on-failure";
+          RestartSec = "5s";
+        };
+        Install = {
+          WantedBy = [ "default.target" ];
+        };
       };
     };
-  };
 }
