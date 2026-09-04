@@ -19,6 +19,7 @@
 
       # remaining aspects (not grouped)
       self.modules.homeManager.clipboard
+      self.modules.homeManager.mimeDefaults
       self.modules.homeManager.rclone
       self.modules.homeManager.fastfetch
       self.modules.homeManager.initProject

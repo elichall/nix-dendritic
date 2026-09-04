@@ -51,6 +51,8 @@
 
               # remaining user-level aspects (not grouped)
               self.modules.homeManager.clipboard
+              self.modules.homeManager.initProject
+              self.modules.homeManager.mimeDefaults
               self.modules.homeManager.rclone
               self.modules.homeManager.fastfetch
             ];

@@ -17,10 +17,10 @@
       # aspect groups (dev toolchain + utilities)
       self.modules.homeManager.toolbox
 
-      # remaining aspects (not grouped): platform-aware clipboard +
+# remaining aspects (not grouped): platform-aware clipboard +
       # win32yank/wslview interop shims
       self.modules.homeManager.clipboard
-      self.modules.homeManager.initProject
+      self.modules.homeManager.mimeDefaults
 
       # standalone base identity — inline (plan D9): homeManager.main
       # assumes a graphical NixOS session
@@ -30,14 +30,14 @@
         home.homeDirectory = "/home/${config.host.identity.username}";
         home.stateVersion = "26.05";
 
-        host.isNixos = false;
-        host.isWsl = true;
-        # WSLg exposes a real wayland compositor — default fits; explicit
-        # for template clarity. clipboard.nix still adds xclip: tools may
-        # pick either protocol (both are present under WSLg).
-        host.displayProtocol = "wayland";
+          host.isNixos = false;
+          host.isWsl = true;
+          # WSLg exposes a real wayland compositor — default fits; explicit
+          # for template clarity. clipboard.nix still adds xclip: tools may
+          # pick either protocol (both are present under WSLg).
+          host.displayProtocol = "wayland";
 
-        targets.genericLinux.enable = true;
+          targets.genericLinux.enable = true;
         fonts.fontconfig.enable = true;
         # HM has no fonts.packages — user-scale fonts live in
         # home.packages; fontconfig picks them up from there.

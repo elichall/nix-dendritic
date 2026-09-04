@@ -18,6 +18,7 @@
 
       # remaining aspects (not grouped)
       self.modules.homeManager.clipboard
+      self.modules.homeManager.mimeDefaults
       self.modules.homeManager.initProject
 
       # standalone base identity — inline (plan D9): homeManager.main
@@ -28,9 +29,9 @@
         home.homeDirectory = "/home/${config.host.identity.username}";
         home.stateVersion = "26.05";
 
-        host.isNixos = false; # foreign distro → genericLinux behavior below
+          host.isNixos = false; # foreign distro → genericLinux behavior below
 
-        targets.genericLinux.enable = true;
+          targets.genericLinux.enable = true;
         fonts.fontconfig.enable = true;
         # HM has no fonts.packages — user-scale fonts live in
         # home.packages; fontconfig picks them up from there.
