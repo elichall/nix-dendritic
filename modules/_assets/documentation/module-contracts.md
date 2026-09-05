@@ -557,7 +557,10 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 ## 4. Do-not-touch registers
 
 - `homeManager.cmdLine` `bashrcExtra` hm-session-vars sourcing — user-reported
-  issues; frozen (TODO stretch).
+  issues; `unset __HM_SESS_VARS_SOURCED` added 2026-09-05 so every new terminal
+  re-applies the current generation's `home.sessionVariables` (fixes stale
+  boot-session env blocking HISTFILE/CLAUDE_CONFIG_DIR until re-login;
+  documented footgun, see discourse 8488/43734). (TODO stretch.)
 - `services.state.items` bluetooth — REACH, as-is (`../plans/deferred/state-implementation.md`).
 - Ghostty window rules/classes (incl. dead `com.center.focus`) — kept as legacy
   (phase-3 decision, void). Experimental stack only (laptop).

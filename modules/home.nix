@@ -16,6 +16,9 @@
     # FILEMANAGER/TERM_FILE_CHOOSER live in homeManager.yazi.
     home.sessionVariables = {
       XCOMPOSECACHE = "${config.home.homeDirectory}/.cache/compose-cache";
+      # npm cache is regenerable/volatile (re-downloadable from the registry),
+      # so it belongs under XDG cache — NOT .local/state.
+      npm_config_cache = "${config.home.homeDirectory}/.cache/npm";
     };
 
     home.pointerCursor = {

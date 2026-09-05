@@ -59,6 +59,19 @@
           tree
         ];
 
+        # ==========================================================================
+        # ENV VARS
+        # ==========================================================================
+        # HISTFILE keeps <shell>_history out of $HOME (per-shell subdir under
+        # XDG cache) — shell-agnostic, valid for zsh/fish/nushell too. blesh 0.4
+        # needs no relocation vars: it is XDG-native (runtime state under
+        # $XDG_STATE_HOME/$XDG_CACHE_HOME) and reads its init file natively from
+        # ${XDG_CONFIG_HOME}/blesh/init.sh — so we simply drop blerc there
+        # (see home.file."config/blesh/init.sh") and source no BLE_* env vars.
+        home.sessionVariables = {
+          HISTFILE = "${config.home.homeDirectory}/.cache/${hostShell}/history";
+        };
+
         programs.bash = {
           enable = hostShell == "bash";
           historyControl = [ "ignoreboth" ];
@@ -80,9 +93,14 @@
           };
 
           bashrcExtra = ''
-            if [ -f ~/.nix-profile/etc/profile.d/hm-session-vars.sh ]; then
-              . ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-            fi
+            # Force the CURRENT generation's session variables into every new
+            # shell. hm-session-vars.sh early-returns when __HM_SESS_VARS_SOURCED
+            # is present — a value inherited from the boot-time graphical session
+            # (older generation) — which silently skips new/changed
+            # home.sessionVariables (HISTFILE, CLAUDE_CONFIG_DIR, ...) until a
+            # full re-login. Clearing the guard makes each terminal self-healing.
+            unset __HM_SESS_VARS_SOURCED
+            . "${config.home.profileDirectory}/etc/profile.d/hm-session-vars.sh"
           '';
 
           initExtra = ''
@@ -211,7 +229,10 @@
         # ==========================================================================
         # DECLARATIVE DOTFILE GENERATION
         # ==========================================================================
-        home.file.".blerc".text = lib.mkIf (hostShell == "bash") ''
+        # blesh 0.4 reads its init file natively from
+        # ${XDG_CONFIG_HOME}/blesh/init.sh (falls back to ~/.blerc) — no BLERC
+        # env var in this version. bash-gated: blesh is bash-only.
+        home.file.".config/blesh/init.sh".text = lib.mkIf (hostShell == "bash") ''
           ble-face -s filename_directory 'fg=blue'
           ble-face -s filename_other fg=white,nounderline
 

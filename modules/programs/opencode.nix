@@ -24,6 +24,14 @@
       ...
     }:
     {
+      # claude-code has a single override point — CLAUDE_CONFIG_DIR relocates
+      # the ENTIRE ~/.claude tree (settings, credentials, plugins, session
+      # history, projects) under one path; there is no data-dir split (no
+      # CLAUDE_DATA_DIR). Everything therefore lives under .config/claude.
+      home.sessionVariables = {
+        CLAUDE_CONFIG_DIR = "${config.home.homeDirectory}/.config/claude";
+      };
+
       home.packages =
         with pkgs;
         [
