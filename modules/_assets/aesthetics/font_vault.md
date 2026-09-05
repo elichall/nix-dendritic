@@ -71,10 +71,17 @@
 󰙾 storm
  fire
 
-󰜗 󰼩 󱩰 󱓣 flake
+󰜗 󰼩 󱩰 󱓣  flake
+
+󰽒 foot
+󱂵 home folder
+󰸉 wallpaper
+ terminal
+ key/ssh
+ archive/cache
 
 ## Brands/Apps
-󱄅 NixOS
+ 󱄅 NixOS
 󰊠 Ghostty
  gtk
  otter-launcher
@@ -96,6 +103,9 @@
  git
  github
  obsidian
+ claude
+󰍲 box
+ systemd
 
 ## Personal
 󰧑 Brain

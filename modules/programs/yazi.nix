@@ -51,14 +51,32 @@
             {
               name = "git";
               text = "";
+              fg = "#F05033";
             }
             {
               name = "gtk-3.0";
               text = "";
+              fg = "#3584E4";
             }
             {
               name = "gtk-4.0";
               text = "";
+              fg = "#3584E4";
+            }
+            {
+              name = ".cache";
+              text = "";
+              fg = "#D08770";
+            }
+            {
+              name = ".ssh";
+              text = "";
+              fg = "#DCA561";
+            }
+            {
+              name = ".local";
+              text = "󱂵";
+              fg = "#6DB9F7";
             }
             {
               name = "noctalia";
@@ -71,8 +89,28 @@
             }
             {
               name = ".nix";
-              text = "󱄅";
-              fg = "#5fb8f2";
+              text = "";
+              fg = "#7ebae4";
+            }
+            {
+              name = ".nix-defexpr";
+              text = "";
+              fg = "#7ebae4";
+            }
+            {
+              name = ".nix-profile";
+              text = "";
+              fg = "#7ebae4";
+            }
+            {
+              name = "nix";
+              text = "";
+              fg = "#7ebae4";
+            }
+            {
+              name = "home-manager";
+              text = "";
+              fg = "#7ebae4";
             }
             {
               name = "wallpapers";
@@ -81,6 +119,7 @@
             {
               name = ".var";
               text = "";
+              fg = "#4A86CF";
             }
             {
               name = "vault";
@@ -90,14 +129,17 @@
             {
               name = "hypr";
               text = "";
+              fg = "#BD2426";
             }
             {
               name = "pulse";
               text = "";
+              fg = "#F07C5B";
             }
             {
               name = "ghostty";
               text = "󰊠";
+              fg = "#A78BFA";
             }
             {
               name = "otter-launcher";
@@ -106,24 +148,44 @@
             {
               name = "nvim";
               text = "";
+              fg = "#57A143";
             }
             {
               name = "tmux";
               text = "";
+              fg = "#1BB91F";
             }
             {
               name = "yazi";
               text = "󰇥";
+              fg = "#E5C07B";
+            }
+            {
+              name = "claude";
+              text = "";
+              fg = "#D97757";
+            }
+            {
+              name = "systemd";
+              text = "";
+              fg = "#30D475";
+            }
+            {
+              name = "opencode";
+              text = "";
+              fg = "#D99C57";
             }
           ];
           prepend_files = [
             {
               name = "hyprland.conf";
               text = "";
+              fg = "#BD2426";
             }
             {
               name = "hyprland.lua";
               text = "";
+              fg = "#BD2426";
             }
             {
               name = "foot.ini";
@@ -132,6 +194,11 @@
             {
               name = "noctalia*";
               text = "󰏒";
+            }
+            {
+              name = "flake.nix";
+              text = "";
+              fg = "#7ebae4";
             }
           ];
         };

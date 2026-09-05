@@ -308,3 +308,50 @@ writes, adaptive via detection shim → `.apply` args + runtime sniffing).
 - [S] `systemPackages` dedup across remaining modules — SUPERSEDED by AGENTS.md Rule 4 (duplicate package declarations are explicitly allowed/encouraged for dependency isolation); dedup is now optional cleanup only
 - [S] `nixos.main` now base-only: bootloader/zram, time/locale, users, nix-ld, fonts, base systemPackages, flatpak, tmpfiles, nix.settings/gc (intentionally kept per user choice). docker REMOVED (unused); docker service split no longer needed
 - [S] `state-implementation.md` (services.state.items bluetooth `Powered` persistence) — REACH, left as-is per user decision
+
+## yazi nix-family icons (DONE, 2026-09-05)
+
+- [x] yazi nix icons unified on yazi's OWN default nix glyph (found by pulling
+  the shipped `theme-dark.toml` from the `shipped` tag — line 783:
+  `{ name = "nix", text = "", fg = "#7ebae4" }`, U+F0D3 — NOT the
+  nf-custom-nixos `󱄅` U+F0C85 the `.nix` dir used). Prepended dirs now all
+  ``/`#7ebae4`: `.nix` (swapped), `.nix-defexpr` (channels store),
+  `.nix-profile` (convenience link), `nix` (basename catch-all →
+  `~/.local/state/nix`, `~/.config/nix`, `~/.cache/nix`), `home-manager`
+  (`~/.local/state/home-manager`). `flake.nix` special-cased in
+  `prepend_files` with the exact starship `nix_shell` symbol `❄️` (U+2744
+  U+FE0F) — emoji display confirmed OK (yazi's own default file icon is a
+  `📄` emoji). `flake.lock` + other `.nix` files left on defaults. No
+  dedicated NixOS emoji exists (only generic snowflake ⓤ); brand mark lives
+  only as a font glyph → `` is the impactful one. Validated app-config-data
+  scope: parse OK, `nix eval` of `theme.icon` matches, generated
+  `theme.toml` built (`fz32hq8cbyfa89yjb3zf02psn0s15y92-yazi-theme`) and all
+  entries confirmed. User still needs to deploy + visually check emoji width
+- [x] yazi icon BRAND-COLOR PASS (2026-09-05, user-confirmed scope): applied
+  recognized/official brand colors to existing uncolored icons — git
+  `#F05033`, tmux `#1BB91F`, nvim `#57A143`, gtk-3.0/4.0 `#3584E4`, hypr
+  `#BD2426` (official Hyprland "Tall Poppy" per brandfetch), hyprland.conf/
+  .lua `#BD2426` (consistency), .var `#4A86CF` (flathub-ish), pulse
+  `#F07C5B`, ghostty `#A78BFA`, yazi `#E5C07B`. Skipped uncolored (no
+  official brand): Projects, foot, noctalia, wallpapers, otter-launcher, and
+  Box rule left as-is (user corrected → it IS `Box`, not `.Box`). Added the
+  only three home-root dirs without yazi backend defaults: `.cache` (  f0e7
+  bolt) `#D08770`, `.ssh` (  f084 key) `#DCA561` (gold nudged off yazi's
+  `#E5C07B` to avoid same-hex collision), `.local` (  f015 home) `#6DB9F7`.
+  Documents/Downloads/Pictures SKIPPED (yazi has backend defaults). `.config`
+  subfolder level deferred to a later pass. Validated app-config-data scope:
+  parse OK, `theme.icon` eval shows all name+fg, built theme.toml
+  (`a0cy9gxyr5i0dyvi1vy5yqzqsvlpri5v-yazi-theme`) confirmed every fg
+- [x] yazi icon .config/ PASS (2026-09-05, user-confirmed scope): added only
+  official-brand-color `.config` dir rules — `claude` (  ec82 nf-cod-claude,
+  `#D97757` Claude "Japonica"; glyph NOT in JetBrainsMono NF 3.4.0 → renders
+  tofu until font updates, user accepted), `systemd` (  f085 nf-fa-cogs,
+  `#30D475` brand.systemd.io green), `opencode` (  f120 nf-fa-terminal,
+  `#D99C57` opencode.ai Di Serria amber — amber chosen over Boston Blue to
+  stay on-brand per user). SKIPPED (no official brand, per user ruling):
+  btop, cava, jolt, fastfetch, direnv, environment.d, dconf, fontconfig,
+  qalculate, rclone, blesh, mimeapps.list, starship.toml, and mpv (user
+  declined brandfetch's unclaimed `#722B72`). Validated: parse OK,
+  `theme.icon` eval shows all 3 (claude U+EC82/systemd U+F085/opencode
+  U+F120), built theme.toml (`ls76iik6mpwmr59m9jivr2rr1hdy3r92-yazi-theme`)
+  confirmed entries

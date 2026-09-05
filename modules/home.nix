@@ -27,7 +27,7 @@
       name = "Adwaita";
       size = 24;
       gtk.enable = true;
-      x11.enable = true;
+      x11.enable = false; # pure-Wayland host: no X resources; cursor via XCURSOR_* env + GTK settings
       dotIcons.enable = false; # disable legacy ~/.icons mirror; XDG ~/.local/share/icons suffices
     };
 
