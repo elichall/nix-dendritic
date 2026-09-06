@@ -13,7 +13,15 @@
       self.modules.nixos.hardwareConfig
 
       self.modules.nixos.options
-      { host.hostName = "t480-nixos"; }
+      {
+        host.hostName = "t480-nixos";
+        host.trustedSshKeys = [
+          # work-ubuntu-desktop
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILf1eovOjigEIalWrLJrAgNat4pme9WAIgQEIKD8h7KF 1elijah.hall@gmail.com"
+          # iPhone (Termius)
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBSE6LTjQ7T6YAAmdwKZMTAy97ZBiGCli6yvwDtv73vO"
+        ];
+      }
 
       # aspect groups (base services + display/wallpaper preset)
       self.modules.nixos.base

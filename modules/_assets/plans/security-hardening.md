@@ -7,50 +7,64 @@ when this was reviewed.
 
 ---
 
-## 1. SSH: stop relying on password auth — but hold off on declarative keys
+## 1. SSH: stop relying on password auth — declarative keys now DONE, disabling password auth still deferred
 
 **Original finding:** `network.nix` sets `PasswordAuthentication = true` with no
 declarative `authorizedKeys` anywhere in the repo, so the whole remote-login
-story over Tailscale rests on an account password that isn't managed by Nix at
+story over Tailscale rested on an account password that isn't managed by Nix at
 all.
 
-**Your caveat:** you know Nix secrets management (sops-nix, agenix, etc.)
-exists but don't understand it yet, and don't want keys landing in the raw git
-repo until you're solid on managing secrets. That's a reasonable line to hold
-— **do not implement key-based auth until this is resolved**, this section is
-deferred.
+**Update — the "no keys / no secrets management" blocker is resolved.** You
+already have separate SSH keypairs for the t480, the work Ubuntu desktop, and
+the WSL work Windows laptop, each already registered as separate GitHub
+identities — meaning these are already-public keys, safe to commit as-is, no
+sops-nix/agenix needed for this. **Applied:** a new `host.trustedSshKeys`
+option (`modules/options/hostOpt.nix`, both scopes) consumed by
+`users.users.${config.host.identity.username}.openssh.authorizedKeys.keys` in
+`network.nix` (NixOS hosts) and by a new `flake.modules.homeManager.network`
+export (standalone-HM hosts, e.g. `work.nix`, which have no `services.openssh`
+of their own to declare keys on).
 
-**One clarification worth having before you decide, though:** the thing you'd
-be committing is your *public* key (`id_ed25519.pub`), not the private key.
-Public keys are not secrets — they're safe to publish anywhere (that's the
-entire point of asymmetric crypto: the public half only lets someone verify
-"this connection holds the matching private key," it can't be used to
-authenticate *as* you). Projects commit `authorized_keys`-equivalent public
-keys to public GitHub repos routinely. So `users.users.elichall.openssh.authorizedKeys.keys
-= [ "ssh-ed25519 AAAA..." ]` in this repo would not itself be a leak.
+**Coexistence with app-managed keys (e.g. Claude Code's own SSH access):** on
+NixOS, declared keys land in `/etc/ssh/authorized_keys.d/<user>`, a separate
+file from `~/.ssh/authorized_keys` — `sshd`'s `AuthorizedKeysFile` checks
+both, so anything else appending directly into `~/.ssh/authorized_keys` keeps
+working untouched. Standalone HM (`work.nix`) has no such split available
+(would require editing the foreign distro's system `sshd_config`, outside
+standalone-HM's scope) — so `homeManager.network` uses an idempotent
+append-if-missing `home.activation` script rather than `home.file` full
+ownership, specifically so it never clobbers keys something else wrote to
+that same file. Trade-off: Nix can't prune a key it once added if later
+removed from `host.trustedSshKeys` — acceptable for a file other things
+legitimately share.
 
-Where secrets management *does* become necessary is anything that must stay
-confidential: private keys, API tokens, the Tailscale auth key if you want
-unattended `tailscale up` on new hosts, etc. Two mainstream options if/when
-you want to explore that:
+The t480 (`workstation.nix`/`laptop.nix`) now trusts the work desktop's key; `work.nix`
+now trusts the t480's key. WSL work laptop and Framework 13 aren't real host
+files yet — extending is a one-line append per host once they exist.
 
-- **sops-nix** — encrypts a YAML/JSON file with `age` or GPG keys; the
-  encrypted blob is what's committed, decrypted at activation time into
-  `/run/secrets/*`. Most popular, good multi-host story (encrypt once per
-  recipient key).
-- **agenix** — same idea, narrower scope (age only), simpler to read end to
-  end if you want to understand the mechanism before trusting it.
+**`PasswordAuthentication` stays `true` for now, deliberately** — key-based
+login is being added as an *additional* trusted path, not a replacement, until
+the 2FA idea below covers the "login from an untrusted/non-key-holding device"
+case. Flipping `PasswordAuthentication = false` is still a real follow-up once
+key-based login is verified working end to end (see item 8, new).
 
-**Deferred action:** once you've picked and understood one of the above (or
-decided you're comfortable committing the public key on its own, which needs
-no secrets tooling at all), come back and:
-1. Add `users.users.elichall.openssh.authorizedKeys.keys` (public key — safe
-   to commit standalone) or point it at a file managed by sops-nix/agenix if
-   you want the list itself encrypted for obscurity.
-2. Flip `PasswordAuthentication = false;` and `KbdInteractiveAuthentication =
-   false;` in `network.nix`.
+The original caveat about *not* committing keys before understanding secrets
+management still stands as general guidance for anything that must stay
+confidential (private keys, API tokens, a Tailscale auth key for unattended
+`tailscale up`) — just not applicable to the public keys already wired up
+here.
 
-Not doing this now. Left as a documented follow-up, not a task.
+If encrypting secrets ever becomes relevant (private keys, API tokens, an
+unattended Tailscale auth key), the two mainstream options are **sops-nix**
+(encrypts a file with `age`/GPG, decrypted at activation into
+`/run/secrets/*`, best multi-host story) or **agenix** (same idea, `age`-only,
+simpler to read end to end). Neither is needed for what's wired up now.
+
+**Remaining open sub-item:** flip `PasswordAuthentication = false;` and
+`KbdInteractiveAuthentication = false;` in `network.nix` once key-based login
+is verified working end to end from both directions (t480 ↔ work desktop) —
+tracked as item 8 below, gated on the 2FA design so untrusted devices aren't
+locked out entirely.
 
 ---
 
@@ -303,19 +317,46 @@ understood trade-off rather than the accidental default.
 
 ---
 
+## 8. Second-factor auth for untrusted/non-key-holding devices (new, deferred)
+
+You want a way to SSH in from a device that *isn't* one of your registered
+keypairs — e.g. a borrowed machine or a new device before it's been enrolled
+— without falling back to a bare password. The shape you described is
+Duo/TOTP-style: password + a second factor from something like Duo Mobile or
+a standard authenticator app.
+
+This needs its own research/design pass before implementation — options
+worth comparing when you get to it:
+- **PAM TOTP** (`pam_google_authenticator` or similar) — self-hosted, no
+  third-party service, standard authenticator app (Google Authenticator,
+  Authy, etc.) scans a QR code once per device/account at enrollment.
+- **Duo** — third-party service, push-based approval instead of typing a
+  code, but adds an external dependency or subscription for what's
+  currently a fully self-contained personal setup.
+
+Whichever is chosen, the intended end state is: key-holding devices skip
+straight through (no change to their experience), while a device without a
+registered key falls through to password + second factor instead of being
+locked out entirely. This is why `PasswordAuthentication` was left `true` in
+item 1 rather than disabled outright — disabling it now would remove the
+untrusted-device path this item is meant to secure, not just tighten it.
+
+---
+
 ## Summary / suggested order of implementation
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | SSH key-based auth | **Deferred** — pending your comfort with secrets mgmt or a decision that public keys need none |
+| 1 | SSH key-based auth (authorized_keys) | **Done** — `host.trustedSshKeys` option wired for t480 ↔ work desktop; `PasswordAuthentication` deliberately left on, see item 8 |
 | 2 | `host.hostName` option + fix `network.nix` | **Done** — both hosts still point at `t480-nixos` (same physical machine); revisit at the Framework 13/server split |
 | 3 | `trusted-users` | No action — already correct |
 | 4 | PAM faillock, deny=5 | **Done** — `login`/`sudo`/`sshd`, no hardcoded module path needed |
 | 5 | Tailscale ACL review + `AllowUsers` line | **Still open** — nothing applied yet (needs your input: admin console review, and whether to add `AllowUsers`/try Tailscale SSH) |
 | 6 | 5 sysctl additions | **Done** |
 | 7 | VM/container connection URI awareness | No code change — decision framework for when you start using it |
+| 8 | 2FA/TOTP for untrusted devices | **Deferred** — needs its own design pass (PAM TOTP vs. Duo) |
 
-Remaining open item: **5** — the `AllowUsers` line is still a one-line,
+Remaining open items: **5** — the `AllowUsers` line is still a one-line,
 zero-risk addition whenever you want it, and the Tailscale ACL console review
 plus a decision on Tailscale SSH vs. OpenSSH are yours to make outside this
-repo.
+repo — and **8**, which needs a design pass before any code lands.

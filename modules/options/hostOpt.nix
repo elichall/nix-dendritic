@@ -46,6 +46,18 @@ in
         description = "This machine's network hostname (networking.hostName).";
       };
 
+      # Empty by default — a host trusts no inbound SSH connections until
+      # explicitly told to. Unlike hostName, no-default-required doesn't
+      # apply here: "trusts nobody" is a valid, safe state, not a mistake.
+      trustedSshKeys = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          Public SSH keys (full authorized_keys-format lines) allowed to
+          log in as this host's primary user.
+        '';
+      };
+
       # Tautological inside nixosSystem (a NixOS eval IS NixOS); its real
       # consumer is the HM copy below — standalone-HM hosts set false to
       # enable foreign-distro behavior (e.g. targets.genericLinux).
@@ -112,6 +124,19 @@ in
 
   flake.modules.homeManager.optionsHost = { config, ... }: {
     options.host = {
+      # Empty by default — a host trusts no inbound SSH connections until
+      # explicitly told to. Consumer: homeManager.network (~/.ssh/authorized_keys)
+      # for standalone-HM hosts that aren't NixOS and so have no
+      # services.openssh of their own.
+      trustedSshKeys = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          Public SSH keys (full authorized_keys-format lines) allowed to
+          log in as this host's primary user.
+        '';
+      };
+
       isNixos = lib.mkOption {
         type = lib.types.bool;
         default = stdPractice.isNixos;
