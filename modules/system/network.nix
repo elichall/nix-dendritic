@@ -4,7 +4,7 @@
 # Wired into workstation.nix via `self.modules.nixos.network`.
 { inputs, ... }: {
   flake.modules.nixos.network = { config, ... }: {
-    networking.hostName = "t480-nixos";
+    networking.hostName = config.host.hostName;
     networking.networkmanager.enable = true;
 
     # ssh friendly settings for a laptop

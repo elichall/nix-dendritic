@@ -36,6 +36,16 @@ in
 {
   flake.modules.nixos.optionsHost = { config, ... }: {
     options.host = {
+      # No stdPractice default on purpose: every NixOS host must set this
+      # explicitly so multiple hosts never collide on identity (Tailscale
+      # device list, SSH known_hosts, nftables logs). An unset value should
+      # be a hard eval error, not a silent inherit from whichever host
+      # happened to define the shared default first.
+      hostName = lib.mkOption {
+        type = lib.types.str;
+        description = "This machine's network hostname (networking.hostName).";
+      };
+
       # Tautological inside nixosSystem (a NixOS eval IS NixOS); its real
       # consumer is the HM copy below — standalone-HM hosts set false to
       # enable foreign-distro behavior (e.g. targets.genericLinux).

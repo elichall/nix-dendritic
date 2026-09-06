@@ -25,6 +25,7 @@
 
       # cross-module option declarations (host scaffold + shared options)
       self.modules.nixos.options
+      { host.hostName = "t480-nixos"; }
 
       # pass home-manager as a module to the nixos system configuration
       inputs.home-manager.nixosModules.home-manager
