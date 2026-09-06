@@ -1,6 +1,7 @@
 # development
-nixos/
 results/
 result
 .envrc
 .direnv/
+.claude/
+CLAUDE.md
