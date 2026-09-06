@@ -47,6 +47,7 @@ Nix's determinism is valuable for **hermetic, slow-moving infrastructure and too
     - `documentation/user/` — User-facing guides to system functionality.
       - `user/maintenance.md` — System upkeep (updates, rollback, GC, cheat sheet).
       - `user/research.md` — Research workflow guide.
+      - `user/google-authenticator-non-nixos.md` — SSH key+TOTP 2FA runbook for standalone-HM (non-NixOS) hosts.
   - `_assets/plans/`: Active and archived work plans.
     - `plans/*.md` — Active plans (top-level files).
     - `plans/completed/` — Finished plans (reference only).
