@@ -104,7 +104,6 @@
           '';
 
           initExtra = ''
-            shopt -s histappend
             shopt -s checkwinsize
             # Initialize blesh first
             if [[ $- == *i* ]]; then
