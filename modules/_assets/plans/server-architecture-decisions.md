@@ -54,6 +54,13 @@
 * **Justification:** Decouples hardware constraints (disk UUIDs, kernel modules) from software topology. Future migration to a dedicated target requires writing a new `nixos.hardware-<newTarget>` aspect and updating a single import line in `server.nix`.
 * **Status:** Settled.
 
+### 2.8. SSH Second-Factor Authentication
+* **Decision:** Add `security.pam.services.sshd.googleAuthenticator.enable = true;` (plus `AuthenticationMethods = "publickey,keyboard-interactive";` in the server's `services.openssh.settings`) when this host goes live. Google Authenticator TOTP, not Duo or privacyIDEA.
+* **Justification:** Already implemented and verified on the work-desktop host (a standalone-HM machine with no Nix authority over PAM, so that one required a manual runbook) — see `2fa-select-hosts-research.md`. Chosen there for zero cost, zero third-party account, and zero external service in the auth path; the server host inherits the same reasoning but gets to be fully declarative since it's NixOS. This is a genuinely native nixpkgs option (`security.pam.services.<name>.googleAuthenticator`, backed by `pkgs.google-authenticator-libpam`), not a hand-rolled PAM rule.
+* **Carry over from the work-desktop rollout, applies here too:** check whether Tailscale SSH (`tailscale up --ssh`) is active on this host before assuming the PAM/`sshd_config` change takes effect — it silently intercepts port 22 over the tailnet interface and supersedes the real `sshd` entirely if enabled, which is what actually blocked the work-desktop rollout at first. Verify with `ssh -v <host> true 2>&1 | grep "remote software version"` — `OpenSSH_...` confirms you're reaching the real daemon.
+* **Verified:** `security.pam.services.<name>.googleAuthenticator.enable` and `pkgs.google-authenticator-libpam` both confirmed present against the pinned nixpkgs release-26.05 source.
+* **Status:** Deferred — not implemented, no server host exists yet. Revisit alongside `nixos.security`/`nixos.network` when `server.nix` is actually built (§2.2, §3).
+
 ## 3. `nixos.base` Group Scope Audit
 
 **Problem identified:** `nixos.base` currently bundles `nixos.battery` and `nixos.audio`, which are workstation-specific:
@@ -61,9 +68,9 @@
 * `nixos.audio` (PipeWire) — desktop/laptop-only; a headless server does not run an audio stack.
 
 **Decision:** `server.nix` should **not** import `nixos.base`. Instead, import the individual headless-safe aspects directly:
-* `nixos.network` — Networking, firewall, Tailscale, SSH.
+* `nixos.network` — Networking, firewall, Tailscale, SSH. Also where `AuthenticationMethods` for the §2.8 2FA decision lands.
 * `nixos.hardware` — fstrim, fwupd, earlyoom (generic, no laptop assumptions).
-* `nixos.security` — Kernel sysctl hardening.
+* `nixos.security` — Kernel sysctl hardening, PAM faillock lockout, and (per §2.8) Google Authenticator TOTP for SSH.
 
 **Future option:** Create a `nixos.serverBase` group aggregating these three, plus any server-specific additions (see §4). This keeps the host file clean while avoiding polluting the existing `nixos.base` group with conditionals.
 
