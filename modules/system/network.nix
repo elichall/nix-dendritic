@@ -15,7 +15,14 @@
       enable = true;
       settings = {
         PermitRootLogin = "no";
-        PasswordAuthentication = true;
+        # Key-based trust (host.trustedSshKeys) is verified working fleet-wide
+        # (t480 <-> work desktop, iPhone -> t480) — password auth is no longer
+        # the only path in, so it's off. If a non-fleet-device fallback is
+        # ever needed, see modules/_assets/plans/outside-fleet-totp-auth.md —
+        # that reintroduces access via keyboard-interactive/PAM (password +
+        # TOTP), not by flipping this back to true.
+        PasswordAuthentication = false;
+        KbdInteractiveAuthentication = false;
         MaxAuthTries = 3;
       };
     };

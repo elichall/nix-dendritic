@@ -54,12 +54,11 @@ one-line append per host once they exist.
   the work desktop after `nix build .#homeConfigurations.work.activationPackage
   && ./result/activate`.
 
-**`PasswordAuthentication` stays `true` for now, deliberately** — key-based
-login is being added as an *additional* trusted path, not a replacement, until
-the 2FA idea below covers the "login from an untrusted/non-key-holding device"
-case. Flipping `PasswordAuthentication = false` is still a real follow-up now
-that key-based login is verified working end to end (see item 8, raised
-priority).
+**Update — `PasswordAuthentication = false` is now DONE.** Key-based login
+was verified fleet-wide (work desktop, iPhone/Termius) before flipping this,
+per the original plan. `modules/system/network.nix` now sets both
+`PasswordAuthentication = false;` and `KbdInteractiveAuthentication = false;`
+on the t480.
 
 **New concern raised by the work-desktop test, worth flagging explicitly:**
 before this change, reaching the work desktop over Tailscale required an
@@ -83,12 +82,6 @@ unattended Tailscale auth key), the two mainstream options are **sops-nix**
 (encrypts a file with `age`/GPG, decrypted at activation into
 `/run/secrets/*`, best multi-host story) or **agenix** (same idea, `age`-only,
 simpler to read end to end). Neither is needed for what's wired up now.
-
-**Remaining open sub-item:** flip `PasswordAuthentication = false;` and
-`KbdInteractiveAuthentication = false;` in `network.nix` once key-based login
-is verified working end to end from both directions (t480 ↔ work desktop) —
-tracked as item 8 below, gated on the 2FA design so untrusted devices aren't
-locked out entirely.
 
 ---
 
@@ -422,7 +415,7 @@ solved by `PasswordAuthentication` at all.
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | SSH key-based auth (authorized_keys) | **Done, verified end to end** — t480 ↔ work desktop and iPhone → t480 all confirmed working (`ssh dakota whoami`, Termius); `PasswordAuthentication` deliberately left on, see item 8 |
+| 1 | SSH key-based auth + disable `PasswordAuthentication` | **Done, fully** — key trust verified fleet-wide, then `PasswordAuthentication`/`KbdInteractiveAuthentication` set to `false` on the t480 |
 | 2 | `host.hostName` option + fix `network.nix` | **Done** — both hosts still point at `t480-nixos` (same physical machine); revisit at the Framework 13/server split |
 | 3 | `trusted-users` | No action — already correct |
 | 4 | PAM faillock, deny=5 | **Done** — `login`/`sudo`/`sshd`, no hardcoded module path needed |
