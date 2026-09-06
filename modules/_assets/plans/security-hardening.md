@@ -38,15 +38,39 @@ that same file. Trade-off: Nix can't prune a key it once added if later
 removed from `host.trustedSshKeys` — acceptable for a file other things
 legitimately share.
 
-The t480 (`workstation.nix`/`laptop.nix`) now trusts the work desktop's key; `work.nix`
-now trusts the t480's key. WSL work laptop and Framework 13 aren't real host
-files yet — extending is a one-line append per host once they exist.
+The t480 (`workstation.nix`/`laptop.nix`) trusts the work desktop's and the
+iPhone's (Termius) keys; `work.nix` trusts the t480's and the iPhone's keys.
+WSL work laptop and Framework 13 aren't real host files yet — extending is a
+one-line append per host once they exist.
+
+**Verified end to end, both directions, both machines:**
+- iPhone (Termius) → t480: connects with the key, no password prompt, once
+  Tailscale itself was reachable from the phone (the actual blocker that day
+  — Tailscale's VPN extension had gone idle on iOS, unrelated to this repo).
+- t480 → work desktop (`dakota` on Tailscale): `ssh dakota whoami` returns
+  `elichall` with `BatchMode=yes` (would hard-fail rather than fall back to a
+  password prompt) — confirms `work.nix`'s `homeManager.network` activation
+  script correctly appended the t480's key into `~/.ssh/authorized_keys` on
+  the work desktop after `nix build .#homeConfigurations.work.activationPackage
+  && ./result/activate`.
 
 **`PasswordAuthentication` stays `true` for now, deliberately** — key-based
 login is being added as an *additional* trusted path, not a replacement, until
 the 2FA idea below covers the "login from an untrusted/non-key-holding device"
-case. Flipping `PasswordAuthentication = false` is still a real follow-up once
-key-based login is verified working end to end (see item 8, new).
+case. Flipping `PasswordAuthentication = false` is still a real follow-up now
+that key-based login is verified working end to end (see item 8, raised
+priority).
+
+**New concern raised by the work-desktop test, worth flagging explicitly:**
+before this change, reaching the work desktop over Tailscale required an
+active step on that end (the work desktop's Tailscale client isn't a
+persistent boot-time service the way the t480's is — see the Tailscale
+client-persistence discussion below) that may have doubled as a soft
+re-authentication gate. Key-based SSH now succeeds in one shot with no such
+gate in the loop. For a personal machine that's a pure improvement; for a
+work-owned machine holding proprietary data, it's a real access-control
+regression from the employer's point of view — the argument for treating
+item 8 as higher priority *specifically for that host*, not a nice-to-have.
 
 The original caveat about *not* committing keys before understanding secrets
 management still stands as general guidance for anything that must stay
@@ -317,29 +341,80 @@ understood trade-off rather than the accidental default.
 
 ---
 
-## 8. Second-factor auth for untrusted/non-key-holding devices (new, deferred)
+## 8. Second-factor auth for select hosts — DONE on the work desktop
 
-You want a way to SSH in from a device that *isn't* one of your registered
-keypairs — e.g. a borrowed machine or a new device before it's been enrolled
-— without falling back to a bare password. The shape you described is
-Duo/TOTP-style: password + a second factor from something like Duo Mobile or
-a standard authenticator app.
+**Implemented and verified:** see
+[`2fa-select-hosts-research.md`](./2fa-select-hosts-research.md) for the full
+research (personal Duo account, Baylor's institutional Duo, privacyIDEA,
+Tailscale SSH check mode) plus the compliance flag specific to this host
+(Baylor lab machine, ITAR/DoD-contracted work — verifying with your PI/
+Baylor's IT security process is still the right move independent of which
+technical option was picked). **Google Authenticator TOTP was chosen** —
+zero cost, zero account/signup, zero third-party service in the auth path —
+and is now the **preferred pathway** for 2FA on this fleet going forward.
+SSH into the work desktop now requires the t480's key *and* a TOTP code, no
+Unix password anywhere in the flow. That doc's §4 has the full runbook and
+the gotchas actually hit (Tailscale SSH silently superseding the real
+`sshd`, a client-config/server-config filename mixup, a PAM double-auth
+overcorrection, and a same-filename key mixup across hosts) — worth reading
+before doing this again on another host.
 
-This needs its own research/design pass before implementation — options
+**Remaining work, not this host:** the future NixOS server host (t480,
+post-Framework-13-handoff) will very likely need the same treatment,
+declaratively this time (`security.pam.services.<name>.googleAuthenticator.enable`
+in `security.nix`, plus `AuthenticationMethods` in `network.nix`) — see
+`2fa-select-hosts-research.md` §9. Not implemented since that host doesn't
+exist yet.
+
+**Original priority-raise context, for the record:** following the
+work-desktop key-trust test, key-based SSH worked end to end with no
+secondary gate at all
+(see the flag at the end of item 1). For a work-owned machine holding
+proprietary data, "any personal device holding the right key gets in, no
+second factor" is a real concern — you specifically don't want that machine
+left with effectively no failsafe/independent check once the key-only path
+is what's actually used day to day. This is no longer just a "nice to have
+for borrowed devices" item; it's now the top open item for the work desktop
+specifically.
+
+**Scope: per-host, not fleet-wide.** This should land as a property of
+individual hosts (the work desktop first; the t480/personal devices are
+lower priority since the "failsafe if I lose my key" risk there is entirely
+your own to accept) — not a single fleet-wide policy. It composes naturally
+with the existing per-host `host.trustedSshKeys` design: a future
+`host.require2fa` (or similar) option would let `network.nix`/`homeManager.network`
+branch per host as trust-model needs already do.
+
+**Two use cases this needs to cover, not just one:**
+1. **Untrusted/non-key-holding device** (a borrowed machine, a new device
+   before enrollment) — falls through to password + second factor instead of
+   being locked out entirely.
+2. **Key-holding device on a sensitive host** (the work desktop case just
+   found) — even a *registered* key shouldn't be sufficient on its own for
+   that specific machine; the second factor should apply there regardless of
+   whether the connecting device already holds a trusted key. This is the
+   part the original framing (item 8 as originally written) didn't cover and
+   the work-desktop test surfaced.
+
+This still needs its own research/design pass before implementation — options
 worth comparing when you get to it:
 - **PAM TOTP** (`pam_google_authenticator` or similar) — self-hosted, no
   third-party service, standard authenticator app (Google Authenticator,
-  Authy, etc.) scans a QR code once per device/account at enrollment.
+  Authy, etc.) scans a QR code once per device/account at enrollment. Can be
+  layered so it fires unconditionally on a given host regardless of key
+  auth, addressing use case 2 above.
 - **Duo** — third-party service, push-based approval instead of typing a
   code, but adds an external dependency or subscription for what's
-  currently a fully self-contained personal setup.
+  currently a fully self-contained personal setup. Also worth checking
+  whether your employer already runs Duo for other systems — if so,
+  integrating with their existing instance may be preferable to standing up
+  a separate personal one on a work-owned machine.
 
-Whichever is chosen, the intended end state is: key-holding devices skip
-straight through (no change to their experience), while a device without a
-registered key falls through to password + second factor instead of being
-locked out entirely. This is why `PasswordAuthentication` was left `true` in
-item 1 rather than disabled outright — disabling it now would remove the
-untrusted-device path this item is meant to secure, not just tighten it.
+`PasswordAuthentication` staying `true` in item 1 was specifically to keep
+use case 1's fallback path open — disabling it now would remove the
+untrusted-device path this item is meant to secure, not just tighten it. Use
+case 2 (key-holder still gated) is a separate mechanism layered on top, not
+solved by `PasswordAuthentication` at all.
 
 ---
 
@@ -347,16 +422,17 @@ untrusted-device path this item is meant to secure, not just tighten it.
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | SSH key-based auth (authorized_keys) | **Done** — `host.trustedSshKeys` option wired for t480 ↔ work desktop; `PasswordAuthentication` deliberately left on, see item 8 |
+| 1 | SSH key-based auth (authorized_keys) | **Done, verified end to end** — t480 ↔ work desktop and iPhone → t480 all confirmed working (`ssh dakota whoami`, Termius); `PasswordAuthentication` deliberately left on, see item 8 |
 | 2 | `host.hostName` option + fix `network.nix` | **Done** — both hosts still point at `t480-nixos` (same physical machine); revisit at the Framework 13/server split |
 | 3 | `trusted-users` | No action — already correct |
 | 4 | PAM faillock, deny=5 | **Done** — `login`/`sudo`/`sshd`, no hardcoded module path needed |
 | 5 | Tailscale ACL review + `AllowUsers` line | **Still open** — nothing applied yet (needs your input: admin console review, and whether to add `AllowUsers`/try Tailscale SSH) |
 | 6 | 5 sysctl additions | **Done** |
 | 7 | VM/container connection URI awareness | No code change — decision framework for when you start using it |
-| 8 | 2FA/TOTP for untrusted devices | **Deferred** — needs its own design pass (PAM TOTP vs. Duo) |
+| 8 | 2FA for select hosts (work desktop first) | **Done** — Google Authenticator TOTP live on the work desktop, key+TOTP verified end to end; now the preferred pathway; NixOS server host (future) still pending, see `2fa-select-hosts-research.md` §9 |
 
-Remaining open items: **5** — the `AllowUsers` line is still a one-line,
+Remaining open item: **5** — the `AllowUsers` line is still a one-line,
 zero-risk addition whenever you want it, and the Tailscale ACL console review
 plus a decision on Tailscale SSH vs. OpenSSH are yours to make outside this
-repo — and **8**, which needs a design pass before any code lands.
+repo. Item **8** is done for the work desktop; its only remaining piece is
+the future NixOS server host, not actionable until that host exists.
