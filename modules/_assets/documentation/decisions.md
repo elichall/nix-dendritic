@@ -734,6 +734,135 @@ imported in flake-parts wiring or multiple files defining
 
 ---
 
+### 58. PAM faillock lockout + kernel sysctl hardening batch
+**Decision:** `nixos.security` gained `security.pam.services.{login,sudo,sshd}.logFailures
+= true` + `rules.auth.faillock.settings = { deny = 5; unlock_time = 900; }`
+(5 failed attempts → 15 min lockout), plus five sysctl additions:
+`kernel.yama.ptrace_scope`, `kernel.dmesg_restrict`, `net.ipv4.tcp_syncookies`,
+`fs.protected_hardlinks`, `fs.protected_symlinks`.
+**Why:** Audit of `modules/system/{network,security}.nix` against the
+multihost Tailscale-SSH workflow found no lockout policy and easy sysctl
+wins with no downside. `logFailures = true` turns on nixpkgs' own built-in
+`pam_faillock` rule — no hardcoded `modulePath` needed, it resolves from
+`config.security.pam.package` internally.
+**Gotchas hit:** `security.pam.services.<name>.rules` is upstream-flagged
+experimental ("subject to breaking changes without notice") — re-check
+against the pinned nixpkgs's `pam.nix` after any nixpkgs bump.
+**Where:** `modules/system/security.nix`, `modules/_assets/plans/security-hardening.md`
+items 4/6.
+
+---
+
+### 59. `host.trustedSshKeys` — declarative inter-device SSH trust, then disable password auth
+**Decision:** New dual-scope option `host.trustedSshKeys` (list of
+authorized_keys-format strings, default `[ ]`) in `hostOpt.nix`, consumed by
+`users.users.${config.host.identity.username}.openssh.authorizedKeys.keys`
+on NixOS hosts and by a new `flake.modules.homeManager.network` export on
+standalone-HM hosts. Once verified working fleet-wide (t480 ↔ work desktop,
+iPhone/Termius → t480), `services.openssh.settings.PasswordAuthentication`
+and `KbdInteractiveAuthentication` were set to `false` on the t480.
+**Why:** The existing SSH story rested entirely on an unmanaged account
+password. The keys involved were already public (pre-existing, separately
+GitHub-registered per device) — no secrets-management blocker, since public
+keys are safe to commit standalone.
+**Key sub-decisions:**
+- **NixOS vs. standalone-HM authority split**: NixOS renders declared keys
+  to `/etc/ssh/authorized_keys.d/<user>`, a file separate from
+  `~/.ssh/authorized_keys` — `sshd`'s `AuthorizedKeysFile` checks both, so
+  this coexists with anything else appending directly to the home-dir file
+  (e.g. Claude Code's own SSH access). Standalone HM has no such split
+  available (would require editing the foreign distro's system
+  `sshd_config`) — `homeManager.network` instead uses an **idempotent
+  append-if-missing `home.activation` script**, not `home.file` full
+  ownership, specifically so it never clobbers keys something else wrote.
+  Trade-off: Nix can't prune a key it once added if later removed from the
+  option — acceptable for a file other things legitimately share.
+- **`host.hostName` promoted the same session** (no default, nixos-scope
+  only — an unset value is a hard eval error) after auditing
+  `networking.hostName` for the same reason: `workstation`/`laptop` are two
+  configs for the *same* physical t480 today, so sharing a hostname is
+  correct now, but the option exists so the Framework 13/server split can
+  diverge without an untangling job later.
+**Gotchas hit:** a literal `elichall` was hardcoded on the first pass of the
+`authorizedKeys.keys` line — fixed to `config.host.identity.username`.
+Tailscale SSH (`tailscale up --ssh`) silently intercepts port 22 over the
+tailnet interface, superseding the real `sshd` entirely — this blocked
+verification on the work desktop until `tailscale set --ssh=false` was run
+there; check `ssh -v <host> true 2>&1 | grep "remote software version"`
+(`OpenSSH_...` vs `Tailscale`) on any future host before assuming a
+PAM/sshd change takes effect.
+**Where:** `modules/options/hostOpt.nix`, `modules/system/network.nix`,
+`modules/hosts/{workstation,laptop}.nix`, `modules/hosts/derivations/work.nix`,
+contract C29, `modules/_assets/plans/security-hardening.md` items 1-2.
+
+---
+
+### 60. Google Authenticator TOTP chosen for SSH 2FA on select hosts
+**Decision:** Google Authenticator TOTP (`pam_google_authenticator`) was
+chosen over personal/institutional Duo, self-hosted privacyIDEA, and
+Tailscale SSH check mode for 2FA on the work desktop — implemented there via
+a manual runbook (standalone HM has no PAM authority), plus a new
+NixOS-only `host.require2fa` scaffolding option (default `false`) for the
+future server host.
+**Why:** Least setup friction of everything researched (no signup, no
+account of any kind, no ambiguity about free-tier feature gates), and it
+removes third-party SaaS from the auth path entirely — a genuine plus given
+the work desktop is a Baylor University lab machine doing ITAR/DoD-contracted
+work (compliance verification with the PI/institution's IT security process
+recommended independent of which technical option was chosen).
+**Key sub-decisions:**
+- `host.require2fa` is **NixOS-scope only** (no `homeManager` counterpart)
+  — standalone-HM hosts have no PAM authority to consume it regardless.
+  Wired into `security.nix` (`security.pam.services.sshd.googleAuthenticator.enable
+  = config.host.require2fa`) and `network.nix`
+  (`AuthenticationMethods = lib.mkIf config.host.require2fa "publickey,keyboard-interactive"`,
+  `mkIf` so the key is entirely absent — not merely `false` — when unused).
+  Verified inert on both current hosts before committing.
+**Gotchas hit** (all on the work desktop's manual runbook — see
+`modules/_assets/documentation/user/google-authenticator-non-nixos.md` for
+the full troubleshooting table): Tailscale SSH interception (same as #59);
+`/etc/ssh/ssh_config` (client) vs `/etc/ssh/sshd_config` (server) — a
+one-letter filename mixup that fails silently rather than erroring;
+stacking `pam_google_authenticator.so` above an un-removed `@include
+common-auth` required both the TOTP code AND the Unix password (three
+factors instead of two) until `common-auth` was commented out;
+`ssh-keygen -p`/`-y` run from inside an active SSH session to the *other*
+host edits/verifies that host's key, not the one presumed — caught via
+unchanged file `mtime` (a real `ssh-keygen -p` always rewrites the file).
+**Where:** `modules/options/hostOpt.nix`, `modules/system/{security,network}.nix`,
+`modules/_assets/plans/completed/2fa-select-hosts-research.md`,
+`modules/_assets/documentation/user/google-authenticator-non-nixos.md`,
+contract C29.
+
+---
+
+### 61. Outside-fleet password+TOTP fallback — considered, not pursued
+**Decision:** A password+TOTP fallback for SSH from a device without a
+registered `host.trustedSshKeys` entry (needed once `PasswordAuthentication`
+was disabled, decision #59) was designed — `AuthenticationMethods =
+"publickey keyboard-interactive"` as alternative method-sets, PAM requiring
+both the account password and TOTP on the no-key branch — then deliberately
+**not implemented**.
+**Why:** A standing, always-network-reachable password path (even
+TOTP-gated) runs against where common practice actually points: the
+industry trend is away from password fallbacks (short-lived SSH
+certificates, not passwords, are the modern answer to "flexible access"),
+the scenario is compound-rare (requires losing every registered device
+simultaneously — the t480 also always has non-network console access), and
+the original motivation (a bulk-deployment tooling wrapper needing "access
+from anywhere") turned out to be orthogonal — deploying config onto a new
+machine via this flake doesn't require the *existing* fleet to accept
+*inbound* connections from it.
+**Kept for later:** a genuine offline **break-glass** keypair (private half
+on a USB drive, never on a networked device, combined with the account
+password and TOTP) is architecturally different — reachable only by
+physical possession, not by anything sitting on the network — and worth
+building properly if a real need for this shows up.
+**Where:** `modules/_assets/plans/deferred/outside-fleet-totp-auth.md`,
+`modules/_assets/plans/security-hardening.md` item 9.
+
+---
+
 ## Appendix — decision source index
 
 | # | Decision | AGENTS.md | TODO.md | Skill | Doc |
@@ -795,3 +924,7 @@ imported in flake-parts wiring or multiple files defining
 | 55 | `mimeDefaults.nix` merged into `mime.nix` (single file, dual scope) | Rule 1 | Option A cleanup | — | module-contracts C4, C16 |
 | 56 | Host option scaffold — dual-scope `host.*`, shared let-in defaults | §4 | wsl-linux-hosts plan | options-architecture | module-contracts C28 |
 | 57 | WSL interop shims (vendored win32yank, native wslview) | Rule 4 | wsl-linux-hosts plan | package-provisioning | module-contracts C28 |
+| 58 | PAM faillock + sysctl hardening batch | — | — | — | security-hardening.md §4/§6 |
+| 59 | `host.trustedSshKeys` + disable password auth | §4 | — | options-architecture | module-contracts C29, security-hardening.md §1-2 |
+| 60 | Google Authenticator TOTP 2FA + `host.require2fa` scaffold | §4 | — | options-architecture | module-contracts C29, completed/2fa-select-hosts-research.md, google-authenticator-non-nixos.md |
+| 61 | Outside-fleet fallback auth — considered, not pursued | — | — | — | deferred/outside-fleet-totp-auth.md |

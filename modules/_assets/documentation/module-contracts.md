@@ -514,7 +514,15 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   "option does not exist"). Registered via both classes' `options` groups in
   `groups/options.nix`.
 - **Tree**: `host.{isNixos, isWsl, displayProtocol (x11|wayland), shell
-  (bash|zsh|fish), identity.{username, email, gitUsername, gitEmail}}`.
+  (bash|zsh|fish), identity.{username, email, gitUsername, gitEmail},
+  hostName, trustedSshKeys, require2fa}`.
+  - `hostName` (nixos-scope only, **no default** — unset is a hard eval
+    error by design, unlike every other option here) and `require2fa`
+    (nixos-scope only, default `false`) deliberately break from the
+    "shared `stdPractice` default" pattern below; see contract C29 for why.
+  - `trustedSshKeys` (both scopes, `listOf str`, default `[ ]`) is the one
+    exception that's dual-scope but still doesn't use `stdPractice` — empty
+    list needs no cross-scope literal sharing.
 - **Purpose**: scaffolds the *possibility space* of a host so future hosts are
   thin templates (clone repo → set a few overrides → build). Defaults encode
   the user's standard practice; options may exist ahead of consumers (each
@@ -532,13 +540,79 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - **Consumers**: `homeManager.git` reads `identity.gitUsername/gitEmail`;
   `homeManager.clipboard` branches on `displayProtocol` + `isWsl`; the inline
   base blocks of standalone hosts derive `home.username` from
-  `identity.username`. Planned: cmdLine on `shell`;
-  `targets.genericLinux.enable` already set manually on standalone hosts.
+  `identity.username`. `nixos.network` reads `hostName` and
+  `trustedSshKeys`; `homeManager.network` reads `trustedSshKeys`;
+  `nixos.security`/`nixos.network` read `require2fa` (contract C29). Planned:
+  cmdLine on `shell`; `targets.genericLinux.enable` already set manually on
+  standalone hosts.
 - **Import order**: hosts import `<class>.options` BEFORE feature aspects —
   git aspect hard-depends on the declarations.
 - **Gotchas**: new files must be `git add`ed before flake evals see them
   (import-tree reads tracked files only); `--raw` eval output cannot print
   booleans (use `--json`).
+
+---
+
+### C29. SSH key trust + 2FA scaffolding (`network.nix` ↔ `security.nix` ↔ `hostOpt.nix`)
+- **Owner**: `modules/system/network.nix` exports both
+  `flake.modules.nixos.network` and `flake.modules.homeManager.network` from
+  the same file (dendritic convention — one feature, both scopes). PAM/2FA
+  enforcement lives in `flake.modules.nixos.security`
+  (`modules/system/security.nix`); the three consumed `host.*` options are
+  declared in `modules/options/hostOpt.nix` (see C28).
+- **The NixOS-vs-standalone-HM authority split governs every piece of this
+  contract**: a NixOS host has full Nix authority over `sshd`/PAM; a
+  standalone-HM host (foreign distro, e.g. `work.nix`) has none — it can
+  only manage plain user-space files like `~/.ssh/authorized_keys`, never
+  `/etc/ssh/sshd_config` or `/etc/pam.d/*`. Every sub-contract below exists
+  because of this split, not by coincidence.
+- **`host.trustedSshKeys` (inbound key trust)**:
+  - NixOS: `users.users.${config.host.identity.username}.openssh.authorizedKeys.keys`
+    — NixOS renders this to `/etc/ssh/authorized_keys.d/<user>`, a file
+    `sshd`'s `AuthorizedKeysFile` checks *alongside* (not instead of)
+    `~/.ssh/authorized_keys`, so this never collides with anything else
+    (Claude Code's own SSH access, manual entries) writing directly to the
+    home-dir file.
+  - Standalone HM: `homeManager.network`'s `home.activation` script
+    **appends idempotently** to `~/.ssh/authorized_keys`
+    (`grep -qxF ... || echo ...`) rather than declaring `home.file`
+    ownership of the whole file — deliberate, so it can never clobber a key
+    something else added to that shared file. Trade-off accepted: Nix can't
+    prune a key it once added if later removed from the option.
+- **`host.hostName` (identity)**: nixos-scope only, **no default** — an
+  unset value is a hard eval error by design (every other `host.*` option
+  defaults via `stdPractice`; this one deliberately doesn't). Consumed by
+  `networking.hostName` in `nixos.network`. `workstation`/`laptop` currently
+  share the same value on purpose (same physical t480); the option exists
+  so a future genuinely-distinct host (Framework 13, server) can diverge
+  without restructuring anything.
+- **`host.require2fa` (2FA scaffolding)**: nixos-scope only, default
+  `false`, **currently unused by any host** — pure scaffolding for the
+  future server host. `nixos.security`:
+  `security.pam.services.sshd.googleAuthenticator.enable = config.host.require2fa;`.
+  `nixos.network`: `services.openssh.settings.AuthenticationMethods =
+  lib.mkIf config.host.require2fa "publickey,keyboard-interactive";` — uses
+  `mkIf` specifically so the key is *absent* (matching upstream's default
+  "any configured method" behavior) rather than merely set to a false-ish
+  value when unused.
+- **2FA on standalone-HM hosts is manual, not declarative** — there is no
+  Nix-managed equivalent to `require2fa` for foreign distros; the work
+  desktop's Google Authenticator setup was done by hand following
+  `modules/_assets/documentation/user/google-authenticator-non-nixos.md`.
+  Do not attempt to "wire this into `homeManager.network`" — the authority
+  to touch PAM/`sshd_config` doesn't exist at that scope.
+- **Tailscale SSH interaction (cross-cutting gotcha, not specific to one
+  side of the split)**: if `tailscale up --ssh` is active on a host,
+  `tailscaled` intercepts port 22 for connections arriving over the
+  `tailscale0` interface *before* the real `sshd` ever sees them — silently
+  defeating every contract above with no error. Check first on any host:
+  `ssh -v <host> true 2>&1 | grep "remote software version"`
+  (`OpenSSH_...` = real daemon reached; `Tailscale` = intercepted, run
+  `tailscale set --ssh=false`).
+- **Where**: `modules/system/network.nix`, `modules/system/security.nix`,
+  `modules/options/hostOpt.nix`, decisions #58-61,
+  `modules/_assets/plans/security-hardening.md`,
+  `modules/_assets/plans/completed/2fa-select-hosts-research.md`.
 
 ---
 

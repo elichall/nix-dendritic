@@ -337,7 +337,7 @@ understood trade-off rather than the accidental default.
 ## 8. Second-factor auth for select hosts — DONE on the work desktop
 
 **Implemented and verified:** see
-[`2fa-select-hosts-research.md`](./2fa-select-hosts-research.md) for the full
+[`completed/2fa-select-hosts-research.md`](./completed/2fa-select-hosts-research.md) for the full
 research (personal Duo account, Baylor's institutional Duo, privacyIDEA,
 Tailscale SSH check mode) plus the compliance flag specific to this host
 (Baylor lab machine, ITAR/DoD-contracted work — verifying with your PI/
@@ -356,7 +356,7 @@ before doing this again on another host.
 post-Framework-13-handoff) will very likely need the same treatment,
 declaratively this time (`security.pam.services.<name>.googleAuthenticator.enable`
 in `security.nix`, plus `AuthenticationMethods` in `network.nix`) — see
-`2fa-select-hosts-research.md` §9. Not implemented since that host doesn't
+`completed/2fa-select-hosts-research.md` §9. Not implemented since that host doesn't
 exist yet.
 
 **Original priority-raise context, for the record:** following the
@@ -450,7 +450,7 @@ full reasoning.
 | 5 | Tailscale ACL review + `AllowUsers` line | **Still open** — nothing applied yet (needs your input: admin console review, and whether to add `AllowUsers`/try Tailscale SSH) |
 | 6 | 5 sysctl additions | **Done** |
 | 7 | VM/container connection URI awareness | No code change — decision framework for when you start using it |
-| 8 | 2FA for select hosts (work desktop first) | **Done** — Google Authenticator TOTP live on the work desktop, key+TOTP verified end to end; now the preferred pathway; NixOS server host (future) still pending, see `2fa-select-hosts-research.md` §9 |
+| 8 | 2FA for select hosts (work desktop first) | **Done** — Google Authenticator TOTP live on the work desktop, key+TOTP verified end to end; now the preferred pathway; NixOS server host (future) still pending, see `completed/2fa-select-hosts-research.md` §9 |
 | 9 | Outside-fleet fallback auth (no key → password+TOTP) | **Considered, not pursued** — see `deferred/outside-fleet-totp-auth.md`; offline break-glass USB key kept as a possible future item, not in scope |
 
 Remaining open item: **5** — the `AllowUsers` line is still a one-line,

@@ -7,10 +7,10 @@ standalone HM has no authority over system PAM/`sshd` (same limitation
 already true for `authorized_keys`/`sshd_config` generally; see
 `AGENTS.md`/`security-hardening.md` for why). If the target host is
 **NixOS**, don't use this doc — see
-`modules/_assets/plans/2fa-select-hosts-research.md` §9 for the declarative
+`modules/_assets/plans/completed/2fa-select-hosts-research.md` §9 for the declarative
 equivalent instead.
 
-Companion reading: `modules/_assets/plans/2fa-select-hosts-research.md` (why
+Companion reading: `modules/_assets/plans/completed/2fa-select-hosts-research.md` (why
 TOTP was chosen over Duo/privacyIDEA/Tailscale check mode) and
 `modules/_assets/plans/security-hardening.md` item 8 (the decision record).
 

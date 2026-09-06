@@ -355,3 +355,51 @@ writes, adaptive via detection shim → `.apply` args + runtime sniffing).
   `theme.icon` eval shows all 3 (claude U+EC82/systemd U+F085/opencode
   U+F120), built theme.toml (`ls76iik6mpwmr59m9jivr2rr1hdy3r92-yazi-theme`)
   confirmed entries
+
+## SSH key trust + 2FA hardening (DONE, 2026-09-06)
+
+- [x] Security audit of `modules/system/{network,security,sandbox,hardware}.nix`
+  against the multihost Tailscale-SSH workflow → `_assets/plans/security-hardening.md`.
+  Applied: `host.hostName` (no-default, nixos-scope-only option replacing a
+  hardcoded string), PAM faillock lockout (`deny=5`, `unlock_time=900` on
+  `login`/`sudo`/`sshd`), 5 sysctl hardening additions, `AllowUsers` still
+  open (needs Tailscale ACL console review, out of repo scope).
+- [x] `host.trustedSshKeys` (dual-scope, `listOf str`, default `[ ]`) —
+  declarative inter-device SSH key trust. NixOS:
+  `authorizedKeys.keys` → `/etc/ssh/authorized_keys.d/<user>` (coexists with
+  `~/.ssh/authorized_keys`). Standalone HM: idempotent append-only
+  `home.activation` script (new `flake.modules.homeManager.network`).
+  Verified end to end: iPhone (Termius) → t480, t480 ↔ work desktop
+  (`ssh dakota whoami`). `PasswordAuthentication`/`KbdInteractiveAuthentication`
+  then set to `false` on the t480 once verified.
+- [x] Google Authenticator TOTP chosen for SSH 2FA on the work desktop
+  (over personal/institutional Duo, self-hosted privacyIDEA, Tailscale SSH
+  check mode — full comparison in `_assets/plans/completed/2fa-select-hosts-research.md`)
+  — zero cost, zero account, zero third-party service in the auth path,
+  relevant given the work desktop is a Baylor lab machine doing
+  ITAR/DoD-contracted work. Manual runbook (standalone HM has no PAM
+  authority) — every gotcha hit (Tailscale SSH silently superseding `sshd`
+  until `tailscale set --ssh=false`; `/etc/ssh/ssh_config` vs `sshd_config`;
+  a PAM triple-auth overcorrection from an un-removed `@include
+  common-auth`; cross-host key-passphrase mixups caught via `mtime`)
+  captured in the new
+  `_assets/documentation/user/google-authenticator-non-nixos.md` guide.
+  Verified: key + TOTP required, no Unix password in the flow.
+- [x] `host.require2fa` (nixos-scope only, default `false`) — declarative
+  scaffolding for the future server host: flips
+  `security.pam.services.sshd.googleAuthenticator.enable` and adds
+  `AuthenticationMethods = "publickey,keyboard-interactive"` (via `mkIf`,
+  so the key is absent rather than merely off when unused). Verified inert
+  on both current hosts.
+- [x] Outside-fleet password+TOTP fallback (for a device without a
+  registered key, once password auth was disabled) — designed, then
+  deliberately **not pursued**: goes against where common practice points
+  (pubkey-only + curated device list over a standing password path), the
+  scenario is compound-rare, and the bulk-deployment-tooling motivation
+  turned out to be orthogonal. Moved to
+  `_assets/plans/deferred/outside-fleet-totp-auth.md`; an offline
+  break-glass USB keypair kept as a distinct, architecturally different
+  idea if a real need ever appears.
+- [x] Unified into the canonical knowledge base: decisions #58-61 in
+  `_assets/documentation/decisions.md`, contract C29 (and C28 extended) in
+  `_assets/documentation/module-contracts.md`.
