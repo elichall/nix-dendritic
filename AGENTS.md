@@ -48,6 +48,12 @@ Nix's determinism is valuable for **hermetic, slow-moving infrastructure and too
       - `user/maintenance.md` — System upkeep (updates, rollback, GC, cheat sheet).
       - `user/research.md` — Research workflow guide.
       - `user/google-authenticator-non-nixos.md` — SSH key+TOTP 2FA runbook for standalone-HM (non-NixOS) hosts.
+    - `documentation/dialogues/` — Recorded conceptual Q&A sessions (no code
+      change, reference for when the topic actually gets built). Uses
+      `[[wiki-link]]`-style cross-references to other docs/plans.
+      - `dialogues/vm-container-sandbox-qa.md` — agent process sandboxing
+        (bwrap), GPU-bound OCI deployment, embedded-system (ESP32) isolation,
+        machine-specific HPC compilation.
   - `_assets/plans/`: Active and archived work plans.
     - `plans/*.md` — Active plans (top-level files).
     - `plans/completed/` — Finished plans (reference only).
