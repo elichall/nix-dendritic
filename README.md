@@ -15,6 +15,17 @@ simply aggregate the aspects they need.
 > Status: the **workstation** (Lenovo T480) is fully migrated and deployed via
 > this flake (2026-08-11). WSL / linux (non-NixOS) are deployed and in testing. macOS / server host stubs exist.
 
+## Philosophy
+
+Nix's determinism earns its keep on hermetic, slow-moving infrastructure —
+system config, pinned toolchains, package provisioning — not on
+fast-iterating, highly coupled application state. Where a project needs the
+latter, the right shape is Nix provisioning the environment/shell and native
+tooling running inside it, not a pure derivation reinventing that tooling's
+own package management. See [`NIX_PHILOSOPHY.md`](./NIX_PHILOSOPHY.md) for
+the fuller argument and worked examples (ML/CUDA, robotics, build
+orchestration) this config's design leans on.
+
 ## Quick start
 
 Deployment on NixOS hosts (workstation, laptop, server, and wsl w/ NixOS).

@@ -25,6 +25,14 @@ Target systems instantiate their environment by creating a specific host entry (
 
 ---
 
+## 1.5. Guiding Philosophy: Nix as Substrate, Not Execution Engine
+
+Full rationale and worked examples: [`NIX_PHILOSOPHY.md`](./NIX_PHILOSOPHY.md).
+
+Nix's determinism is valuable for **hermetic, slow-moving infrastructure and toolchains** — system configuration, pinned toolchains, package provisioning. It is not a good fit for **fast-iterating, highly coupled application state** — forcing pure Nix derivations onto that kind of workload is over-engineering and causes evaluation-scaling pain, not safety. When a feature module needs to provision a fast-moving or project-local ecosystem (language package managers, per-project dependency trees, anything that changes faster than the flake should be re-evaluated), the correct pattern is: **Nix provisions the environment/shell; native tooling runs inside it.** Don't reach for a pure derivation to package something that isn't hermetic by nature.
+
+---
+
 ## 2. Workspace Layout & Existing Configuration
 
 - `./modules/`: The dendritic root. `import-tree` recursively traverses and imports every tracked `.nix` file (except `_`-prefixed) into the `flake-parts` pipeline.
