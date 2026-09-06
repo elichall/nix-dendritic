@@ -403,11 +403,39 @@ worth comparing when you get to it:
   integrating with their existing instance may be preferable to standing up
   a separate personal one on a work-owned machine.
 
-`PasswordAuthentication` staying `true` in item 1 was specifically to keep
-use case 1's fallback path open — disabling it now would remove the
-untrusted-device path this item is meant to secure, not just tighten it. Use
-case 2 (key-holder still gated) is a separate mechanism layered on top, not
-solved by `PasswordAuthentication` at all.
+**Update:** `PasswordAuthentication` is now `false` (item 1). Use case 1
+(untrusted device, no key) is no longer covered by leaving password auth on
+— it's tracked separately in item 9, considered and deliberately not
+pursued. Use case 2 (key-holder still gated on a select host) remains what
+§4 of this item and item 8 actually solved.
+
+---
+
+## 9. Outside-fleet fallback auth — CONSIDERED, NOT PURSUED
+
+Now that `PasswordAuthentication = false` fleet-wide (item 1) removes the
+old implicit "just use the password" fallback, a password+TOTP fallback for
+devices without a registered `host.trustedSshKeys` entry was designed and
+then deliberately dropped on review — moved to
+[`deferred/outside-fleet-totp-auth.md`](./deferred/outside-fleet-totp-auth.md).
+
+**Why:** a standing, always-network-reachable password fallback goes against
+where common practice actually points (pubkey-only + curated device list is
+the more current-best-practice posture, not a gap to fill), the scenario it
+covers is compound-rare (would need to lose every registered device
+simultaneously), and the bulk-deployment-tooling motivation for wanting
+"access from anywhere" turned out to be orthogonal — deploying config onto a
+new machine doesn't require the existing fleet to accept inbound connections
+from it.
+
+**Kept for later, not in scope now:** a genuine offline **break-glass**
+keypair — private half on a USB drive kept physically on hand, never on a
+networked device, combined with the account password and a TOTP code for a
+real three-factor recovery path that's only reachable by someone holding the
+physical object. Architecturally different from the dropped design (that one
+made the fallback always-available over the network); worth building
+properly if this ever becomes a real need. See the deferred doc for the
+full reasoning.
 
 ---
 
@@ -423,9 +451,12 @@ solved by `PasswordAuthentication` at all.
 | 6 | 5 sysctl additions | **Done** |
 | 7 | VM/container connection URI awareness | No code change — decision framework for when you start using it |
 | 8 | 2FA for select hosts (work desktop first) | **Done** — Google Authenticator TOTP live on the work desktop, key+TOTP verified end to end; now the preferred pathway; NixOS server host (future) still pending, see `2fa-select-hosts-research.md` §9 |
+| 9 | Outside-fleet fallback auth (no key → password+TOTP) | **Considered, not pursued** — see `deferred/outside-fleet-totp-auth.md`; offline break-glass USB key kept as a possible future item, not in scope |
 
 Remaining open item: **5** — the `AllowUsers` line is still a one-line,
 zero-risk addition whenever you want it, and the Tailscale ACL console review
 plus a decision on Tailscale SSH vs. OpenSSH are yours to make outside this
 repo. Item **8** is done for the work desktop; its only remaining piece is
-the future NixOS server host, not actionable until that host exists.
+the future NixOS server host, not actionable until that host exists. Item
+**9** is closed as "not pursued" — no further action unless a real need for
+break-glass access actually shows up.
