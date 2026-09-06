@@ -34,7 +34,7 @@ Options files use the `Opt.nix` suffix in their filename. This:
 | `options/browserOpt.nix` | `homeManager.browser` | `browser.{appId,command,desktop}` | Hosts may override `browser.desktop` |
 | `options/themeOpt.nix` | `homeManager.optionsTheme` | `theme.{dir,active,generated,ghosttyThemeConf}` | Path defaults, rarely overridden |
 | `options/utilsOpt.nix` | `homeManager.optionsUtils` | `utils.{notifySend,interactionWatch}` | Set by utils modules (bridge pattern) |
-| `options/hostOpt.nix` | `nixos.optionsHost` + `homeManager.optionsHost` | `host.{isNixos,isWsl,displayProtocol,shell,identity.*}` | Hosts override identity choices; defaults = standard practice (see Multi-Scope section) |
+| `options/hostOpt.nix` | `nixos.optionsHost` + `homeManager.optionsHost` | `host.{isNixos,isWsl,displayProtocol,shell,identity.*,hostName,trustedSshKeys,require2fa}` | Hosts override identity choices; defaults = standard practice (see Multi-Scope section) |
 
 ## Key Design Points
 
@@ -81,6 +81,15 @@ Rules for this pattern:
   nixos-side override need appears.
 - **Precedence ladder**: option `default` < `mkDefault` < explicit assignment
   < `mkForce`. Override at whichever scope owns the concern.
+- **Not every option in a shared file needs both scopes.** `hostName` and
+  `require2fa` are declared nixos-scope only (no `homeManager` counterpart)
+  because their consumers — `networking.hostName`,
+  `security.pam.services.<name>.googleAuthenticator` — only exist at that
+  scope; standalone-HM hosts have no authority to consume them regardless.
+  `hostName` also breaks from `stdPractice` deliberately: no default at all,
+  so an unset value is a hard eval error rather than a silent inherit
+  (identity collisions across hosts are a real footgun worth failing loudly
+  on). Don't assume symmetry is required just because the *file* is shared.
 
 ### Utility options are a bridge
 `utils.notifySend` and `utils.interactionWatch` exist because the

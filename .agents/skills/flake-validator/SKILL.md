@@ -115,6 +115,11 @@ ritual.
 - **Home Manager "versions mismatched" warning**: `home-manager` input resolved off its release branch. Fix = pin `home-manager` to the nixpkgs-matching release (`github:nix-community/home-manager/release-26.05`) + `nix flake lock --update-input home-manager`, then commit flake.nix + flake.lock.
 - **`'system' has been renamed` warning**: a `pkgs.system` accessor. Fix = `pkgs.stdenv.hostPlatform.system` (3 known sites: `display/otter-launcher/otter.nix`, `display/waybar.nix`, `display/tui.nix`).
 - **`result` symlink appears in `git status`**: transient `nix build` output. Don't commit it; `.gitignore` covers `results*/` but not singular `result`.
+- **Verifying `lib.mkIf cond value` produced no definition (not just a false-y one)**: when the point is "this key must be entirely absent when unused" (e.g. `host.require2fa`-gated `AuthenticationMethods`, so upstream's own default behavior applies rather than an explicit off-value), evaluate the *containing attrset* and test membership, not the leaf:
+  ~~~bash
+  nix eval '.#nixosConfigurations.<hostname>.config.services.openssh.settings' --apply 's: s ? AuthenticationMethods'
+  ~~~
+  `false` confirms the key is absent; evaluating the leaf path directly would just error ("attribute missing") or, for a plain bool option, silently return its default instead of proving non-definition.
 - **Spot-checking `environment.systemPackages` membership**: never compare with `builtins.elem "<name>"` against the raw list — it holds *derivations*, and `p.name` includes the version (`"awww-0.9.2"`). Map names first:
   ~~~nix
   map (p: (builtins.parseDrvName p.name).name) config.environment.systemPackages

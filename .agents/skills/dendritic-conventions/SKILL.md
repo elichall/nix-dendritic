@@ -29,6 +29,16 @@ exports `nixos.hyprland` for the compositor and `homeManager.hyprland`
 for keybinds; `mime.nix` exports `nixos.mime` for XML registration and
 `homeManager.mimeDefaults` for default applications).
 
+A distinct flavor of this pattern, not just "two concerns, one feature":
+`network.nix` exports `nixos.network` (SSH/`authorized_keys.d`, full PAM
+authority) and `homeManager.network` (an idempotent `~/.ssh/authorized_keys`
+append via `home.activation`) as **two different implementations of the
+same contract** (trusting `host.trustedSshKeys`), because a standalone-HM
+host has zero authority over the system files the NixOS side uses. When a
+feature's user-scope half exists specifically to work around a
+standalone-HM authority gap — not just "also configure something
+user-level" — document that split explicitly (see module-contracts.md C29).
+
 ## Group Structure
 Groups live in `modules/groups/` and bundle related aspects:
 - `nixos.base` = battery, network, hardware, audio, security
