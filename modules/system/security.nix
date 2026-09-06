@@ -4,7 +4,7 @@
 # NOTE: nix.settings / nix.gc intentionally stay in nixos.main (user choice).
 # Wired into workstation.nix via `self.modules.nixos.security`.
 { inputs, ... }: {
-  flake.modules.nixos.security = { ... }: {
+  flake.modules.nixos.security = { config, ... }: {
     # Kernel sysctl hardening
     boot.kernel.sysctl = {
       "net.ipv4.conf.all.rp_filter" = 1;
@@ -58,6 +58,11 @@
           deny = 5;
           unlock_time = 900;
         };
+        # Scaffolding for host.require2fa (modules/options/hostOpt.nix) —
+        # off by default (bool binds straight through, no mkIf needed).
+        # Verified working on the work desktop's manual (non-Nix) runbook;
+        # see 2fa-select-hosts-research.md §9 for the declarative version.
+        googleAuthenticator.enable = config.host.require2fa;
       };
     };
   };

@@ -58,6 +58,24 @@ in
         '';
       };
 
+      # Scaffolding for the future server host — defaults to false so no
+      # current host is affected until deliberately flipped. When true,
+      # nixos.security/nixos.network wire in Google Authenticator TOTP for
+      # SSH (security.pam.services.sshd.googleAuthenticator +
+      # AuthenticationMethods requiring key AND TOTP), the same mechanism
+      # already verified on the work desktop — see
+      # modules/_assets/plans/2fa-select-hosts-research.md §9. NixOS-only:
+      # standalone-HM hosts have no PAM authority to wire this into anyway.
+      require2fa = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Require a TOTP code in addition to an SSH key to log in as this
+          host's primary user (Google Authenticator, native NixOS PAM
+          support). Off by default — opt in per host.
+        '';
+      };
+
       # Tautological inside nixosSystem (a NixOS eval IS NixOS); its real
       # consumer is the HM copy below — standalone-HM hosts set false to
       # enable foreign-distro behavior (e.g. targets.genericLinux).

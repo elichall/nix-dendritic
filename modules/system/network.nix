@@ -3,7 +3,7 @@
 # Leaned out of modules/configuration.nix (nixos.main).
 # Wired into workstation.nix via `self.modules.nixos.network`.
 { inputs, ... }: {
-  flake.modules.nixos.network = { config, ... }: {
+  flake.modules.nixos.network = { config, lib, ... }: {
     networking.hostName = config.host.hostName;
     networking.networkmanager.enable = true;
 
@@ -24,6 +24,13 @@
         PasswordAuthentication = false;
         KbdInteractiveAuthentication = false;
         MaxAuthTries = 3;
+        # Scaffolding for host.require2fa (modules/options/hostOpt.nix): once
+        # true, a key alone is no longer sufficient — pubkey must succeed
+        # *and* keyboard-interactive (Google Authenticator, wired in
+        # security.nix) both succeed. lib.mkIf so this key is simply absent
+        # (not merely off) when require2fa is false, matching upstream's
+        # default AuthenticationMethods behavior (any configured method).
+        AuthenticationMethods = lib.mkIf config.host.require2fa "publickey,keyboard-interactive";
       };
     };
     users.users.${config.host.identity.username}.openssh.authorizedKeys.keys = config.host.trustedSshKeys;
