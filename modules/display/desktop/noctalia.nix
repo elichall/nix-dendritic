@@ -228,7 +228,7 @@
                 set -g window-status-separator ""
                 set -g pane-border-style "fg=#$C8"
                 set -g pane-active-border-style "fg=#$C2"
-                set -g message-style "bg=#$C8,fg=#$C2,bold"
+                set -g message-style "bg=default,fg=#$C2,bold"
                 TMUX
 
                 # Push palette to all running foot instances via OSC escape sequences

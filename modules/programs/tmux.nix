@@ -129,7 +129,7 @@
 
         set -g pane-border-style "fg=${palette_backup.gray}"
         set -g pane-active-border-style "fg=${palette_backup.green}"
-        set -g message-style "bg=${palette_backup.gray},fg=${palette_backup.green},bold"
+        set -g message-style "bg=default,fg=${palette_backup.green},bold"
       '';
     };
 }

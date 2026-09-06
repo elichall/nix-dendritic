@@ -190,11 +190,11 @@
         # status-right intentionally omitted — continuum prepends its save
         # interpolation there; overwriting it breaks auto-save.
         set -g window-status-format "#[fg=#$C8_GRAY,bg=default] #I:#W "
-        set -g window-status-current-format "#[fg=#$C2_GREEN,bg=#$C8_GRAY,bold] #I:#W "
+        set -g window-status-current-format "#[fg=#$BG,bg=#$C8_GRAY,bold] #I:#W "
         set -g window-status-separator ""
         set -g pane-border-style "fg=#$C8_GRAY"
         set -g pane-active-border-style "fg=#$C2_GREEN"
-        set -g message-style "bg=#$C8_GRAY,fg=#$C2_GREEN,bold"
+        set -g message-style "bg=default,fg=#$C2_GREEN,bold"
         TMUX
 
         cat > "$GENERATED/nvim/palette.lua" <<NVIM
