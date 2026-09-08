@@ -29,6 +29,8 @@
       # assumes a graphical NixOS session
       ({ pkgs, config, ... }: {
         # identity flows from the host scaffold (C28 consumer)
+        host.identity.username = "eli";
+
         home.username = config.host.identity.username;
         home.homeDirectory = "/home/${config.host.identity.username}";
         home.stateVersion = "26.05";
@@ -49,7 +51,6 @@
           nerd-fonts.jetbrains-mono
           noto-fonts
         ];
-        programs.home-manager.enable = true;
       })
     ];
   };
