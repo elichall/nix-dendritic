@@ -67,6 +67,10 @@
         extraConfig = ''
           set -g default-terminal "tmux-256color"
           set -ag terminal-overrides ",xterm-256color:RGB"
+          # Kitty graphics protocol (yazi image/PDF previews) rides DCS/APC
+          # escape sequences that tmux drops by default since 3.3 — allow
+          # them through so yazi can talk to the outer kitty terminal.
+          set -g allow-passthrough on
           set-option -g detach-on-destroy off
 
           set -g pane-base-index 1

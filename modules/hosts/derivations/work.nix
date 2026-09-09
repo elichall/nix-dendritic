@@ -24,6 +24,7 @@
       self.modules.homeManager.fastfetch
       self.modules.homeManager.initProject
       self.modules.homeManager.network
+      self.modules.homeManager.wezterm
 
       # standalone base identity — inline (plan D9): homeManager.main
       # assumes a graphical NixOS session
