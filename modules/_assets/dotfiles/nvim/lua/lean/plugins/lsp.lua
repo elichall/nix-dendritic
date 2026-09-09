@@ -105,7 +105,10 @@ return {
             texlab = {
               build = {
                 executable = "latexmk",
-                args = { "-pdf", "-interaction=nonstopmode", "-synctex=1", "%f" },
+                -- No -pdf here: it forces pdflatex on the command line,
+                -- overriding a project's .latexmkrc $pdf_mode (e.g. xelatex).
+                -- Let each project's .latexmkrc pick the engine.
+                args = { "-interaction=nonstopmode", "-synctex=1", "%f" },
                 onSave = true,
               },
               forwardSearch = {
