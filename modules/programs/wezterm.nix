@@ -11,10 +11,10 @@
 # comes from `flatpak install flathub org.wezfurlong.wezterm` (manual,
 # one-time — see modules/_assets/plans, work-host troubleshooting).
 { ... }: {
-  flake.modules.homeManager.wezterm = { lib, pkgs, ... }: {
-    xdg.configFile."wezterm/wezterm.lua" = {
-      force = true;
-      text = ''
+  flake.modules.homeManager.wezterm =
+    { lib, pkgs, ... }:
+    let
+      weztermConfig = pkgs.writeText "wezterm.lua" ''
         local wezterm = require 'wezterm'
         local config = wezterm.config_builder()
 
@@ -25,6 +25,7 @@
         config.font_size = 13.0
 
         config.window_decorations = 'NONE'
+        config.enable_tab_bar = false
         config.window_background_opacity = 0.70
         -- No blur-behind on Linux/X11 in WezTerm (unlike kitty's
         -- background_blur / ghostty's background-blur) — opacity alone is
@@ -32,6 +33,7 @@
 
         config.default_cursor_style = 'SteadyBlock'
         config.audible_bell = 'Disabled'
+        config.window_close_confirmation = 'NeverPrompt'
 
         config.initial_cols = 120
         config.initial_rows = 34
@@ -44,29 +46,50 @@
 
         return config
       '';
+    in
+    {
+      # GNOME custom keybindings (Super+Return, Super+t), the dock/favorites
+      # pin, and the wezterm config itself are all wired here via activation
+      # rather than xdg.configFile. Reason for the config: WezTerm's Flatpak
+      # manifest bind-mounts the REAL ~/.config/wezterm into its sandbox
+      # (shadowing the app's own isolated config dir) — but that bind-mount
+      # only works if what's there is a real file. xdg.configFile writes a
+      # symlink into /nix/store, and /nix/store isn't visible inside the
+      # sandbox at all, so the symlink would resolve to nothing in there.
+      # Writing a real (non-symlink) copy at the real path is what the
+      # sandbox actually needs to see.
+      home.activation.wireWeztermDesktop = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        DCONF=${lib.getExe pkgs.dconf}
+        GSETTINGS=${lib.getExe' pkgs.glib "gsettings"}
+
+        mkdir -p "$HOME/.config/wezterm"
+        cp ${weztermConfig} "$HOME/.config/wezterm/wezterm.lua"
+        chmod 644 "$HOME/.config/wezterm/wezterm.lua"
+
+        # Same /nix/store-invisibility problem as the config, but for fonts:
+        # JetBrainsMono Nerd Font lives in the nix profile (a store symlink
+        # farm), which Flatpak's automatic font-sharing doesn't see — only
+        # standard paths like ~/.local/share/fonts are auto-shared. (Noto
+        # Sans Mono CJK JP is an apt package under /usr/share/fonts, which
+        # IS auto-shared, so it needs no help.) Copy real font files in.
+        mkdir -p "$HOME/.local/share/fonts"
+        cp -f ${pkgs.nerd-fonts.jetbrains-mono}/share/fonts/truetype/NerdFonts/JetBrainsMono/*.ttf \
+          "$HOME/.local/share/fonts/" 2>/dev/null || true
+        ${lib.getExe' pkgs.fontconfig "fc-cache"} -f "$HOME/.local/share/fonts" >/dev/null 2>&1 || true
+
+        $DCONF write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/command \
+          "'flatpak run org.wezfurlong.wezterm'"
+        $DCONF write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command \
+          "'flatpak run org.wezfurlong.wezterm start -- tmux new-session -A -s main'"
+
+        CURRENT_FAVS=$($GSETTINGS get org.gnome.shell favorite-apps)
+        case "$CURRENT_FAVS" in
+          *"'kitty.desktop'"*)
+            NEW_FAVS=$(printf '%s' "$CURRENT_FAVS" | ${lib.getExe' pkgs.gnused "sed"} \
+              "s/'kitty\\.desktop'/'org.wezfurlong.wezterm.desktop'/")
+            $GSETTINGS set org.gnome.shell favorite-apps "$NEW_FAVS"
+            ;;
+        esac
+      '';
     };
-
-    # GNOME custom keybindings (Super+Return, Super+t) and the dock/favorites
-    # pin are local desktop-session state, not files — dconf/gsettings is the
-    # only way to manage them declaratively. Flatpak install itself is a
-    # manual one-time step (outside nix's reproducibility tier by design).
-    home.activation.wireWeztermDesktop = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      DCONF=${lib.getExe pkgs.dconf}
-      GSETTINGS=${lib.getExe' pkgs.glib "gsettings"}
-
-      $DCONF write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/command \
-        "'flatpak run org.wezfurlong.wezterm'"
-      $DCONF write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command \
-        "'flatpak run org.wezfurlong.wezterm start -- tmux new-session -A -s main'"
-
-      CURRENT_FAVS=$($GSETTINGS get org.gnome.shell favorite-apps)
-      case "$CURRENT_FAVS" in
-        *"'kitty.desktop'"*)
-          NEW_FAVS=$(printf '%s' "$CURRENT_FAVS" | ${lib.getExe' pkgs.gnused "sed"} \
-            "s/'kitty\\.desktop'/'org.wezfurlong.wezterm.desktop'/")
-          $GSETTINGS set org.gnome.shell favorite-apps "$NEW_FAVS"
-          ;;
-      esac
-    '';
-  };
 }
