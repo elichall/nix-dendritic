@@ -48,20 +48,20 @@
       '';
     in
     {
-      # GNOME custom keybindings (Super+Return, Super+t), the dock/favorites
-      # pin, and the wezterm config itself are all wired here via activation
-      # rather than xdg.configFile. Reason for the config: WezTerm's Flatpak
-      # manifest bind-mounts the REAL ~/.config/wezterm into its sandbox
-      # (shadowing the app's own isolated config dir) — but that bind-mount
-      # only works if what's there is a real file. xdg.configFile writes a
-      # symlink into /nix/store, and /nix/store isn't visible inside the
-      # sandbox at all, so the symlink would resolve to nothing in there.
-      # Writing a real (non-symlink) copy at the real path is what the
-      # sandbox actually needs to see.
-      home.activation.wireWeztermDesktop = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        DCONF=${lib.getExe pkgs.dconf}
-        GSETTINGS=${lib.getExe' pkgs.glib "gsettings"}
-
+      # Config is written here via activation rather than xdg.configFile:
+      # WezTerm's Flatpak manifest bind-mounts the REAL ~/.config/wezterm
+      # into its sandbox (shadowing the app's own isolated config dir) — but
+      # that bind-mount only works if what's there is a real file.
+      # xdg.configFile writes a symlink into /nix/store, and /nix/store
+      # isn't visible inside the sandbox at all, so the symlink would
+      # resolve to nothing in there. Writing a real (non-symlink) copy at
+      # the real path is what the sandbox actually needs to see.
+      #
+      # DE-agnostic on purpose — no GNOME/desktop-session assumptions here.
+      # Wiring this into any given host's actual desktop shell (keybinds,
+      # dock pins, etc.) is that host's job, not this aspect's — see e.g.
+      # modules/hosts/derivations/work.nix for the GNOME-specific glue.
+      home.activation.weztermConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         mkdir -p "$HOME/.config/wezterm"
         cp ${weztermConfig} "$HOME/.config/wezterm/wezterm.lua"
         chmod 644 "$HOME/.config/wezterm/wezterm.lua"
@@ -76,20 +76,6 @@
         cp -f ${pkgs.nerd-fonts.jetbrains-mono}/share/fonts/truetype/NerdFonts/JetBrainsMono/*.ttf \
           "$HOME/.local/share/fonts/" 2>/dev/null || true
         ${lib.getExe' pkgs.fontconfig "fc-cache"} -f "$HOME/.local/share/fonts" >/dev/null 2>&1 || true
-
-        $DCONF write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/command \
-          "'flatpak run org.wezfurlong.wezterm'"
-        $DCONF write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command \
-          "'flatpak run org.wezfurlong.wezterm start -- tmux new-session -A -s main'"
-
-        CURRENT_FAVS=$($GSETTINGS get org.gnome.shell favorite-apps)
-        case "$CURRENT_FAVS" in
-          *"'kitty.desktop'"*)
-            NEW_FAVS=$(printf '%s' "$CURRENT_FAVS" | ${lib.getExe' pkgs.gnused "sed"} \
-              "s/'kitty\\.desktop'/'org.wezfurlong.wezterm.desktop'/")
-            $GSETTINGS set org.gnome.shell favorite-apps "$NEW_FAVS"
-            ;;
-        esac
       '';
     };
 }
