@@ -109,7 +109,11 @@ return {
                 -- overriding a project's .latexmkrc $pdf_mode (e.g. xelatex).
                 -- Let each project's .latexmkrc pick the engine.
                 args = { "-interaction=nonstopmode", "-synctex=1", "%f" },
-                onSave = true,
+                -- Off: an onSave build here races with any project-level
+                -- watcher (e.g. scripts/watch-preview.sh) building the same
+                -- output directory, corrupting latexmk's cached state.
+                -- Build on demand via :LspTexlabBuild instead.
+                onSave = false,
               },
               forwardSearch = {
                 executable = vim.fn.executable("zathura") == 1 and "zathura" or "evince",
