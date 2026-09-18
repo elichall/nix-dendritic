@@ -36,6 +36,14 @@
         # for template clarity. clipboard.nix still adds xclip: tools may
         # pick either protocol (both are present under WSLg).
         host.displayProtocol = "wayland";
+        host.trustedSshKeys = [
+          # work-ubuntu-desktop
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILf1eovOjigEIalWrLJrAgNat4pme9WAIgQEIKD8h7KF 1elijah.hall@gmail.com"
+          # t480
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7m3i3KyhA2ySpQf9L0i7VqVxCil2np9blYy1ggV69v 1elijah.hall@gmail.com"
+          # iPhone (Termius)
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBSE6LTjQ7T6YAAmdwKZMTAy97ZBiGCli6yvwDtv73vO"
+        ];
 
         targets.genericLinux.enable = true;
         fonts.fontconfig.enable = true;
