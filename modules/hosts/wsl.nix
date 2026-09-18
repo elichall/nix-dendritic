@@ -21,6 +21,9 @@
       # win32yank/wslview interop shims
       self.modules.homeManager.clipboard
       self.modules.homeManager.mimeDefaults
+      self.modules.homeManager.fastfetch
+      self.modules.homeManager.initProject
+      self.modules.homeManager.network
 
       # standalone base identity — inline (plan D9): homeManager.main
       # assumes a graphical NixOS session
@@ -53,7 +56,6 @@
           nerd-fonts.jetbrains-mono
           noto-fonts
         ];
-        programs.home-manager.enable = true;
       })
     ];
   };
