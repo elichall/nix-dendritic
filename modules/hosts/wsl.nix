@@ -8,7 +8,7 @@
 # Cross-platform plan: modules/_assets/plans/wsl-linux-hosts.md.
 { inputs, self, ... }: {
   flake.homeConfigurations.wsl = inputs.home-manager.lib.homeManagerConfiguration {
-    pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+    pkgs = self.pkgs.x86_64-linux;
 
     modules = [
       # cross-module option declarations (host scaffold + shared options)
