@@ -60,16 +60,15 @@ opt.clipboard = "unnamedplus"
 -- query/response — covers `p`/`"+p"` replaying content from a prior
 -- yank/delete made inside nvim itself.
 --
--- UNCONFIRMED / needs real-world testing: whether the terminal's own
--- native paste gesture (bracketed paste — a universal terminal standard,
--- not specific to any one terminal, and not something OSC52/tmux-specific
--- config affects either way) also populates this same register when used
--- to bring in genuinely external content (e.g. from a browser). A direct
--- PTY test showed a raw bracketed-paste sequence inserts text into the
--- buffer WITHOUT touching the unnamed register — implying the terminal's
--- native paste and nvim's `p`/`"+p"` may be two independent paths (paste
--- directly at the cursor for external content; `p` for internal-to-nvim
--- moves). Update this comment once actually verified interactively.
+-- Confirmed interactively: for genuinely external content (e.g. from a
+-- browser), use the terminal's own native paste gesture (bracketed paste
+-- — a universal terminal standard, unaffected by OSC52/tmux config either
+-- way) directly at the cursor, rather than `p`/`"+p"`. A PTY test showed
+-- bracketed paste inserts text straight into the buffer WITHOUT touching
+-- the unnamed register, so it and `p`/`"+p"` are two independent paths:
+-- paste-at-cursor for external content, `p` for moving text around
+-- within nvim itself (yank here, paste there) — both now work reliably
+-- through tmux and over SSH, just via different mechanisms.
 if vim.env.TMUX then
   local function pasteFromUnnamed()
     return {
