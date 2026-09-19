@@ -42,22 +42,29 @@ vim.g.loaded_ruby_provider = 0
 -- Gracefully degrades if xclip/pbcopy/win32yank are missing
 opt.clipboard = "unnamedplus"
 
--- Inside tmux, delegate to OSC52 instead of the local xclip/wl-copy: those
--- write to whatever machine nvim's process actually runs on, which is
--- useless when the session is a long-lived tmux session being viewed over
--- SSH from elsewhere (tmux's own yank already works this way — it forwards
--- OSC52 to whichever client is currently attached, local or remote, same
--- mechanism `allow-passthrough` in tmux.nix exists to let through).
+-- Inside tmux, delegate to tmux's own paste buffer instead of the local
+-- xclip/wl-copy: those write to whatever machine nvim's process actually
+-- runs on, which is useless when the session is a long-lived tmux session
+-- being viewed over SSH from elsewhere. Terminal-agnostic on purpose (no
+-- terminal name appears below) — `load-buffer -w` forwards to whichever
+-- client is currently attached via the same escape mechanism tmux's own
+-- yank already uses (needs `allow-passthrough`, set in tmux.nix), and
+-- `refresh-client -l` asks that same attached client to push its real
+-- clipboard into tmux's buffer before reading it back. Plain OSC52
+-- query/response for paste (tried first) is unreliable through tmux — the
+-- response has to travel back to nvim's stderr channel and often times
+-- out or returns stale content (see neovim/neovim#28010, #29350).
 if vim.env.TMUX then
   vim.g.clipboard = {
-    name = "OSC 52",
+    name = "tmux",
     copy = {
-      ["+"] = require("vim.ui.clipboard.osc52").copy("+"),
-      ["*"] = require("vim.ui.clipboard.osc52").copy("*"),
+      ["+"] = { "tmux", "load-buffer", "-w", "-" },
+      ["*"] = { "tmux", "load-buffer", "-w", "-" },
     },
     paste = {
-      ["+"] = require("vim.ui.clipboard.osc52").paste("+"),
-      ["*"] = require("vim.ui.clipboard.osc52").paste("*"),
+      ["+"] = { "bash", "-c", "tmux refresh-client -l; sleep 0.05; tmux save-buffer -" },
+      ["*"] = { "bash", "-c", "tmux refresh-client -l; sleep 0.05; tmux save-buffer -" },
     },
+    cache_enabled = 0,
   }
 end
