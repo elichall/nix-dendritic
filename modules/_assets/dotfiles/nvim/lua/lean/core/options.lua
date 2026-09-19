@@ -42,19 +42,37 @@ vim.g.loaded_ruby_provider = 0
 -- Gracefully degrades if xclip/pbcopy/win32yank are missing
 opt.clipboard = "unnamedplus"
 
--- Inside tmux, delegate to tmux's own paste buffer instead of the local
+-- Inside tmux, delegate COPY to tmux's own buffer instead of the local
 -- xclip/wl-copy: those write to whatever machine nvim's process actually
 -- runs on, which is useless when the session is a long-lived tmux session
--- being viewed over SSH from elsewhere. Terminal-agnostic on purpose (no
--- terminal name appears below) — `load-buffer -w` forwards to whichever
--- client is currently attached via the same escape mechanism tmux's own
--- yank already uses (needs `allow-passthrough`, set in tmux.nix), and
--- `refresh-client -l` asks that same attached client to push its real
--- clipboard into tmux's buffer before reading it back. Plain OSC52
--- query/response for paste (tried first) is unreliable through tmux — the
--- response has to travel back to nvim's stderr channel and often times
--- out or returns stale content (see neovim/neovim#28010, #29350).
+-- being viewed over SSH from elsewhere. `load-buffer -w` forwards to
+-- whichever client is currently attached via the same OSC52-write
+-- mechanism tmux's own yank already uses (needs `allow-passthrough`, set
+-- in tmux.nix) — write-only, so there's nothing to race.
+--
+-- PASTE deliberately avoids any active "ask the terminal what's in its
+-- clipboard" query (tried both nvim's built-in OSC52 paste and tmux's
+-- `refresh-client -l` — both round-trip through tmux's escape-sequence
+-- parser, which is confirmed flaky upstream: tmux/tmux#3068, #4275,
+-- neovim/neovim#28010/#29350; symptom was raw escape-response bytes
+-- occasionally leaking into the buffer as text). Instead this just
+-- reflects back whatever's already in the unnamed register — which every
+-- terminal populates directly, with zero query/response, whenever its
+-- OWN native paste gesture is used (bracketed paste: a universal, decades
+-- -old terminal standard, not specific to any one terminal — tmux has
+-- always passed it through transparently, unlike OSC52). The one
+-- requirement this places on the user: bring in external content (e.g.
+-- from a browser) via the terminal's own paste action at least once
+-- first, rather than expecting a bare `p` to silently pull from the
+-- system clipboard with no terminal involvement at all.
 if vim.env.TMUX then
+  local function pasteFromUnnamed()
+    return {
+      vim.split(vim.fn.getreg('"'), "\n"),
+      vim.fn.getregtype('"'),
+    }
+  end
+
   vim.g.clipboard = {
     name = "tmux",
     copy = {
@@ -62,8 +80,8 @@ if vim.env.TMUX then
       ["*"] = { "tmux", "load-buffer", "-w", "-" },
     },
     paste = {
-      ["+"] = { "bash", "-c", "tmux refresh-client -l; sleep 0.05; tmux save-buffer -" },
-      ["*"] = { "bash", "-c", "tmux refresh-client -l; sleep 0.05; tmux save-buffer -" },
+      ["+"] = pasteFromUnnamed,
+      ["*"] = pasteFromUnnamed,
     },
     cache_enabled = 0,
   }
