@@ -56,15 +56,20 @@ opt.clipboard = "unnamedplus"
 -- parser, which is confirmed flaky upstream: tmux/tmux#3068, #4275,
 -- neovim/neovim#28010/#29350; symptom was raw escape-response bytes
 -- occasionally leaking into the buffer as text). Instead this just
--- reflects back whatever's already in the unnamed register — which every
--- terminal populates directly, with zero query/response, whenever its
--- OWN native paste gesture is used (bracketed paste: a universal, decades
--- -old terminal standard, not specific to any one terminal — tmux has
--- always passed it through transparently, unlike OSC52). The one
--- requirement this places on the user: bring in external content (e.g.
--- from a browser) via the terminal's own paste action at least once
--- first, rather than expecting a bare `p` to silently pull from the
--- system clipboard with no terminal involvement at all.
+-- reflects back whatever's already in the unnamed register, with zero
+-- query/response — covers `p`/`"+p"` replaying content from a prior
+-- yank/delete made inside nvim itself.
+--
+-- UNCONFIRMED / needs real-world testing: whether the terminal's own
+-- native paste gesture (bracketed paste — a universal terminal standard,
+-- not specific to any one terminal, and not something OSC52/tmux-specific
+-- config affects either way) also populates this same register when used
+-- to bring in genuinely external content (e.g. from a browser). A direct
+-- PTY test showed a raw bracketed-paste sequence inserts text into the
+-- buffer WITHOUT touching the unnamed register — implying the terminal's
+-- native paste and nvim's `p`/`"+p"` may be two independent paths (paste
+-- directly at the cursor for external content; `p` for internal-to-nvim
+-- moves). Update this comment once actually verified interactively.
 if vim.env.TMUX then
   local function pasteFromUnnamed()
     return {
