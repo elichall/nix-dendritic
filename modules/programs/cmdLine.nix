@@ -122,6 +122,24 @@
               PROMPT_COMMAND="''${PROMPT_COMMAND#_direnv_hook}"
               blehook PRECMD!='_direnv_hook'
             fi
+            # tmux's update-environment (tmux.nix) only refreshes its OWN
+            # stored session environment on attach — it can't reach into an
+            # already-running shell's environment from outside. Pull the
+            # live DISPLAY/WAYLAND_DISPLAY before every command so nvim's
+            # built-in clipboard auto-detection (see options.lua) always
+            # sees whichever client is actually attached right now, not
+            # whichever one originally created this (possibly long-lived,
+            # possibly reattached-from-elsewhere) session. Scoped to just
+            # these two vars deliberately, not a blind eval of everything
+            # tmux has stored.
+            _refresh_tmux_display() {
+              [[ -n ''${TMUX:-} ]] || return 0
+              eval "$(${lib.getExe pkgs.tmux} show-environment -s 2>/dev/null | \
+                ${lib.getExe' pkgs.gnugrep "grep"} -E '^(DISPLAY|WAYLAND_DISPLAY)=|^unset (DISPLAY|WAYLAND_DISPLAY)')"
+            }
+            if [[ ''${BLE_VERSION-} && -t 0 ]]; then
+              blehook PRECMD!='_refresh_tmux_display'
+            fi
             # Initialize starship (auto-detects ble.sh and hooks into blehook PRECMD)
             if [[ $- == *i* ]]; then
               eval "$(${lib.getExe pkgs.starship} init bash --print-full-init)"

@@ -71,6 +71,12 @@
           # escape sequences that tmux drops by default since 3.3 — allow
           # them through so yazi can talk to the outer kitty terminal.
           set -g allow-passthrough on
+          # tmux's own default update-environment already refreshes DISPLAY
+          # on reattach but never covered Wayland — append WAYLAND_DISPLAY
+          # so nvim's built-in clipboard auto-detection sees whichever
+          # client is actually attached right now, not whichever one
+          # originally created this (possibly long-lived) session.
+          set -ga update-environment "WAYLAND_DISPLAY"
           set-option -g detach-on-destroy off
 
           set -g pane-base-index 1
