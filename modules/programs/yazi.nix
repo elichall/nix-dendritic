@@ -200,6 +200,14 @@
               text = "";
               fg = "#7ebae4";
             }
+            {
+              # .tpp (C++ template-implementation files) aren't in yazi's
+              # bundled default icon set — matches .cpp's nf-custom-cpp
+              # glyph + canonical ISO C++ blue so it renders identically.
+              name = "*.tpp";
+              text = "";
+              fg = "#00599C";
+            }
           ];
         };
       };

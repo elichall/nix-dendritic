@@ -1,5 +1,14 @@
 local opt = vim.opt
 
+-- Neovim's builtin filetype detection has no entry for .tpp (C++ template
+-- implementation files, split from .hpp headers in some codebases) — with
+-- no filetype match, syntax highlighting, treesitter, AND clangd's LSP
+-- attachment (gated on filetype, see lean/plugins/lsp.lua) all silently
+-- skip these files. Mapping the extension to the existing "cpp" filetype
+-- fixes all three at once; no clangd-specific config needed since clangd's
+-- own filetypes list already includes "cpp".
+vim.filetype.add({ extension = { tpp = "cpp" } })
+
 -- Time in milliseconds to wait for a mapped sequence to complete
 opt.timeoutlen = 300
 opt.ttimeoutlen = 0
