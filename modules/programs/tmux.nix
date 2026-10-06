@@ -42,7 +42,7 @@
             plugin = resurrect;
             extraConfig = ''
               set -g @resurrect-strategy-nvim 'session'
-              set -g @resurrect-processes "opencode"
+              set -g @resurrect-processes "opencode yazi nvim"
               set -g @resurrect-dir '~/.local/share/tmux/resurrect'
             '';
           }
