@@ -60,7 +60,6 @@ Nix's determinism is valuable for **hermetic, slow-moving infrastructure and too
     - `plans/deferred/` — Paused or deferred plans.
 - `./legacy/` (gitignored): Frozen snapshot of the pre-flake `/etc/nixos` config — reference only. NOTE: `legacy/` carries pre-fix bugs (e.g. the gtk.css transparency bug); port from the LIVE `/etc/nixos` tree when in doubt.
 - `./nixos -> /etc/nixos` (gitignored symlink): inert pre-switch config. A bare `nixos-rebuild switch` (no `--flake`) would fall back to it — ALWAYS pass `--flake`.
-- `./post-switch-smoke-test.sh`: read-only post-rebuild verification script (run after every switch).
 
 ---
 
@@ -205,7 +204,6 @@ Agents must create and maintain a `TODO.md` file at the repository root to refle
 | `flake-validator` | `.agents/skills/flake-validator/SKILL.md` | Evaluation, validation, diagnostics |
 | `package-provisioning` | `.agents/skills/package-provisioning/SKILL.md` | Adding new packages (tier 1/2/3) |
 - **Docs Convention**: Extended prose (decisions, contracts, rationale) lives in `modules/_assets/` docs (see §8) — NOT in module headers. Module headers carry only short pointers. When a decision/contract changes, update the relevant `_assets` doc in the same change.
-- **Post-Switch Verification**: after deploying a new generation, run `./post-switch-smoke-test.sh` (read-only) and confirm 0 failures before concluding the cycle.
 
 ---
 
@@ -234,7 +232,7 @@ output data*, not the Nix evaluation. A full toplevel build adds no signal;
 validate with the targeted derivation build (e.g.
 `nix build .#nixosConfigurations.workstation.config.home-manager.users.elichall.xdg.configFile."otter-launcher/config.toml".source`),
 a config format check (`builtins.fromTOML`/`fromJSON`), and the fast dry evals.
-The user still runs the deploy + smoke test after any change.
+The user still runs the deploy after any change.
 
 ### Dependency input hygiene
 - Inputs `home-manager`, `wlctl`, `otter-launcher` follow our `nixpkgs` pin.

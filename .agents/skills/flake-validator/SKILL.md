@@ -23,7 +23,7 @@ Execute these commands in sequence to verify changes without running `nixos-rebu
 > Nix evaluation — skip step 5 and instead build the targeted derivation (e.g.
 > `nix build .#nixosConfigurations.<hostname>.config.home-manager.users.<user>.xdg.configFile."otter-launcher/config.toml".source`),
 > parse-check the format (`builtins.fromTOML`/`fromJSON`), and run the fast dry
-> evals (steps 3–4). The user still deploys + smoke-tests after any change.
+> evals (steps 3–4). The user still deploys after any change.
 
 ### 1. Syntax Verification
 Check for syntax errors across all modules imported by `import-tree`:
@@ -99,11 +99,6 @@ declare `config`, the reference binds to the OUTER (flake-parts) scope →
 `error: attribute 'host' missing` on every host importing it, even hosts that
 never query shell options. Inner function heads must declare
 `{ pkgs, config, ... }:` explicitly.
-
-### 7. Post-Switch Verification
-After a deployed switch, run `./post-switch-smoke-test.sh` (read-only) and
-confirm 0 failures. See `modules/_assets/documentation/user/maintenance.md` for the rebuild/update
-ritual.
 
 ## Failure Diagnostics
 - **`attribute '...' missing`**: Verify that `modules/flake-parts.nix` exports `inputs.flake-parts.flakeModules.modules`.

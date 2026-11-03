@@ -218,9 +218,6 @@ sudo nixos-rebuild --rollback switch
 
 # Garbage collection (manual; automatic weekly GC already configured)
 sudo nix-collect-garbage -d
-
-# Post-switch verification (run in the graphical session)
-./post-switch-smoke-test.sh
 ```
 
 ---
@@ -230,7 +227,7 @@ sudo nix-collect-garbage -d
 1. Edit modules; `git add` new files so the build sees them.
 2. Commit (clean tree + committed `flake.lock` = reproducible switch).
 3. `sudo nixos-rebuild switch --flake ~/.nix#workstation`.
-4. Log in and run `./post-switch-smoke-test.sh`.
+4. Log in and spot-check the session.
 5. Weekly: `nix flake update && git add flake.lock && git commit &&` switch.
 
 ---
