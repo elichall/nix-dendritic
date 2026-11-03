@@ -60,6 +60,7 @@
     };
 
   flake.modules.homeManager.mimeDefaults = { config, ... }: {
+    xdg.configFile."mimeapps.list".force = true;
     xdg.mimeApps = {
       enable = true;
       defaultApplications = {
