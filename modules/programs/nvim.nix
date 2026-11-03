@@ -131,6 +131,7 @@
         texlab # latex
         bash-language-server # bash
         tree-sitter # tree-sitter grammar CLI
+        gcc # `cc` for nvim-treesitter's runtime parser builds (Nix provisions, nvim compiles)
         ltex-ls # markdown/tex grammar + scientific dictionary (spell.lua)
       ];
 

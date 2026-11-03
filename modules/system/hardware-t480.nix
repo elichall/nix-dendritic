@@ -1,7 +1,7 @@
 # t480 machine-specific hardware: fileSystems, kernel modules, microcode.
 # Imported by hosts via `self.modules.nixos.hardwareConfig`.
 { inputs, ... }: {
-  flake.modules.nixos.hardwareConfig = { config, lib, ... }: {
+  flake.modules.nixos.t480-hardwareConfig = { config, lib, ... }: {
     imports =
       [ "${inputs.nixpkgs}/nixos/modules/installer/scan/not-detected.nix"
       ];

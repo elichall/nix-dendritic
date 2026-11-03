@@ -21,11 +21,14 @@ in
   flake.modules.homeManager.hyprland =
     {
       config,
+      osConfig ? { },
       pkgs,
       lib,
       ...
     }:
     let
+      # nixos-scope host option; absent on standalone-HM hosts → 1.0
+      internalScale = osConfig.host.display.internalScale or 1.0;
       noctaliaCmd = lib.getExe noctaliaPackage;
       tmuxCmd = "${lib.getExe pkgs.tmux} new-session -A -s 'main'";
       menu = "otter-open";
@@ -72,13 +75,25 @@ in
           ${
             if config.programs.noctalia.enable then
               ''
-                local noctalia = dofile(os.getenv("HOME") .. "/.config/hypr/noctalia.lua")
-                local theme = {
-                  accent = noctalia.colors.primary,
-                  muted = noctalia.colors.surface,
-                  bg = noctalia.colors.shadow,
-                }
-                noctalia.apply_theme()
+                local noctalia_path = os.getenv("HOME") .. "/.config/hypr/noctalia.lua"
+                local theme
+                local ok, noctalia = pcall(dofile, noctalia_path)
+                if ok and type(noctalia) == "table" and noctalia.colors then
+                  theme = {
+                    accent = noctalia.colors.primary,
+                    muted = noctalia.colors.surface,
+                    bg = noctalia.colors.shadow,
+                  }
+                  if type(noctalia.apply_theme) == "function" then
+                    noctalia.apply_theme()
+                  end
+                else
+                  theme = {
+                    accent = "rgb(74, 199, 236)",
+                    muted = "rgb(88, 91, 112)",
+                    bg = "rgb(17, 17, 27)"
+                  }
+                end
               ''
             else
               ''
@@ -93,8 +108,10 @@ in
           ------------------
           -- -- MONITORS -- --
           ------------------
+          -- external monitor
           hl.monitor({ output = "DP-1", mode = "preferred", position = "auto", scale = 1 })
-          hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = 1 })
+          -- internal panel: per-host scale (host.display.internalScale, nixos scope via osConfig)
+          hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = ${toString internalScale} })
 
           ---------------------
           -- -- MY PROGRAMS -- --
@@ -310,6 +327,14 @@ in
             size = { 550, 250 },
             stay_focused = true,
             focus_on_activate = false,
+          })
+
+          hl.window_rule({
+            name = "termfilechooser_rule",
+            match = { initial_class = "^termfilechooser$" },
+            float = true,
+            center = true,
+            size = { 1000, 650 },
           })
 
           hl.window_rule({

@@ -7,6 +7,7 @@
       self.modules.nixos.display
       self.modules.nixos.hyprland
       self.modules.nixos.mime
+      self.modules.nixos.termfilechooser
     ];
   };
 
@@ -19,6 +20,8 @@
       self.modules.homeManager.otterLauncher
       self.modules.homeManager.showoff
       self.modules.homeManager.mimeDefaults
+      self.modules.homeManager.xdgUserDirs
+      self.modules.homeManager.termfilechooser
     ];
   };
 }

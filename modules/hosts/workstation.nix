@@ -11,7 +11,7 @@
     modules = [
       # base identity + machine-specific hardware
       self.modules.nixos.main
-      self.modules.nixos.hardwareConfig
+      self.modules.nixos.fw13p-hardwareConfig
 
       # aspect groups (base services + display/wallpaper preset)
       self.modules.nixos.base
@@ -26,12 +26,15 @@
       # cross-module option declarations (host scaffold + shared options)
       self.modules.nixos.options
       {
-        host.hostName = "t480-nixos";
+        host.hostName = "fw13p-nixos";
+        host.display.internalScale = 1.5;
         host.trustedSshKeys = [
           # work-ubuntu-desktop
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILf1eovOjigEIalWrLJrAgNat4pme9WAIgQEIKD8h7KF 1elijah.hall@gmail.com"
           # work-windows-laptop
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINckAveevwz3fMQyFM9LgDmBg8P1HT0CtG/jOCuYgk0y baylor\elijah_hall1@DRPA-RESH14"
+          # t480
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7m3i3KyhA2ySpQf9L0i7VqVxCil2np9blYy1ggV69v 1elijah.hall@gmail.com"
           # iPhone (Termius)
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBSE6LTjQ7T6YAAmdwKZMTAy97ZBiGCli6yvwDtv73vO"
         ];

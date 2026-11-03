@@ -520,6 +520,10 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
     error by design, unlike every other option here) and `require2fa`
     (nixos-scope only, default `false`) deliberately break from the
     "shared `stdPractice` default" pattern below; see contract C29 for why.
+  - `display.internalScale` (nixos-scope only, `float`, default `1.0`) is the
+    built-in panel scale; `homeManager.hyprland` reads it via
+    `osConfig.host.display.internalScale or 1.0` (standalone-HM → 1.0).
+    Set per host (fw13p = 1.5).
   - `trustedSshKeys` (both scopes, `listOf str`, default `[ ]`) is the one
     exception that's dual-scope but still doesn't use `stdPractice` — empty
     list needs no cross-scope literal sharing.

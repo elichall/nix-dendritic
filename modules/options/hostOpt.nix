@@ -76,6 +76,14 @@ in
         '';
       };
 
+      # Nixos-scope only: HM consumers (hyprland) read it via `osConfig`,
+      # falling back to 1.0 on standalone-HM hosts that don't own a display.
+      display.internalScale = lib.mkOption {
+        type = lib.types.float;
+        default = 1.0;
+        description = "Scale factor for the built-in panel (consumer: homeManager.hyprland eDP-1 rule via osConfig).";
+      };
+
       # Tautological inside nixosSystem (a NixOS eval IS NixOS); its real
       # consumer is the HM copy below — standalone-HM hosts set false to
       # enable foreign-distro behavior (e.g. targets.genericLinux).
