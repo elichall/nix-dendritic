@@ -22,7 +22,10 @@
         common = {
           default = [ "gtk" ];
         };
-        Hyprland = {
+        # Lowercase on purpose: xdg-desktop-portal lowercases XDG_CURRENT_DESKTOP
+        # and looks for `hyprland-portals.conf`; `Hyprland-portals.conf` is
+        # never matched on a case-sensitive filesystem.
+        hyprland = {
           default = [
             "hyprland"
             "gtk"

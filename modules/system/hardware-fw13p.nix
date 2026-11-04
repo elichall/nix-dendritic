@@ -2,7 +2,7 @@
 # and may be overwritten by future invocations.  Please make changes
 # to /etc/nixos/configuration.nix instead.
 { inputs, ... }: {
-flake.modules.nixos.fw13p-hardwareConfig = { config, lib, ... }: {
+flake.modules.nixos.fw13p-hardwareConfig = { config, lib, pkgs, ... }: {
   imports =
     [ "${inputs.nixpkgs}/nixos/modules/installer/scan/not-detected.nix"
     ];
@@ -29,6 +29,12 @@ flake.modules.nixos.fw13p-hardwareConfig = { config, lib, ... }: {
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.npu.enable = true;
+  # VA-API hardware video decode/encode on the Arc B390 (xe driver): iHD driver
+  # plus the oneVPL runtime (Quick Sync). Without these `vainfo` finds no driver.
+  hardware.graphics.extraPackages = [
+    pkgs.intel-media-driver
+    pkgs.vpl-gpu-rt
+  ];
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 };
 }

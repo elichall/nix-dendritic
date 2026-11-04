@@ -413,7 +413,17 @@ writes, adaptive via detection shim → `.apply` args + runtime sniffing).
 - [x] `homeManager.xdgUserDirs` (`modules/system/xdg-userdirs.nix`, in `homeManager.desktop`): defines `~/.config/user-dirs.dirs` (Documents/Downloads/Pictures) — without it flatpak `xdg-download` was never mounted and Firefox downloads vanished with the sandbox.
 - [x] `termfilechooser` (`modules/display/termfilechooser.nix`, in `nixos.desktop`/`homeManager.desktop`): FileChooser portal routed to yazi for GUI open/save dialogs; Hyprland float rule for app-id `termfilechooser`. Needs a re-login to take effect.
 - [x] Config health check run: Hyprland `--verify-config`, lua-language-server against Hyprland stubs, foot, tmux, nvim `:checkhealth` — all clean. Open question: the TTY-launch deprecation warnings were not reproducible; capture with `Hyprland 2>&1 | tee ~/hypr-launch.txt` if they recur.
-- [ ] Hyprland: external monitor declared as `DP-1` but workspaces 6–10 target `DP-2` — reconcile.
+- [/] Hyprland: external monitor is port-independent — catch-all `hl.monitor({ output = "" })` plus a `monitor.added` Lua hook (`assign_external_workspaces`) that gives each non-eDP-1 monitor its own workspace block, left-to-right (1st external 6–10, 2nd 11–15, …; re-run on monitor.added and monitor.removed). VERIFY after deploy: plug the monitor into a different port and confirm workspaces 6–10 follow (if rules do not override/move on hotplug, fall back to `desc:` matching or add a `hl.dsp.workspace.move` call).
 - [ ] Delete stray `modules/display/hyprland.nix.bak`.
 - [ ] Verify after deploy (manual): Firefox download lands in `~/Downloads`, upload dialog opens yazi, nvim parsers build, fw13p panel at 1.5 scale.
 - [x] Removed `post-switch-smoke-test.sh` references from AGENTS.md, maintenance.md, and the flake-validator skill (script no longer exists).
+
+## fw13p hardware follow-ups (2026-11-03) — after confirming the basics work
+- [x] Add `intel-media-driver` + `vpl-gpu-rt` to `hardware.graphics.extraPackages` (`modules/system/hardware-fw13p.nix`). Verify after rebuild: `nix shell nixpkgs#libva-utils -c vainfo` lists iHD profiles (VAProfileH264/HEVC/AV1…); confirm Firefox/mpv use VA-API.
+- [ ] BIOS 0.0.3.2 → 0.0.3.4 applied via fwupd capsule (staged 2026-11-03, applies on next restart). After reboot: `fwupdmgr get-devices` shows 0.0.3.4; then set the BIOS battery charge limit (TLP thresholds can't apply — no sysfs interface; see below).
+- [ ] `modules/system/battery.nix`: remove dead `START/STOP_CHARGE_THRESH_BAT0`/`BAT1` lines (no BAT0; BAT1 has no `charge_control_*_threshold`) and comment that the charge limit is set in BIOS. Revisit if a Framework 13 Pro charge-limit kernel interface appears (`framework-laptop-kmod` in nixpkgs is a 2024-09 snapshot — likely too old).
+- [S] `services.fprintd.enable` — Goodix MOC fingerprint sensor is present (firmware current). Changes the PAM stack for login/sudo; consider alongside the SSH 2FA setup.
+- [S] `services.thermald.enable` — currently off; unknown whether it supports this CPU.
+- [S] `services.hardware.bolt.enable` — currently off; enable if Thunderbolt/USB4 docks are used.
+- [ ] Not yet verified: NVMe SMART (`sudo smartctl -a /dev/nvme0n1`), suspend/resume + overnight drain (only `s2idle` offered), what is on USB-C `con2` (ucsi_acpi alt-mode errors).
+- [x] xdg-desktop-portal config attr renamed `Hyprland` → `hyprland` (display.nix + termfilechooser.nix): portal matches the lowercase `hyprland-portals.conf`; the capitalised file was never read, so FileChooser always fell through to the GTK portal (and Screenshot etc. used the deprecated `UseIn` key). Verify after switch: restart `xdg-desktop-portal`, then Firefox open/save dialog should open yazi in a floating foot window.

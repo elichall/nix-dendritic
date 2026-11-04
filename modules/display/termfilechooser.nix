@@ -11,7 +11,8 @@
   flake.modules.nixos.termfilechooser = { pkgs, ... }: {
     xdg.portal = {
       extraPortals = [ pkgs.xdg-desktop-portal-termfilechooser ];
-      config.Hyprland."org.freedesktop.impl.portal.FileChooser" = [ "termfilechooser" ];
+      # attr name must be lowercase (see display.nix)
+      config.hyprland."org.freedesktop.impl.portal.FileChooser" = [ "termfilechooser" ];
     };
   };
 

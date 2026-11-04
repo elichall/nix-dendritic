@@ -16,7 +16,7 @@
   flake.overlays.claude-code-unstable = final: _prev: {
     claude-code =
       (import inputs.nixpkgs-unstable {
-        inherit (final) system;
+        system = final.stdenv.hostPlatform.system;
         config.allowUnfreePredicate = pkg: pkg.pname == "claude-code";
       }).claude-code;
   };

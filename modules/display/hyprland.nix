@@ -108,8 +108,8 @@ in
           ------------------
           -- -- MONITORS -- --
           ------------------
-          -- external monitor
-          hl.monitor({ output = "DP-1", mode = "preferred", position = "auto", scale = 1 })
+          -- any other monitor, on any port (empty output = catch-all fallback)
+          hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
           -- internal panel: per-host scale (host.display.internalScale, nixos scope via osConfig)
           hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = ${toString internalScale} })
 
@@ -289,10 +289,35 @@ in
             hl.workspace_rule({ workspace = tostring(w), monitor = "eDP-1" })
           end
 
-          hl.workspace_rule({ workspace = "6", monitor = "DP-2", default = true })
-          for w = 7, 10 do
-            hl.workspace_rule({ workspace = tostring(w), monitor = "DP-2" })
+          -- External monitors (anything but the internal panel) get workspace
+          -- blocks left-to-right: 1st external 6-10, 2nd 11-15, 3rd 16-20, ...
+          -- so swapping the Framework expansion-card port (DP-1/DP-2/...) or
+          -- adding a second display still works. Re-applied on every hotplug;
+          -- pcall keeps a Lua error here from aborting the rest of the config.
+          local function assign_external_workspaces()
+            pcall(function()
+              local externals = {}
+              for _, m in ipairs(hl.get_monitors()) do
+                if m.name ~= "eDP-1" then
+                  table.insert(externals, m)
+                end
+              end
+              table.sort(externals, function(a, b)
+                if a.x ~= b.x then return a.x < b.x end
+                return a.name < b.name
+              end)
+              for i, m in ipairs(externals) do
+                local first = 6 + (i - 1) * 5
+                hl.workspace_rule({ workspace = tostring(first), monitor = m.name, default = true })
+                for w = first + 1, first + 4 do
+                  hl.workspace_rule({ workspace = tostring(w), monitor = m.name })
+                end
+              end
+            end)
           end
+          assign_external_workspaces()
+          hl.on("monitor.added", assign_external_workspaces)
+          hl.on("monitor.removed", assign_external_workspaces)
 
           hl.workspace_rule({ workspace = "special:magic", gaps_out = { top = 40, right = 250, bottom = 40, left = 250 } })
 
