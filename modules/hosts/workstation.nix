@@ -62,6 +62,7 @@
               # aspect groups (dev toolchain + display/wallpaper preset + research)
               self.modules.homeManager.toolbox
               self.modules.homeManager.desktop
+              self.modules.homeManager.flatpak
               self.modules.homeManager.researchGroup
               self.modules.homeManager.utils
 

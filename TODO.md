@@ -449,3 +449,6 @@ Decision (user): run raw with no tweaks first; only add what a real symptom just
 
 ## cava ANSI gradient (2026-11-03)
 - [x] cava gradient from the terminal's ANSI palette: `noctalia-theme-sync` (noctalia.nix) now writes `~/.config/cava/themes/noctalia` (blue→cyan→green→yellow→red from foot regular4/6/2/3/1) and sends SIGUSR2 to cava; `homeManager.showoff` owns `cava/config` (`theme = noctalia`, live-config) plus a fallback-theme activation seed. Toplevel build OK. After switch: run `noctalia-theme-sync` once, then `cava`.
+
+## Flatpak scaling (2026-11-03)
+- [x] `modules/programs/flatpak.nix` (`homeManager.flatpak`, wired in workstation.nix): user flatpak overrides — ParaView/FreeCAD native Wayland; Steam `STEAM_FORCE_DESKTOPUI_SCALING` = `host.display.scale` (only if != 1.0). Hyprland `xwayland.force_zero_scaling = true`. decisions #64. Verify after switch: 3D viewports OK, Steam sized right; `paraview_file_dialog` rule still matches (class vs app_id).

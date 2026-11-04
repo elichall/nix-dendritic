@@ -1002,3 +1002,19 @@ restore neovim sessions"; Claude Code issue on blanked terminal titles.
 | 61 | Outside-fleet fallback auth — considered, not pursued | — | — | — | deferred/outside-fleet-totp-auth.md |
 | 62 | Floating popups (Firefox extension popout, Zotero dialogs) — solution found, decided against | — | TODO.md | — | decisions #62 |
 | 63 | tmux-resurrect on NixOS — empty-title save repair + delayed nvim/yazi relaunch | — | TODO.md | — | tmux.nix |
+| 64 | Flatpak scaling via user overrides (ParaView/FreeCAD Wayland, Steam host scale) | — | TODO.md | — | flatpak.nix |
+
+### 64. Flatpak apps: scaling fixed via user flatpak overrides, not wrappers
+**Decision:** `modules/programs/flatpak.nix` (`homeManager.flatpak`) renders
+`~/.local/share/flatpak/overrides/<app-id>` from an attrset. ParaView and
+FreeCAD (Qt) are forced to native Wayland (`QT_QPA_PLATFORM=wayland`,
+`!x11;!fallback-x11`); Steam (CEF, X11-only) gets
+`STEAM_FORCE_DESKTOPUI_SCALING=<host.display.scale>` only when the scale != 1.0.
+Hyprland also sets `xwayland.force_zero_scaling = true` so X11 clients are not
+blur-upscaled.
+**Why:** all three are hand-installed flatpaks, so Nix package wrappers do not
+apply; overrides are the same mechanism as Zotero's. Apps with their own module
+(Zotero) keep their override there.
+**Revisit if:** the ParaView/FreeCAD 3D view misbehaves on Wayland (relax to
+`fallback-x11` + `QT_SCALE_FACTOR=<scale>`), or Steam ignores the env var
+(use a `.desktop` `Exec` with `-forcedesktopscaling`).
