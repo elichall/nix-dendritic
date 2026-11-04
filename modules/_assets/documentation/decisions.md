@@ -861,6 +861,37 @@ building properly if a real need for this shows up.
 **Where:** `modules/_assets/plans/deferred/outside-fleet-totp-auth.md`,
 `modules/_assets/plans/security-hardening.md` item 9.
 
+### 62. Floating popup windows (Firefox extension popout, Zotero dialogs) — solution found, decided against
+**Decision:** Popups such as the Bitwarden popout from Firefox and Zotero's
+secondary windows (Plugins Manager, item dialogs) keep tiling by default. A
+working fix was built and tested, then deliberately **not adopted**.
+**Why they tile:** They are ordinary top-level windows of the app's own class
+and send no dialog hint (`xdgTag`/`xdgDescription` empty in
+`hyprctl clients -j`), so Hyprland tiles them. There is **no common
+discriminating factor**: the Firefox popout opens with the same initial title
+and class as a normal Firefox window (its real title,
+`Extension: (Bitwarden Password Manager) - …`, arrives only after open), and a
+Zotero dialog differs from the main window only by being the second window of
+its class. Static `hl.window_rule` matching therefore cannot catch them — it
+sees the class/title at open time.
+**What was found:** Event listeners can do it: `hl.on("window.open")` +
+`hl.on("window.title")` + `hl.on("window.close")`, floating via
+`hl.dispatch(hl.dsp.window.float/resize/center({ window = w }))` — Firefox
+windows titled `^Extension: ` at 520×720, any Zotero window beyond the first at
+900×650, each floated once. Verified live against a running Hyprland 0.55.4
+with synthetic windows and via `Hyprland --verify-config`.
+**Why not adopted:** The window first appears tiled, then visibly jumps (float,
+resize, then center), which looks janky; and since each app needs its own
+heuristic (extension-title prefix, "not the first window"), it is a pile of
+per-app special cases rather than a rule — generic site login/OAuth popups
+still would not match. Judged not worth the added Lua and visual glitch.
+**Kept for later:** If this becomes worth fixing, revisit with the same
+approach (log `openwindow` events + `hyprctl clients -j` while triggering the
+popup, then extend the matchers), or look for an upstream per-app fix (a
+dialog hint / `xdg-dialog` support in the app) so Hyprland floats it natively.
+**Where:** `TODO.md` ("Popup windows tile…"); event API in Hyprland's Lua
+stubs (`share/hypr/stubs/hl.meta.lua`).
+
 ---
 
 ## Appendix — decision source index
@@ -928,3 +959,4 @@ building properly if a real need for this shows up.
 | 59 | `host.trustedSshKeys` + disable password auth | §4 | — | options-architecture | module-contracts C29, security-hardening.md §1-2 |
 | 60 | Google Authenticator TOTP 2FA + `host.require2fa` scaffold | §4 | — | options-architecture | module-contracts C29, completed/2fa-select-hosts-research.md, google-authenticator-non-nixos.md |
 | 61 | Outside-fleet fallback auth — considered, not pursued | — | — | — | deferred/outside-fleet-totp-auth.md |
+| 62 | Floating popups (Firefox extension popout, Zotero dialogs) — solution found, decided against | — | TODO.md | — | decisions #62 |

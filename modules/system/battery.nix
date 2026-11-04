@@ -21,8 +21,12 @@
         CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
         CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
 
+        # Choices on the fw13p: low-power | balanced | performance. Battery was
+        # `low-power`; moved to `balanced` (low-power + powersave + PCIe ASPM
+        # powersupersave made gaming on battery stutter-prone). See TODO.md
+        # "Gaming" notes.
         PLATFORM_PROFILE_ON_AC = "performance";
-        PLATFORM_PROFILE_ON_BAT = "low-power";
+        PLATFORM_PROFILE_ON_BAT = "balanced";
 
         PCIE_ASPM_ON_AC = "default";
         PCIE_ASPM_ON_BAT = "powersupersave";
