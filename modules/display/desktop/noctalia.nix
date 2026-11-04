@@ -260,6 +260,21 @@
                   } > "/proc/$shell_pid/fd/1" 2>/dev/null &
                 done
 
+                # Cava gradient from the terminal ANSI palette (bottom -> top):
+                # blue, cyan, green, yellow, red. cava needs hex for gradients.
+                mkdir -p "$HOME/.config/cava/themes"
+                cat > "$HOME/.config/cava/themes/noctalia" <<CAVA
+                [color]
+                background = 'default'
+                foreground = '#$C4'
+                gradient = 1
+                gradient_color_1 = '#$C4'
+                gradient_color_2 = '#$C6'
+                gradient_color_3 = '#$C2'
+                gradient_color_4 = '#$C3'
+                gradient_color_5 = '#$C1'
+                CAVA
+
                 # Reload palette in all running neovim instances
                 if [ -d "''${XDG_RUNTIME_DIR:-/tmp}" ]; then
                   find "''${XDG_RUNTIME_DIR:-/tmp}" -type s 2>/dev/null | grep "nvim" | while read -r server; do
@@ -269,6 +284,7 @@
 
                 # Reload opencode's system theme palette
                 pkill -SIGUSR2 opencode 2>/dev/null || true
+                pkill -USR2 -x cava 2>/dev/null || true
               '';
             };
           in

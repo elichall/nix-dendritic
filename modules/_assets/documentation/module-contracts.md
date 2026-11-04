@@ -456,6 +456,9 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
 - Palette sync: `noctalia-theme-sync` script (see C24) fans out colors to
   tmux, foot, nvim, and opencode on every `colors_changed` hook event. Theme
   paths consumed via `config.theme.*` (set by `homeManager.themePaths`).
+  It also writes `~/.config/cava/themes/noctalia`, a 5-stop ANSI gradient
+  (blue→cyan→green→yellow→red from foot regular4/6/2/3/1); the cava config is
+  owned by `homeManager.showoff`.
 - User guide: `modules/_assets/documentation/user/noctalia-guide.md` — full
   reference for bar customization, plugins, theming, keybindings, and Home
   Manager Nix syntax.
