@@ -9,7 +9,13 @@
 
     # ssh friendly settings for a laptop
     networking.networkmanager.wifi.powersave = false;
-    services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
+    # Never suspend on lid close (SSH must survive); Hyprland handles the panel
+    # (modules/display/hyprland.nix, lidScript).
+    services.logind.settings.Login = {
+      HandleLidSwitch = "ignore";
+      HandleLidSwitchExternalPower = "ignore";
+      HandleLidSwitchDocked = "ignore";
+    };
 
     services.openssh = {
       enable = true;

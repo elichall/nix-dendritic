@@ -41,6 +41,25 @@ in
       muteAudio = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
       muteMic = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
 
+      # Lid handler (called from lid-switch binds + monitor hotplug events).
+      # Lid closed + external monitor present -> disable eDP-1; otherwise ensure
+      # it is enabled (closed lid with no external just blanks via dpms).
+      lidScript = pkgs.writeShellScript "hypr-lid" ''
+        PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.gnugrep pkgs.hyprland ]}
+        panel="hl.monitor({ output = \"eDP-1\", mode = \"preferred\", position = \"auto\", scale = ${toString displayScale}, disabled = false })"
+        if grep -q closed /proc/acpi/button/lid/*/state 2>/dev/null; then
+          if hyprctl monitors -j | grep -q '"name": "\(DP\|HDMI\)'; then
+            hyprctl eval 'hl.monitor({ output = "eDP-1", disabled = true })'
+          else
+            hyprctl eval "$panel"
+            hyprctl dispatch dpms off eDP-1
+          fi
+        else
+          hyprctl eval "$panel"
+          hyprctl dispatch dpms on eDP-1
+        fi
+      '';
+
       screenSnip = "${lib.getExe pkgs.grimblast} copysave area";
       screenShot = "${lib.getExe pkgs.grimblast} copysave screen";
       fileManager = config.terminal.exec "bash -ci '${lib.getExe pkgs.yazi}; exit'";
@@ -318,6 +337,12 @@ in
           assign_external_workspaces()
           hl.on("monitor.added", assign_external_workspaces)
           hl.on("monitor.removed", assign_external_workspaces)
+
+          -- Lid: logind ignores it (network.nix) so SSH survives; this decides the panel.
+          hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("${lidScript}"), { locked = true })
+          hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("${lidScript}"), { locked = true })
+          hl.on("monitor.added", function() hl.exec_cmd("${lidScript}") end)
+          hl.on("monitor.removed", function() hl.exec_cmd("${lidScript}") end)
 
           hl.workspace_rule({ workspace = "special:magic", gaps_out = { top = 40, right = 250, bottom = 40, left = 250 } })
 
