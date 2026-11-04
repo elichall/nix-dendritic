@@ -892,6 +892,47 @@ dialog hint / `xdg-dialog` support in the app) so Hyprland floats it natively.
 **Where:** `TODO.md` ("Popup windows tile…"); event API in Hyprland's Lua
 stubs (`share/hypr/stubs/hl.meta.lua`).
 
+### 63. tmux-resurrect on NixOS — repair empty-title saves, relaunch nvim/yazi from a delayed hook
+**Decision:** `modules/programs/tmux.nix` ships two small helper scripts wired
+through resurrect's hooks: `resurrect-fix-titles` (on `post-save-layout`, given
+the new file, and on `pre-restore-all`, repairing the `last` file) and
+`resurrect-relaunch-programs` (on `post-restore-all`). `@resurrect-processes`
+and `@resurrect-strategy-nvim` were removed.
+**Why (three independent defects, all reproduced on an isolated tmux server):**
+1. **Empty pane title corrupts the save.** resurrect's save/restore read rows
+   with a tab-`IFS` `read`; an empty title collapses, every later column shifts
+   left (and a pid leaks in), so the directory is read from the wrong column and
+   the pane restores in `$HOME` with its program lost. A blank title is sticky
+   and easy to get — Claude Code blanks it on exit (reported upstream Aug 2026)
+   — so a later `nvim` in that pane (nvim sets no title) saves shifted. This is
+   the "pane goes back to home" symptom; yazi sets its own title, so it mostly
+   escaped. Fix: insert a placeholder title (`-`) and drop the leaked column.
+2. **Process restore can never match on NixOS.** `@resurrect-processes "nvim
+   yazi"` (no `~`) requires the saved command to START with the name, but it is
+   a store path (`/nix/store/…/bin/nvim`); `nvim` additionally carries the
+   wrapper's `--cmd lua …;…` args, whose `;` breaks a re-sent command line
+   (verified: the restored prompt hung in a multiline state). Fix: don't list
+   them; relaunch the plain command name read from the pane-command column.
+3. **keys are sent before the shell is ready.** resurrect `send-keys` the
+   instant a pane exists; with ble.sh the Enter is swallowed ("-- MULTILINE --")
+   if sent ~0.3 s after start but works after ~4 s. Fix: relaunch after a 3 s
+   delay, only into panes now sitting at a plain shell (so nothing runs twice).
+**Verified:** end-to-end on a separate tmux server (`-L`) with the generated
+config: a blank-titled pane running nvim in `~/.nix`, a yazi pane in `~/.ssh`
+and a plain shell all saved cleanly and auto-restored in the right directories
+with nvim/yazi running; an old corrupted save (copy of a real one) was repaired
+by the pre-restore hook.
+**Not done / caveats:** no `Session.vim` (nvim sessions) support — the config
+has no session plugin; nvim comes back as a fresh `nvim` in its directory.
+Fixed 3 s delay, not readiness polling (a very slow shell start could still
+miss). Not relaunched: `claude` (saved as `claude --continue`), other programs.
+Upstream resurrect in nixpkgs is a 2022 snapshot; a newer plugin might fix #1
+natively. Community workarounds for #2 elsewhere use `~nvim` matches or `sed`
+hooks that strip the store prefix and `--cmd` args.
+**Where:** `modules/programs/tmux.nix` (`resurrectFixTitles`,
+`resurrectRelaunch`); NixOS Discourse thread "How to get tmux resurrect to
+restore neovim sessions"; Claude Code issue on blanked terminal titles.
+
 ---
 
 ## Appendix — decision source index
@@ -960,3 +1001,4 @@ stubs (`share/hypr/stubs/hl.meta.lua`).
 | 60 | Google Authenticator TOTP 2FA + `host.require2fa` scaffold | §4 | — | options-architecture | module-contracts C29, completed/2fa-select-hosts-research.md, google-authenticator-non-nixos.md |
 | 61 | Outside-fleet fallback auth — considered, not pursued | — | — | — | deferred/outside-fleet-totp-auth.md |
 | 62 | Floating popups (Firefox extension popout, Zotero dialogs) — solution found, decided against | — | TODO.md | — | decisions #62 |
+| 63 | tmux-resurrect on NixOS — empty-title save repair + delayed nvim/yazi relaunch | — | TODO.md | — | tmux.nix |

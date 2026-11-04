@@ -18,6 +18,69 @@
         white = "#a89984";
         gray = "#928374";
       };
+
+      # tmux-resurrect helpers (see decisions.md #63 for the full diagnosis).
+      #
+      # 1. Empty pane title => corrupted save. resurrect reads its records with a
+      #    tab-IFS `read`, which collapses an empty title field, so the whole row
+      #    shifts left one column and the directory is lost (pane restores in
+      #    $HOME, its program is not relaunched). A sticky blank title is easy to
+      #    get - Claude Code blanks it on exit. Repair: re-insert a placeholder
+      #    title and drop the leaked pid column. Runs on every new save
+      #    (post-save-layout, gets the file path) and before every restore
+      #    (pre-restore-all, repairs older saves).
+      resurrectFixTitles = pkgs.writeShellApplication {
+        name = "resurrect-fix-titles";
+        runtimeInputs = [ pkgs.gawk pkgs.coreutils pkgs.tmux ];
+        text = ''
+          file="''${1:-}"
+          if [ -z "$file" ]; then
+            dir="$(tmux show-option -gqv @resurrect-dir)"
+            dir="''${dir/#\~/$HOME}"
+            file="$(readlink -f "$dir/last")"
+          fi
+          [ -f "$file" ] || exit 0
+          tmp="$(mktemp)"
+          awk -F'\t' -v OFS='\t' '
+            $1 == "pane" && NF == 11 && $7 ~ /^:\// { print $1,$2,$3,$4,$5,$6,"-",$7,$8,$9,$11; next }
+            { print }
+          ' "$file" > "$tmp"
+          cat "$tmp" > "$file"
+          rm -f "$tmp"
+        '';
+      };
+
+      # 2. Relaunch nvim/yazi/opencode. resurrect's own `@resurrect-processes`
+      #    match needs the saved command to START with the name, but on NixOS it
+      #    is a store path (/nix/store/…/bin/nvim --cmd lua …;…, whose `;` also
+      #    breaks a re-sent command line), so nothing ever matched. It also sends
+      #    keys the instant a pane is created, before the shell (ble.sh) is ready,
+      #    and Enter gets swallowed. So: wait for the shells, then send the plain
+      #    command name to panes that were running one and are now at a shell.
+      resurrectRelaunch = pkgs.writeShellApplication {
+        name = "resurrect-relaunch-programs";
+        runtimeInputs = [ pkgs.gawk pkgs.coreutils pkgs.tmux ];
+        text = ''
+          sleep 3
+          dir="$(tmux show-option -gqv @resurrect-dir)"
+          dir="''${dir/#\~/$HOME}"
+          last="$(readlink -f "$dir/last")"
+          [ -f "$last" ] || exit 0
+          awk -F'\t' -v OFS='\t' '
+            $1 == "pane" {
+              cmd = $(($7 ~ /^:\//) ? 9 : 10)
+              if (cmd == "nvim" || cmd == "yazi" || cmd == "opencode") print $2, $3, $6, cmd
+            }
+          ' "$last" |
+          while IFS=$'\t' read -r session window pane cmd; do
+            target="$session:$window.$pane"
+            cur="$(tmux display-message -p -t "$target" '#{pane_current_command}' 2>/dev/null)" || continue
+            case "$cur" in
+              bash|zsh|fish|sh) tmux send-keys -t "$target" "$cmd" C-m ;;
+            esac
+          done
+        '';
+      };
     in
     {
       programs.tmux = {
@@ -41,9 +104,13 @@
           {
             plugin = resurrect;
             extraConfig = ''
-              set -g @resurrect-strategy-nvim 'session'
-              set -g @resurrect-processes "opencode yazi nvim"
               set -g @resurrect-dir '~/.local/share/tmux/resurrect'
+              # nvim/yazi/opencode are NOT listed in @resurrect-processes: the
+              # built-in match can't see through Nix store paths. They are
+              # relaunched by the post-restore hook below instead.
+              set -g @resurrect-hook-post-save-layout '${resurrectFixTitles}/bin/resurrect-fix-titles'
+              set -g @resurrect-hook-pre-restore-all '${resurrectFixTitles}/bin/resurrect-fix-titles'
+              set -g @resurrect-hook-post-restore-all '${resurrectRelaunch}/bin/resurrect-relaunch-programs'
             '';
           }
           {
