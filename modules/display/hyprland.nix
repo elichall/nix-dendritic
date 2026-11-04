@@ -27,8 +27,8 @@ in
       ...
     }:
     let
-      # nixos-scope host option; absent on standalone-HM hosts → 1.0
-      internalScale = osConfig.host.display.internalScale or 1.0;
+      # nixos-scope host option (one scale for ALL monitors); absent on standalone-HM → 1.0
+      displayScale = osConfig.host.display.scale or 1.0;
       noctaliaCmd = lib.getExe noctaliaPackage;
       tmuxCmd = "${lib.getExe pkgs.tmux} new-session -A -s 'main'";
       menu = "otter-open";
@@ -108,10 +108,10 @@ in
           ------------------
           -- -- MONITORS -- --
           ------------------
-          -- any other monitor, on any port (empty output = catch-all fallback)
-          hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
-          -- internal panel: per-host scale (host.display.internalScale, nixos scope via osConfig)
-          hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = ${toString internalScale} })
+          -- any other monitor, on any port (empty output = catch-all fallback); same scale as the internal panel
+          hl.monitor({ output = "", mode = "preferred", position = "auto", scale = ${toString displayScale} })
+          -- internal panel (host.display.scale, nixos scope via osConfig)
+          hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = ${toString displayScale} })
 
           ---------------------
           -- -- MY PROGRAMS -- --

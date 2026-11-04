@@ -407,7 +407,7 @@ writes, adaptive via detection shim → `.apply` args + runtime sniffing).
 ## Framework 13 (fw13p) host + session fixes (2026-11-03)
 
 - [x] Hosts: t480 → `workstation-temp` (`t480-hardwareConfig`, becoming headless server); fw13p is `workstation` (`fw13p-hardwareConfig`). NOTE: `modules/hosts/laptop.nix` still imports the removed `nixos.hardwareConfig` and no longer evaluates — delete it or point it at `t480-hardwareConfig`.
-- [x] `host.display.internalScale` (nixos-scope float, default 1.0; fw13p = 1.5): `homeManager.hyprland` reads it via `osConfig.host.display.internalScale or 1.0` for the eDP-1 rule. Documented in module-contracts.md. Also fixed `pcall(dotfile…)` → `dofile` and `local theme` scoping in the noctalia branch.
+- [x] `host.display.scale` (nixos-scope float, default 1.0; fw13p = 1.5; renamed from `internalScale`): `homeManager.hyprland` reads it via `osConfig.host.display.scale or 1.0` for the eDP-1 rule AND the catch-all external-monitor rule. Documented in module-contracts.md. Also fixed `pcall(dotfile…)` → `dofile` and `local theme` scoping in the noctalia branch.
 - [x] SSH trust: fw13p pubkey added to workstation-temp/laptop/wsl `host.trustedSshKeys`; t480 key added to workstation.
 - [x] nvim: `gcc` added to `homeManager.nvim` packages (nvim-treesitter compiled parsers failed with missing `cc`). After rebuild: `rm -rf ~/.cache/nvim/tree-sitter-*` once.
 - [x] `homeManager.xdgUserDirs` (`modules/system/xdg-userdirs.nix`, in `homeManager.desktop`): defines `~/.config/user-dirs.dirs` (Documents/Downloads/Pictures) — without it flatpak `xdg-download` was never mounted and Firefox downloads vanished with the sandbox.
@@ -427,3 +427,4 @@ writes, adaptive via detection shim → `.apply` args + runtime sniffing).
 - [S] `services.hardware.bolt.enable` — currently off; enable if Thunderbolt/USB4 docks are used.
 - [ ] Not yet verified: NVMe SMART (`sudo smartctl -a /dev/nvme0n1`), suspend/resume + overnight drain (only `s2idle` offered), what is on USB-C `con2` (ucsi_acpi alt-mode errors).
 - [x] xdg-desktop-portal config attr renamed `Hyprland` → `hyprland` (display.nix + termfilechooser.nix): portal matches the lowercase `hyprland-portals.conf`; the capitalised file was never read, so FileChooser always fell through to the GTK portal (and Screenshot etc. used the deprecated `UseIn` key). Verify after switch: restart `xdg-desktop-portal`, then Firefox open/save dialog should open yazi in a floating foot window.
+- [x] Added "10. New host checklist" to `modules/_assets/documentation/user/maintenance.md` (and updated §6 for per-machine hardware module keys).

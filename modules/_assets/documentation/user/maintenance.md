@@ -142,16 +142,19 @@ plus `nix.settings.auto-optimise-store = true` (hardlink dedupe).
 
 ## 6. Hardware configuration
 
-Frozen as a module: `modules/system/hardware-t480.nix` (registry key
-`nixos.hardwareConfig`). This replaced `/etc/nixos/hardware-configuration.nix`.
+Frozen as one module per machine: `modules/system/hardware-t480.nix`
+(registry key `nixos.t480-hardwareConfig`) and `modules/system/hardware-fw13p.nix`
+(`nixos.fw13p-hardwareConfig`). These replaced `/etc/nixos/hardware-configuration.nix`.
+Each machine needs its own unique key — a shared name breaks every host that
+still imports the old one.
 
 - **When hardware changes** (new disk layout, kernel modules, initrd needs),
   regenerate the reference and port the new bits:
   ```bash
   sudo nixos-generate-config
-  # diff /etc/nixos/hardware-configuration.nix against modules/system/hardware-t480.nix
+  # diff /etc/nixos/hardware-configuration.nix against modules/system/hardware-<machine>.nix
   ```
-- It must stay wrapped in `flake.modules.nixos.hardwareConfig` — bare NixOS
+- It must stay wrapped in `flake.modules.nixos.<machine>-hardwareConfig` — bare NixOS
   modules cannot live under `modules/` because import-tree recurses every
   `.nix` into the flake-parts evaluation.
 - `fileSystems` must match reality or the switch fails its assertion — expected.
@@ -219,6 +222,90 @@ sudo nixos-rebuild --rollback switch
 # Garbage collection (manual; automatic weekly GC already configured)
 sudo nix-collect-garbage -d
 ```
+
+---
+
+## 10. New host checklist
+
+Work through this when adding a machine (written after bringing up the
+Framework 13 `fw13p`). `[N]` = Nix config, `[S]` = state Nix does not manage.
+
+### Identity & wiring
+- [ ] [N] New `modules/hosts/<name>.nix`; set `host.hostName` (hard eval error
+      if unset — by design) and `system.stateVersion`.
+- [ ] [N] Unique hardware module key (`nixos.<machine>-hardwareConfig`) from a
+      fresh `sudo nixos-generate-config`: `fileSystems` UUIDs, swap, `kvm-intel`
+      / `kvm-amd`, initrd modules.
+- [ ] [N] `host.trustedSshKeys` on the new host, and the new host's pubkey
+      (`~/.ssh/id_ed25519.pub`) added to every other host's list.
+- [ ] [N] Search for stale references after any rename:
+      `grep -rn "<old-registry-key>" modules/`.
+- [ ] [N] Every host evaluates warning-free (the gate):
+      ```bash
+      for h in $(nix eval .#nixosConfigurations --apply builtins.attrNames --json | jq -r '.[]'); do
+        nix eval --option abort-on-warn true .#nixosConfigurations.$h.config.system.build.toplevel.drvPath
+      done
+      ```
+      Use `final.stdenv.hostPlatform.system` in overlays, never `final.system`.
+
+### Hardware & firmware
+- [ ] GPU userspace, not just the kernel driver: `nix shell nixpkgs#libva-utils -c vainfo`
+      and `nix shell nixpkgs#vulkan-tools -c vulkaninfo --summary`. No VA-API
+      driver = no hardware video decode (Intel: `intel-media-driver`, `vpl-gpu-rt`).
+- [ ] Firmware: `fwupdmgr get-updates`. BIOS/system-firmware updates need AC
+      power and an explicit accept for the *System Firmware* item.
+- [ ] Kernel complaints: `journalctl -k -b -p warning` (ACPI `_CPC`, `ucsi_acpi`
+      and a Wi-Fi firmware "falling back to older version" line are usually benign).
+- [ ] Radios/sensors/peripherals: `nmcli dev`, `bluetoothctl list`, `wpctl status`,
+      `ls /dev/video* /dev/accel*`, `fwupdmgr get-devices` (fingerprint reader).
+- [ ] Decide on optional services (default off): `fprintd`, `thermald`,
+      `hardware.bolt` (Thunderbolt/USB4 docks).
+- [ ] `systemctl --failed` and `systemctl --user --failed` are empty.
+
+### Power & battery
+- [ ] Battery name: `ls /sys/class/power_supply/` (`BAT0` vs `BAT1`). Remove
+      thresholds for batteries that don't exist.
+- [ ] TLP thresholds only work if sysfs exposes
+      `/sys/class/power_supply/BAT*/charge_control_*_threshold`. If absent (the
+      fw13p case), set the limit in BIOS and drop the TLP threshold lines.
+- [ ] Governor / EPP / platform profile actually applied while on battery:
+      `cat /sys/devices/system/cpu/cpu0/cpufreq/{scaling_driver,scaling_governor,energy_performance_preference}`
+      and `/sys/firmware/acpi/platform_profile{,_choices}`.
+- [ ] Only one power daemon: `power-profiles-daemon` off when TLP is on.
+
+### Display & session
+- [ ] `host.display.scale` set for the panel (applies to the internal panel
+      *and* the catch-all external-monitor rule). Resolutions should divide
+      evenly by the scale (3840×2160 / 1.5 ✓).
+- [ ] Internal panel connector name (`eDP-1`) matches the rules in
+      `modules/display/hyprland.nix`; externals are port-independent (catch-all
+      rule + hotplug hook): swap ports once and confirm with
+      `hyprctl monitors` / `hyprctl workspaces`.
+- [ ] XDG user dirs exist (`~/.config/user-dirs.dirs`, from
+      `homeManager.xdgUserDirs`) — otherwise flatpak `xdg-download` mounts
+      nothing and downloads vanish with the sandbox. Test:
+      `flatpak run --command=ls org.mozilla.firefox ~/Downloads`.
+- [ ] Portal routing: attribute names under `xdg.portal.config` must be
+      lowercase (`hyprland`). `journalctl --user -u xdg-desktop-portal` must NOT
+      say "via the deprecated UseIn key". Test the file dialog from Firefox.
+
+### State Nix does not manage
+- [ ] rclone: `rclone config` with the remote named exactly `boxdrive`, then
+      `systemctl --user start rclone-box` (the unit asserts `rclone.conf` exists
+      at login only).
+- [ ] Git push auth: HTTPS remote prompts every time — switch to SSH
+      (`git remote set-url origin git@github.com:…`, key registered on GitHub)
+      or enable the `gh` credential helper.
+- [ ] Tailscale login; Google Authenticator enrolment if `host.require2fa`.
+- [ ] Flatpak apps are installed imperatively and are NOT in the flake
+      (Firefox, Zotero, Flatseal, …): reinstall and re-apply permissions.
+- [ ] First `nvim` launch compiles treesitter parsers (needs `gcc`, provisioned
+      by `homeManager.nvim`); after a fix, `rm -rf ~/.cache/nvim/tree-sitter-*`.
+- [ ] BIOS settings that Linux cannot see or set (battery charge limit, Secure Boot).
+
+### Close-out
+- [ ] Update `TODO.md` and the relevant `module-contracts.md` entry for any new
+      option; commit with a clean tree and an up-to-date `flake.lock`.
 
 ---
 

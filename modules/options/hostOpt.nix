@@ -78,10 +78,10 @@ in
 
       # Nixos-scope only: HM consumers (hyprland) read it via `osConfig`,
       # falling back to 1.0 on standalone-HM hosts that don't own a display.
-      display.internalScale = lib.mkOption {
+      display.scale = lib.mkOption {
         type = lib.types.float;
         default = 1.0;
-        description = "Scale factor for the built-in panel (consumer: homeManager.hyprland eDP-1 rule via osConfig).";
+        description = "Display scale factor applied to every monitor: the built-in panel and the catch-all rule for external monitors (consumer: homeManager.hyprland via osConfig).";
       };
 
       # Tautological inside nixosSystem (a NixOS eval IS NixOS); its real

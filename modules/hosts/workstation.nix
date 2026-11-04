@@ -27,7 +27,7 @@
       self.modules.nixos.options
       {
         host.hostName = "fw13p-nixos";
-        host.display.internalScale = 1.5;
+        host.display.scale = 1.5;
         host.trustedSshKeys = [
           # work-ubuntu-desktop
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILf1eovOjigEIalWrLJrAgNat4pme9WAIgQEIKD8h7KF 1elijah.hall@gmail.com"
