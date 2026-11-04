@@ -84,6 +84,13 @@ in
         description = "Display scale factor applied to every monitor: the built-in panel and the catch-all rule for external monitors (consumer: homeManager.hyprland via osConfig).";
       };
 
+      # Nixos-scope only; consumer: homeManager.hyprland via osConfig (default false).
+      keyboard.hasPrintKey = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether the keyboard has a Print Screen key. When false (default), hyprland also binds Super+Shift+S as the area-snip chord.";
+      };
+
       # Tautological inside nixosSystem (a NixOS eval IS NixOS); its real
       # consumer is the HM copy below — standalone-HM hosts set false to
       # enable foreign-distro behavior (e.g. targets.genericLinux).

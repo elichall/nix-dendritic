@@ -29,6 +29,7 @@ in
     let
       # nixos-scope host option (one scale for ALL monitors); absent on standalone-HM → 1.0
       displayScale = osConfig.host.display.scale or 1.0;
+      hasPrintKey = osConfig.host.keyboard.hasPrintKey or false;
       noctaliaCmd = lib.getExe noctaliaPackage;
       tmuxCmd = "${lib.getExe pkgs.tmux} new-session -A -s 'main'";
       menu = "otter-open";
@@ -266,6 +267,10 @@ in
           hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
           hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(screenSnip))
           hl.bind(mainMod .. " + SHIFT + Print", hl.dsp.exec_cmd(screenShot))
+          ${lib.optionalString (!hasPrintKey) ''
+            -- no Print key (host.keyboard.hasPrintKey = false): Super+Shift+S = area snip
+            hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(screenSnip))
+          ''}
 
           hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(brightnessU), { repeating = true, locked = true })
           hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(brightnessD), { repeating = true, locked = true })
