@@ -43,6 +43,8 @@
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINckAveevwz3fMQyFM9LgDmBg8P1HT0CtG/jOCuYgk0y baylor\elijah_hall1@DRPA-RESH14"
           # iPhone (Termius)
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBSE6LTjQ7T6YAAmdwKZMTAy97ZBiGCli6yvwDtv73vO"
+          # fw13p
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIORplBtmIMTcovh7B5IpCWIzFMqk4nygxiGVC/MY4Q6F fw13p-nixos"
         ];
 
         targets.genericLinux.enable = true;
