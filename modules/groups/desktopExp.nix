@@ -20,6 +20,7 @@
       self.modules.homeManager.tui
       self.modules.homeManager.otterLauncher
       self.modules.homeManager.showoff
+      self.modules.homeManager.power
       self.modules.homeManager.awww
       self.modules.homeManager.waypaper
       self.modules.homeManager.waybar

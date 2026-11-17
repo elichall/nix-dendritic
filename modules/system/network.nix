@@ -7,15 +7,8 @@
     networking.hostName = config.host.hostName;
     networking.networkmanager.enable = true;
 
-    # ssh friendly settings for a laptop
-    networking.networkmanager.wifi.powersave = false;
-    # Never suspend on lid close (SSH must survive); Hyprland handles the panel
-    # (modules/display/hyprland.nix, lidScript).
-    services.logind.settings.Login = {
-      HandleLidSwitch = "ignore";
-      HandleLidSwitchExternalPower = "ignore";
-      HandleLidSwitchDocked = "ignore";
-    };
+    # Wi-Fi power saving is managed by TLP (battery.nix: on battery only); the
+    # lid policy lives in modules/system/power.nix.
 
     services.openssh = {
       enable = true;

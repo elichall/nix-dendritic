@@ -644,6 +644,18 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   `titlebar=native`). The nixos-scope custom MIME XML (`engineeringMimes` in
   `system/mime.nix`) is still central.
 
+### C31. Power policy (`power.nix` ↔ `hyprland.nix` ↔ `battery.nix` ↔ `showoff.nix`)
+- `modules/system/power.nix` exports `nixos.power` (logind lid policy; in
+  `nixos.base`) and `homeManager.power` (`idle-action` + `hypr/hypridle.conf`;
+  in the `desktop`/`desktopExp` groups next to `showoff`). `showoff.nix` no
+  longer writes `hypridle.conf`; it only provides the `showoff --idle` command.
+- `hyprland.nix` `panelScript` (lid + hotplug) owns panel enable/disable; the
+  panel runs VRR (`vrr = 1`), there is no per-power-source mode switching.
+- `battery.nix` owns TLP incl. `WIFI_PWR_ON_{AC,BAT}`; `network.nix` must NOT set
+  `networkmanager.wifi.powersave`.
+- Hyprland dispatchers from shell must use Lua form (`hyprctl dispatch
+  'hl.dsp.dpms({ action = "off" })'`); plain `dispatch dpms off` is rejected.
+
 ## 3. Wrapper / PATH status table
 
 | Wrapper | Module | Currently | Lands |

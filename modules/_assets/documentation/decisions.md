@@ -1004,6 +1004,7 @@ restore neovim sessions"; Claude Code issue on blanked terminal titles.
 | 63 | tmux-resurrect on NixOS — empty-title save repair + delayed nvim/yazi relaunch | — | TODO.md | — | tmux.nix |
 | 64 | Flatpak scaling via user overrides (ParaView/FreeCAD Wayland, Steam host scale) | — | TODO.md | — | flatpak.nix |
 | 65 | Flatpak app registry — one module per app, auto-wired into mime/hyprland/overrides | — | TODO.md | — | flatpakOpt.nix, programs/flatpak/ |
+| 66 | Power policy — idle ladder (AC vs battery), lid suspend, 60 Hz + Wi-Fi saving on battery | — | TODO.md | — | power.nix, hyprland.nix |
 
 ### 64. Flatpak apps: scaling fixed via user flatpak overrides, not wrappers
 **Decision:** `modules/programs/flatpak.nix` (`homeManager.flatpak`) renders
@@ -1039,3 +1040,29 @@ Nix-managed packages; `programs/flatpak/` is hand-installed apps.
 **Revisit if:** installs should become declarative (nix-flatpak or a
 `flatpak-sync` helper reading the registry), or the central nixos custom-MIME
 XML should move into per-app `nixos.*` modules.
+
+### 66. Power policy — the laptop used to never sleep
+**Decision:** `modules/system/power.nix` (nixos + homeManager) owns the idle
+ladder and lid policy. `hypridle.conf` drives `idle-action`:
+- AC: `showoff` idle screen (5 min). No screen-off, no lock, no suspend.
+- Battery: screen off (10 min) → suspend (30 min). No lock, no `showoff`.
+  Suspend is skipped if any logind session is `Remote=yes` (SSH).
+- (`idle-action dim|undim` still exist but no listener uses them — the dim step was dropped.)
+- Lid (logind): `HandleLidSwitch=suspend` (battery, no external), `ExternalPower`
+  and `Docked` = `ignore` (SSH + external monitor keep working).
+- `hyprland.nix` runs the internal panel with VRR (`vrr = 1` on `eDP-1`, also
+  in `panelScript`): the panel refreshes only when content changes, so an idle
+  desktop idles at the panel's low rate with no mode switch. (A 60 Hz-on-battery
+  mode switch + AC watcher was tried first and dropped: it blanks the screen on
+  every plug/unplug.) Wi-Fi power saving moved to TLP (`WIFI_PWR_ON_BAT=on`);
+  the NetworkManager `powersave=false` override was removed.
+**Why:** measured root cause of poor battery life — Noctalia idle
+screen-off/lock disabled, hypridle only ran the animated `showoff` screensaver,
+the lid was ignored in every state (an earlier SSH-driven change), and nothing
+ever suspended (0 suspends in `suspend_stats`). The platform only offers `s2idle`
+(normal for this Intel Ultra part); TLP/EPP/platform profile were already sane.
+**Gotchas found:** this Hyprland rejects plain `hyprctl dispatch dpms off` (Lua
+config) — use `hyprctl dispatch 'hl.dsp.dpms({ action = "off", monitor = "eDP-1" })'`.
+The earlier lid script had that bug (panel never blanked on lid close, no external).
+**Revisit if:** idle drain is still high after this (check `powertop`, SLP_S0
+residency after an s2idle cycle), or a lock step is wanted.

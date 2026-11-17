@@ -46,10 +46,13 @@ in
       muteAudio = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
       muteMic = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
 
-      # Lid handler (called from lid-switch binds + monitor hotplug events).
+      # Panel handler (lid-switch binds + monitor hotplug).
       # Lid closed + external monitor present -> disable eDP-1; otherwise ensure
-      # it is enabled (closed lid with no external just blanks via dpms).
-      lidScript = pkgs.writeShellScript "hypr-lid" ''
+      # it is enabled (closed lid with no external just blanks via dpms). The
+      # panel runs VRR (vrr = 1) so it refreshes only when content changes; no
+      # per-power-source mode switching. Rationale: decisions.md #66; idle
+      # ladder: modules/system/power.nix.
+      panelScript = pkgs.writeShellScript "hypr-panel" ''
         PATH=${
           lib.makeBinPath [
             pkgs.coreutils
@@ -57,17 +60,17 @@ in
             pkgs.hyprland
           ]
         }
-        panel="hl.monitor({ output = \"eDP-1\", mode = \"preferred\", position = \"auto\", scale = ${toString displayScale}, disabled = false })"
+        panel="hl.monitor({ output = \"eDP-1\", mode = \"preferred\", position = \"auto\", scale = ${toString displayScale}, vrr = 1, disabled = false })"
         if grep -q closed /proc/acpi/button/lid/*/state 2>/dev/null; then
           if hyprctl monitors -j | grep -q '"name": "\(DP\|HDMI\)'; then
             hyprctl eval 'hl.monitor({ output = "eDP-1", disabled = true })'
           else
             hyprctl eval "$panel"
-            hyprctl dispatch dpms off eDP-1
+            hyprctl dispatch 'hl.dsp.dpms({ action = "off", monitor = "eDP-1" })'
           fi
         else
           hyprctl eval "$panel"
-          hyprctl dispatch dpms on eDP-1
+          hyprctl dispatch 'hl.dsp.dpms({ action = "on", monitor = "eDP-1" })'
         fi
       '';
 
@@ -141,7 +144,7 @@ in
           -- any other monitor, on any port (empty output = catch-all fallback); same scale as the internal panel
           hl.monitor({ output = "", mode = "preferred", position = "auto", scale = ${toString displayScale} })
           -- internal panel (host.display.scale, nixos scope via osConfig)
-          hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = ${toString displayScale} })
+          hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = ${toString displayScale}, vrr = 1 })
 
           ---------------------
           -- -- MY PROGRAMS -- --
@@ -354,11 +357,11 @@ in
           hl.on("monitor.added", assign_external_workspaces)
           hl.on("monitor.removed", assign_external_workspaces)
 
-          -- Lid: logind ignores it (network.nix) so SSH survives; this decides the panel.
-          hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("${lidScript}"), { locked = true })
-          hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("${lidScript}"), { locked = true })
-          hl.on("monitor.added", function() hl.exec_cmd("${lidScript}") end)
-          hl.on("monitor.removed", function() hl.exec_cmd("${lidScript}") end)
+          -- Lid: logind suspends on battery / ignores on AC+external (system/power.nix); this decides the panel.
+          hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("${panelScript}"), { locked = true })
+          hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("${panelScript}"), { locked = true })
+          hl.on("monitor.added", function() hl.exec_cmd("${panelScript}") end)
+          hl.on("monitor.removed", function() hl.exec_cmd("${panelScript}") end)
 
           hl.workspace_rule({ workspace = "special:magic", gaps_out = { top = 40, right = 250, bottom = 40, left = 250 } })
 

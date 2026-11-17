@@ -11,6 +11,7 @@
   flake.modules.nixos.base = {
     imports = [
       self.modules.nixos.battery
+      self.modules.nixos.power
       self.modules.nixos.network
       self.modules.nixos.hardware
       self.modules.nixos.audio

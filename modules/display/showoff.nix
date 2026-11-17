@@ -254,13 +254,8 @@
         ]);
 
       xdg.configFile = {
-        # Hypridle triggers showoff after 300s of inactivity
-        "hypr/hypridle.conf".text = ''
-          listener {
-              timeout = 300
-              on-timeout = showoff --idle
-          }
-        '';
+        # hypr/hypridle.conf is owned by homeManager.power (modules/system/power.nix);
+        # it calls `showoff --idle` on AC only.
 
         # Tmux config for the isolated showoff session (no status bar, true color, fast escape)
         "tmux/showoff.conf".text = ''
