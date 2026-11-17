@@ -22,7 +22,7 @@ The group aggregates three modules:
 |--------|-----|------------------|
 | `research` | `homeManager.research` | pandoc + texlive (user-scale) |
 | `obsidian` | `homeManager.obsidian` | nvim plugin layer for Obsidian vaults |
-| `zotero` | `homeManager.zotero` | Flatpak desktop entry |
+| `zotero` | `homeManager.flatpakZotero` (in `flatpakGroup`) | Flatpak desktop entry |
 
 Individual keys are importable standalone if you only need part of the stack.
 

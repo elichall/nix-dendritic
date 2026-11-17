@@ -16,6 +16,8 @@
       self.modules.homeManager.optionsTheme
       self.modules.homeManager.browser
       self.modules.homeManager.optionsUtils
+      self.modules.homeManager.optionsFlatpak
+      self.modules.homeManager.flatpak
       self.modules.homeManager.optionsHost
     ];
   };

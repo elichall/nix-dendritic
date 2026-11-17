@@ -203,6 +203,7 @@ Agents must create and maintain a `TODO.md` file at the repository root to refle
 | `domain-classifier` | `.agents/skills/domain-classifier/SKILL.md` | NixOS vs HM scope classification |
 | `flake-validator` | `.agents/skills/flake-validator/SKILL.md` | Evaluation, validation, diagnostics |
 | `package-provisioning` | `.agents/skills/package-provisioning/SKILL.md` | Adding new packages (tier 1/2/3) |
+| `flatpak-apps` | `.agents/skills/flatpak-apps/SKILL.md` | Adding/debugging hand-installed flatpak apps (registry) |
 - **Docs Convention**: Extended prose (decisions, contracts, rationale) lives in `modules/_assets/` docs (see §8) — NOT in module headers. Module headers carry only short pointers. When a decision/contract changes, update the relevant `_assets` doc in the same change.
 
 ---

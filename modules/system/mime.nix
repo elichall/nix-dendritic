@@ -59,7 +59,16 @@
       environment.systemPackages = [ customMime ];
     };
 
-  flake.modules.homeManager.mimeDefaults = { config, ... }: {
+  flake.modules.homeManager.mimeDefaults = { config, lib, ... }:
+    let
+      # Flatpak apps (registry: modules/options/flatpakOpt.nix) claim their own
+      # MIME types; per-app modules live in modules/programs/flatpak/.
+      flatpakDefaults = lib.zipAttrsWith (_: lib.concatLists) (
+        lib.mapAttrsToList (_: app: lib.genAttrs app.mimeTypes (_: [ app.desktopId ]))
+          config.flatpak.apps
+      );
+    in
+    {
     xdg.configFile."mimeapps.list".force = true;
     xdg.mimeApps = {
       enable = true;
@@ -70,12 +79,7 @@
         "x-scheme-handler/about" = [ config.browser.desktop ];
         "x-scheme-handler/unknown" = [ config.browser.desktop ];
         "inode/directory" = [ "yazi.desktop" ];
-        "model/step" = [ "org.freecad.FreeCAD.desktop" ];
-        "application/x-vtk" = [ "org.paraview.ParaView.desktop" ];
-        "application/x-gmsh-msh" = [ "org.paraview.ParaView.desktop" ];
-        "application/x-paraview-vtu" = [ "org.paraview.ParaView.desktop" ];
-        "application/x-paraview-vtm" = [ "org.paraview.ParaView.desktop" ];
-      };
+      } // flatpakDefaults;
     };
   };
 }

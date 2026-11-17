@@ -29,6 +29,10 @@ in
     let
       # nixos-scope host option (one scale for ALL monitors); absent on standalone-HM → 1.0
       displayScale = osConfig.host.display.scale or 1.0;
+      # window rules contributed by flatpak apps (registry: modules/options/flatpakOpt.nix)
+      flatpakRules = lib.concatMapStrings (r: "hl.window_rule(${lib.generators.toLua { } r})\n") (
+        lib.concatMap (a: a.windowRules) (lib.attrValues config.flatpak.apps)
+      );
       hasPrintKey = osConfig.host.keyboard.hasPrintKey or false;
       noctaliaCmd = lib.getExe noctaliaPackage;
       tmuxCmd = "${lib.getExe pkgs.tmux} new-session -A -s 'main'";
@@ -46,7 +50,13 @@ in
       # Lid closed + external monitor present -> disable eDP-1; otherwise ensure
       # it is enabled (closed lid with no external just blanks via dpms).
       lidScript = pkgs.writeShellScript "hypr-lid" ''
-        PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.gnugrep pkgs.hyprland ]}
+        PATH=${
+          lib.makeBinPath [
+            pkgs.coreutils
+            pkgs.gnugrep
+            pkgs.hyprland
+          ]
+        }
         panel="hl.monitor({ output = \"eDP-1\", mode = \"preferred\", position = \"auto\", scale = ${toString displayScale}, disabled = false })"
         if grep -q closed /proc/acpi/button/lid/*/state 2>/dev/null; then
           if hyprctl monitors -j | grep -q '"name": "\(DP\|HDMI\)'; then
@@ -401,11 +411,8 @@ in
             size = { 900, 600 },
           })
 
-          hl.window_rule({
-            name = "paraview_file_dialog",
-            match = { class = "^paraview$", title = "^Open File.*" },
-            center = true,
-          })
+          -- Per-app rules from the flatpak registry (modules/programs/flatpak/*.nix)
+          ${flatpakRules}
 
           hl.window_rule({
             name = "suppress-maximize-events",

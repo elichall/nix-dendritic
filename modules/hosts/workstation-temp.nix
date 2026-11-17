@@ -62,6 +62,7 @@
               self.modules.homeManager.toolbox
               self.modules.homeManager.desktop
               self.modules.homeManager.researchGroup
+              self.modules.homeManager.flatpakZotero # flatpak (was part of researchGroup)
               self.modules.homeManager.utils
 
               # remaining user-level aspects (not grouped)

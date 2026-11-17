@@ -57,7 +57,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
 | `homeManager.opencode` | `programs/opencode.nix` | opencode binary + poppler-utils (PDF pipeline dep), SOLE owner of `xdg.configFile."opencode/tui.json"` + global `/pdf` command (`opencode/commands/pdf.md`) |
 | `homeManager.fastfetch` | `programs/fastfetch.nix` | fastfetch binary + chafa block-image logo config (`symbols = "block"`), auto height, explicit `modules` list = default structure (2.63.1 prints NOTHING but the logo without it) (HOME-ONLY, user directive) |
 | `homeManager.rclone` | `programs/rclone.nix` | rclone binary + rclone-box user unit |
-| `homeManager.zotero` | `research/zotero.nix` | zotero flatpak desktop entry |
+| `homeManager.flatpakZotero` | `programs/flatpak/zotero.nix` | zotero flatpak override + desktop entry (flatpak registry, C30) |
 | `homeManager.clipboard` | `system/clipboard.nix` | Platform-aware clipboard tooling branching on `host.*` (C28): `displayProtocol` selects wl-clipboard/xclip; `isWsl` adds vendored win32yank (fetchzip of upstream release, dual-name `win32yank{,.exe}`) + `wslview` shim (wslu removed from nixpkgs — project archived) + xclip (WSLg exposes x11 too). Requires `options` group imported first |
 | `homeManager.ghostty` | `display/experimental/ghostty.nix` | ghostty binary + SOLE owner of `xdg.configFile."ghostty/config"` (experimental stack only) |
 | `homeManager.foot` | `display/desktop/foot.nix` | foot terminal via `programs.foot.enable` (HM native module); stable stack terminal |
@@ -188,6 +188,7 @@ nix eval .#modules --apply 'm: { nixos = builtins.attrNames m.nixos; homeManager
   `mimeType = [ "inode/directory" ]`.
 - `homeManager.mimeDefaults` maps `"inode/directory" = [ "yazi.desktop" ]` —
   the desktop ID must stay in sync with that entry.
+- Flatpak apps contribute their own MIME defaults via the registry — see C30.
 
 ### C5. Otter dismiss & window-class contract
 - Dismiss callback = `pkill -x otter-launcher` (exact comm: kills only the
@@ -622,6 +623,26 @@ interaction-watch [--tag NAME] [--grace SECS] [--interval SECS]
   `modules/_assets/plans/completed/2fa-select-hosts-research.md`.
 
 ---
+
+### C30. Flatpak app registry (`options/flatpakOpt.nix` ↔ `programs/flatpak/*` ↔ mime ↔ hyprland)
+- **Registry**: `homeManager.optionsFlatpak` (`modules/options/flatpakOpt.nix`,
+  in the `options` group) declares `flatpak.apps.<app-id>` with fields
+  `desktopId`, `overrides`, `mimeTypes`, `windowRules`, `desktopEntry`, `notes`.
+- **Producers**: one module per hand-installed flatpak in
+  `modules/programs/flatpak/` (`flatpakOnlyoffice`, `flatpakParaview`,
+  `flatpakFreecad`, `flatpakSteam`, `flatpakZotero`), each only setting its entry. A
+  host picking an app module is what enables its quirks (group:
+  `homeManager.flatpakGroup`, `modules/groups/flatpaks.nix`). Never import the
+  same app module twice (`lines` options concatenate).
+- **Consumers**: `homeManager.flatpak` (renderer, in the `options` group) writes
+  `~/.local/share/flatpak/overrides/<id>` + optional `.desktop`;
+  `homeManager.mimeDefaults` merges `mimeTypes` into `xdg.mimeApps`;
+  `homeManager.hyprland` renders `windowRules` with `lib.generators.toLua`.
+  No consumer names a specific app.
+- **Not covered**: installation stays manual (`flatpak install flathub <id>`);
+  `notes` records manual steps for app-owned files (e.g. OnlyOffice
+  `titlebar=native`). The nixos-scope custom MIME XML (`engineeringMimes` in
+  `system/mime.nix`) is still central.
 
 ## 3. Wrapper / PATH status table
 

@@ -1003,6 +1003,7 @@ restore neovim sessions"; Claude Code issue on blanked terminal titles.
 | 62 | Floating popups (Firefox extension popout, Zotero dialogs) — solution found, decided against | — | TODO.md | — | decisions #62 |
 | 63 | tmux-resurrect on NixOS — empty-title save repair + delayed nvim/yazi relaunch | — | TODO.md | — | tmux.nix |
 | 64 | Flatpak scaling via user overrides (ParaView/FreeCAD Wayland, Steam host scale) | — | TODO.md | — | flatpak.nix |
+| 65 | Flatpak app registry — one module per app, auto-wired into mime/hyprland/overrides | — | TODO.md | — | flatpakOpt.nix, programs/flatpak/ |
 
 ### 64. Flatpak apps: scaling fixed via user flatpak overrides, not wrappers
 **Decision:** `modules/programs/flatpak.nix` (`homeManager.flatpak`) renders
@@ -1018,3 +1019,23 @@ apply; overrides are the same mechanism as Zotero's. Apps with their own module
 **Revisit if:** the ParaView/FreeCAD 3D view misbehaves on Wayland (relax to
 `fallback-x11` + `QT_SCALE_FACTOR=<scale>`), or Steam ignores the env var
 (use a `.desktop` `Exec` with `-forcedesktopscaling`).
+
+### 65. Flatpak app registry — one self-contained module per app
+**Decision:** hand-installed flatpak apps are described by `flatpak.apps.<app-id>`
+(`modules/options/flatpakOpt.nix`). Each app has one module in
+`modules/programs/flatpak/` setting only its entry (overrides, mimeTypes,
+Hyprland windowRules, desktopEntry, notes). Generic consumers — the renderer
+`programs/flatpak/flatpak.nix`, `homeManager.mimeDefaults`, `homeManager.hyprland`
+— iterate the registry; none names an app. `modules/groups/flatpaks.nix`
+(`flatpakGroup`) is the easy-to-attach list.
+**Why:** quirks were being debugged per app (blurry Xwayland, dialogs at 0,0,
+transparent custom frame) and recorded as hard references in shared configs
+(mime.nix, hyprland.nix) that applied on every host whether or not it wanted the
+app. Now importing the app module is the single switch; removing it removes every
+trace (verified by dropping `flatpakOnlyoffice` and diffing the generated files).
+**Scope limit:** installation stays manual (decided against a helper script and
+against nix-flatpak: the registry only holds settings). `programs/` proper is
+Nix-managed packages; `programs/flatpak/` is hand-installed apps.
+**Revisit if:** installs should become declarative (nix-flatpak or a
+`flatpak-sync` helper reading the registry), or the central nixos custom-MIME
+XML should move into per-app `nixos.*` modules.

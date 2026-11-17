@@ -452,3 +452,12 @@ Decision (user): run raw with no tweaks first; only add what a real symptom just
 
 ## Flatpak scaling (2026-11-03)
 - [x] `modules/programs/flatpak.nix` (`homeManager.flatpak`, wired in workstation.nix): user flatpak overrides — ParaView/FreeCAD native Wayland; Steam `STEAM_FORCE_DESKTOPUI_SCALING` = `host.display.scale` (only if != 1.0). Hyprland `xwayland.force_zero_scaling = true`. decisions #64. Verify after switch: 3D viewports OK, Steam sized right; `paraview_file_dialog` rule still matches (class vs app_id).
+
+## OnlyOffice as Office handler (2026-11-16)
+- [x] `modules/system/mime.nix` (`homeManager.mimeDefaults`): docx/doc/docm, xlsx/xls, pptx/ppt → `org.onlyoffice.desktopeditors.desktop` (flatpak, installed by hand: `flatpak install flathub org.onlyoffice.desktopeditors`). CSV and ODF deliberately NOT claimed (csv stays with the nvim default). Verify after switch: `xdg-mime query default application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
+- [x] OnlyOffice transparent border fix: manual, app-owned `~/.var/app/org.onlyoffice.desktopeditors/config/onlyoffice/DesktopEditors.conf` → `titlebar=native` (app closed). Noted next to the OnlyOffice mime mapping in `modules/system/mime.nix`; repeat on fresh install/new host.
+- [x] OnlyOffice dialogs opened at the top-left (Xwayland class `DesktopEditors` requests 0,0): `onlyoffice_dialogs` window rule (`center = true`) in `modules/display/hyprland.nix`. Verify after switch by opening File → Open.
+
+## Flatpak app registry (2026-11-16)
+- [x] `flatpak.apps.<app-id>` registry (`modules/options/flatpakOpt.nix`) + one module per hand-installed flatpak in `modules/programs/flatpak/` (onlyoffice, paraview, freecad, steam, zotero; renderer in `flatpak.nix`), attach list `modules/groups/flatpaks.nix` (`flatpakGroup`, wired in workstation.nix). mimeDefaults and hyprland now read the registry; no app named in either. Zotero moved from `research/` (laptop.nix / workstation-temp.nix import `homeManager.flatpakZotero` directly). Verified: mimeapps + all overrides + zotero.desktop byte-identical to before; hyprland.lua differs only in rule format/order (toLua tables; Hyprland accepted via `hyprctl eval`); dropping `flatpakOnlyoffice` removes its mime lines + rule. decisions #65, C30, skill `flatpak-apps`.
+- [S] Declarative flatpak install (nix-flatpak or a `flatpak-sync` helper reading the registry); move nixos custom-MIME XML (`engineeringMimes`) into per-app `nixos.*` modules. Pre-existing: `laptop` host fails eval (`hardwareConfig` missing).
